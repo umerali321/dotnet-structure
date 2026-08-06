@@ -24,6 +24,15 @@ try
 
     builder.Services.AddControllers();
 
+    const string AllowAllCorsPolicy = "AllowAll";
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(AllowAllCorsPolicy, policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+    });
+
     builder.Services
         .AddApiVersioning(options =>
         {
@@ -78,6 +87,8 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    app.UseCors(AllowAllCorsPolicy);
 
     app.UseAuthentication();
     app.UseAuthorization();
