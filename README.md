@@ -20,7 +20,20 @@ docs/              Architecture decision records and supplementary documentation
 
 ## Status
 
-This is a bare skeleton: the projects, references, and base infrastructure (EF Core + SQL Server, JWT bearer authentication, FluentValidation, Serilog, OpenAPI + Scalar, API versioning, global exception handling) are wired and build cleanly, but no domain entities or features have been implemented yet.
+Base infrastructure (EF Core + SQL Server, JWT bearer authentication, FluentValidation, Serilog, OpenAPI + Scalar, API versioning, global exception handling) and a complete SuperAdmin authentication module are wired and build cleanly. No other domain entities/features exist yet, and Company Admin / Employee accounts are intentionally not implemented.
+
+## Authentication
+
+There is exactly one built-in SuperAdmin account, defined in configuration (`SuperAdmin` section in `appsettings.json`) rather than the database — it always exists even before any database is connected. Dev default: `superadmin@skillsetsbackend.local` / `SuperAdmin@123` (change this — via user secrets or environment variables, never commit real credentials — before deploying anywhere real).
+
+| Endpoint | Auth | Description |
+|---|---|---|
+| `POST /api/v1/auth/login` | Anonymous | Validates SuperAdmin credentials, returns an access token (30 min) + refresh token (7 days) |
+| `POST /api/v1/auth/refresh` | Anonymous | Exchanges a valid refresh token for a new access + refresh token pair (rotates and revokes the old one) |
+| `POST /api/v1/auth/logout` | Anonymous | Revokes a refresh token |
+| `GET /api/v1/auth/me` | Bearer (SuperAdmin) | Returns the authenticated identity's claims — proves token validation works |
+
+Refresh tokens are stored in memory for now (lost on restart, not shared across instances) via `InMemoryRefreshTokenRepository` — a deliberate placeholder. The entity, EF Core configuration, and `DbSet` are already in place and migration-ready; swapping in a real database only requires writing an EF-Core-backed `IRefreshTokenRepository` and changing one DI registration line (see `AGENTS.md` for details) — no other auth code changes.
 
 ## Getting started
 

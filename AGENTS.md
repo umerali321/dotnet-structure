@@ -4,7 +4,7 @@ Instructions for any AI coding agent (Claude Code, Cursor, Copilot, Codex CLI, W
 
 ## What this is
 
-`SkillsetsBackend` — a .NET 10 Clean Architecture Web API skeleton. As of now it is still a **bare skeleton**: infrastructure and wiring are in place, no domain entities/features exist yet.
+`SkillsetsBackend` — a .NET 10 Clean Architecture Web API. Base infrastructure (EF Core, JWT, Scalar, Serilog, CORS, versioning) plus a complete SuperAdmin authentication module are built. No other domain entities/features exist yet, and Company Admin / Employee accounts are intentionally not implemented (see "Authentication module" below).
 
 ## Non-negotiable facts (do not "fix" these)
 
@@ -16,7 +16,19 @@ Instructions for any AI coding agent (Claude Code, Cursor, Copilot, Codex CLI, W
 - **Naming is `SkillsetsBackend.*`** across every project, namespace, and assembly (`SkillsetsBackend.API`, `.Application`, `.Domain`, `.Infrastructure`, `.Shared`). Keep it consistent for anything new.
 - **CORS is intentionally wide open** (`AllowAnyOrigin/Method/Header`, policy `AllowAll` in `Program.cs`). Don't narrow it unless asked.
 - **No secrets or connection info in code, ever.** The SQL Server connection string lives only in `ConnectionStrings:DefaultConnection` in `appsettings.json` / environment-specific config / `ConnectionStrings__DefaultConnection` env var. `Infrastructure/DependencyInjection.cs` fails fast with a clear error if it's missing. Never hardcode a server, database, username, or password anywhere.
-- **`FluentValidation.AspNetCore` is banned** (deprecated by its own maintainers) — validators register via `FluentValidation.DependencyInjectionExtensions` in `Application/DependencyInjection.cs`.
+- **`FluentValidation.AspNetCore` is banned** (deprecated by its own maintainers) — validators register via `FluentValidation.DependencyInjectionExtensions` in `Application/DependencyInjection.cs`. There is no automatic validation pipeline (no MediatR, no action filter) — every command handler manually calls `IValidator<TCommand>.ValidateAsync` at the top of `Handle` and throws `Application.Common.Exceptions.ValidationException` on failure. Follow this same pattern for new commands; don't introduce MediatR to "fix" it.
+- **No MediatR anywhere.** "Commands" are plain record types, "Handlers" are plain classes with a `Handle(...)` method injected directly into controllers via DI (see `Application/Auth/Commands/*` and `API/Controllers/AuthController.cs`). Don't add MediatR or `IRequest`/`IRequestHandler` — this is a deliberate, existing pattern, not an oversight.
+
+## Authentication module
+
+A complete SuperAdmin JWT authentication module exists at `Application/Auth/*`, `Infrastructure/Auth/*`, `API/Controllers/AuthController.cs`. Read this before touching any of it:
+
+- **There is exactly one SuperAdmin, and it is never stored in the database.** Its identity lives in configuration (`SuperAdmin:Id`, `SuperAdmin:Email`, `SuperAdmin:PasswordHash` — a PBKDF2 hash, generated via `Microsoft.AspNetCore.Identity.PasswordHasher<T>`, never plaintext) and is validated by `Infrastructure/Auth/SuperAdminAuthenticator.cs`. Do not add a SuperAdmin database table or move these credentials into `ApplicationDbContext`.
+  - Dev default: `superadmin@skillsetsbackend.local` / `SuperAdmin@123`. This must be replaced (via user-secrets/environment variables, never committed) before any real deployment.
+- **Refresh tokens are database-ready but not database-backed yet — this is deliberate, not incomplete.** `Domain/Identity/RefreshToken.cs` (entity), `Infrastructure/Persistence/Configurations/RefreshTokenConfiguration.cs` (EF config), and `ApplicationDbContext.RefreshTokens` (DbSet) all exist and are migration-ready. The *active* `IRefreshTokenRepository` implementation registered in `Infrastructure/DependencyInjection.cs` is `InMemoryRefreshTokenRepository` (in-process, lost on restart) — a clearly-labeled placeholder. **When the database is connected**: write an EF-Core-backed `IRefreshTokenRepository` implementation using `ApplicationDbContext.RefreshTokens`, swap the one DI registration line, run `dotnet ef migrations add InitialCreate --project src/Infrastructure --startup-project src/API`. No command, handler, controller, or interface changes needed.
+- **Auth endpoints**: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` (all `[AllowAnonymous]` — refresh/logout trust the refresh token itself as the credential), `GET /api/v1/auth/me` (`[Authorize(Policy = Roles.SuperAdmin)]`, proves token validation end-to-end).
+- **JWT**: access token 30 min, refresh token 7 days (`Jwt:AccessTokenExpiryMinutes` / `Jwt:RefreshTokenExpiryDays`). Refresh rotates the token (old one is revoked and linked via `ReplacedByToken`, reuse of a revoked/expired token is rejected with 401).
+- **Roles**: `Domain/Identity/Roles.cs` defines `SuperAdmin`, `CompanyAdmin`, `Employee` as string constants. Only `SuperAdmin` is actually issued/usable today — `CompanyAdmin`/`Employee` (and any Company entity/endpoints) are intentionally not implemented; don't build them unless explicitly asked. Authorization policy names equal the role name (`options.AddPolicy(Roles.SuperAdmin, ...)` in `Infrastructure/DependencyInjection.cs`) — reuse that pattern rather than inventing new policy-name constants.
 
 ## Layer dependency rule (enforced by project references — do not violate)
 
@@ -35,10 +47,10 @@ Domain never references anything above it. Application never references Infrastr
 SkillsetsBackend.slnx
 Directory.Build.props        common TargetFramework/Nullable/ImplicitUsings for every project
 src/
-  API/            Controllers, Program.cs (composition root), Middleware/, appsettings*.json
-  Application/    Common/Exceptions, Common/Interfaces, DependencyInjection.cs — use-case layer, no framework deps
-  Domain/         Common/ (BaseEntity, IAggregateRoot) — zero dependencies on other layers
-  Infrastructure/ Persistence/ApplicationDbContext.cs, Options/JwtSettings.cs, DependencyInjection.cs
+  API/            Controllers/ (incl. AuthController), Program.cs (composition root), Middleware/, appsettings*.json
+  Application/    Common/Exceptions, Common/Interfaces, Auth/ (Commands, Interfaces, DTOs), DependencyInjection.cs — use-case layer, no framework deps
+  Domain/         Common/ (BaseEntity, IAggregateRoot), Identity/ (Roles, RefreshToken) — zero dependencies on other layers
+  Infrastructure/ Persistence/ (ApplicationDbContext, Configurations/), Options/ (JwtSettings, SuperAdminSettings), Auth/ (PasswordHasher, SuperAdminAuthenticator, TokenService, InMemoryRefreshTokenRepository), DependencyInjection.cs
   Shared/         Common/Result.cs, Common/PaginatedList.cs — cross-cutting kernel, zero dependencies
 tests/
   UnitTests/         targets Domain + Application
@@ -61,4 +73,9 @@ Each layer with wiring exposes one `AddXxx(IServiceCollection ...)` extension in
 dotnet build
 dotnet test
 dotnet run --project src/API      # Scalar UI at /scalar/v1 in Development
+
+# Login as the built-in SuperAdmin (dev default credentials, see "Authentication module" above)
+curl -X POST http://localhost:5175/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"superadmin@skillsetsbackend.local","password":"SuperAdmin@123"}'
 ```
