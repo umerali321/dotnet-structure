@@ -1,8 +1,8 @@
 using System.Net;
-using CleanArchitecture.Application.Common.Exceptions;
+using SkillsetsBackend.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CleanArchitecture.API.Middleware;
+namespace SkillsetsBackend.API.Middleware;
 
 public class ExceptionHandlingMiddleware
 {

@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Application\CleanArchitecture.Application.csproj" />
-    <ProjectReference Include="..\Domain\CleanArchitecture.Domain.csproj" />
-    <ProjectReference Include="..\Shared\CleanArchitecture.Shared.csproj" />
+    <ProjectReference Include="..\Application\SkillsetsBackend.Application.csproj" />
+    <ProjectReference Include="..\Domain\SkillsetsBackend.Domain.csproj" />
+    <ProjectReference Include="..\Shared\SkillsetsBackend.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Domain\CleanArchitecture.Domain.csproj" />
-    <ProjectReference Include="..\Shared\CleanArchitecture.Shared.csproj" />
+    <ProjectReference Include="..\Domain\SkillsetsBackend.Domain.csproj" />
+    <ProjectReference Include="..\Shared\SkillsetsBackend.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,8 +1,8 @@
 using System.Reflection;
-using CleanArchitecture.Application.Common.Interfaces;
+using SkillsetsBackend.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace CleanArchitecture.Infrastructure.Persistence;
+namespace SkillsetsBackend.Infrastructure.Persistence;
 
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {

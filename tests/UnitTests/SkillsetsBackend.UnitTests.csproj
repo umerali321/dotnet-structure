@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Domain\CleanArchitecture.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Application\CleanArchitecture.Application.csproj" />
+    <ProjectReference Include="..\..\src\Domain\SkillsetsBackend.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Application\SkillsetsBackend.Application.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-namespace CleanArchitecture.Infrastructure.Options;
+namespace SkillsetsBackend.Infrastructure.Options;
 
 public class JwtSettings
 {

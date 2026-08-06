@@ -1,4 +1,4 @@
-namespace CleanArchitecture.Shared.Common;
+namespace SkillsetsBackend.Shared.Common;
 
 public class Result
 {

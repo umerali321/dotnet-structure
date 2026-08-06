@@ -1,4 +1,4 @@
-namespace CleanArchitecture.Application.Common.Interfaces;
+namespace SkillsetsBackend.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {

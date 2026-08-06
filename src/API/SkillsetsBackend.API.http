@@ -1,0 +1,6 @@
+@SkillsetsBackend.API_HostAddress = http://localhost:5175
+
+GET {{SkillsetsBackend.API_HostAddress}}/health
+Accept: application/json
+
+###

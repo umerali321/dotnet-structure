@@ -1,14 +1,14 @@
 using System.Text;
-using CleanArchitecture.Application.Common.Interfaces;
-using CleanArchitecture.Infrastructure.Options;
-using CleanArchitecture.Infrastructure.Persistence;
+using SkillsetsBackend.Application.Common.Interfaces;
+using SkillsetsBackend.Infrastructure.Options;
+using SkillsetsBackend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
-namespace CleanArchitecture.Infrastructure;
+namespace SkillsetsBackend.Infrastructure;
 
 public static class DependencyInjection
 {

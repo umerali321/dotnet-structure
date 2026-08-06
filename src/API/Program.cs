@@ -1,8 +1,9 @@
 using Asp.Versioning;
-using CleanArchitecture.API.Middleware;
-using CleanArchitecture.Application;
-using CleanArchitecture.Infrastructure;
-using Microsoft.OpenApi;
+using SkillsetsBackend.API.Middleware;
+using SkillsetsBackend.Application;
+using SkillsetsBackend.Infrastructure;
+using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -38,24 +39,31 @@ try
             options.SubstituteApiVersionInUrl = true;
         });
 
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(options =>
+    builder.Services.AddOpenApi(options =>
     {
-        options.SwaggerDoc("v1", new OpenApiInfo { Title = "CleanArchitecture API", Version = "v1" });
-
-        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        options.AddDocumentTransformer((document, context, cancellationToken) =>
         {
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            Name = "Authorization",
-            In = ParameterLocation.Header,
-            Type = SecuritySchemeType.Http,
-            Description = "Enter a valid JWT bearer token.",
-        });
+            document.Info.Title = "SkillsetsBackend API";
 
-        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-        {
-            [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
+            document.Components ??= new OpenApiComponents();
+            document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter a valid JWT bearer token.",
+            };
+
+            document.SecurityRequirements.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Id = "Bearer", Type = ReferenceType.SecurityScheme },
+                }] = [],
+            });
+
+            return Task.CompletedTask;
         });
     });
 
@@ -65,8 +73,8 @@ try
 
     if (app.Environment.IsDevelopment())
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        app.MapOpenApi();
+        app.MapScalarApiReference();
     }
 
     app.UseHttpsRedirection();

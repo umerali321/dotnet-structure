@@ -1,4 +1,4 @@
-namespace CleanArchitecture.Domain.Common;
+namespace SkillsetsBackend.Domain.Common;
 
 public interface IAggregateRoot
 {
