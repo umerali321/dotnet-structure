@@ -2,7 +2,7 @@ using Asp.Versioning;
 using SkillsetsBackend.API.Middleware;
 using SkillsetsBackend.Application;
 using SkillsetsBackend.Infrastructure;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -54,8 +54,9 @@ try
         {
             document.Info.Title = "SkillsetsBackend API";
 
-            document.Components ??= new OpenApiComponents();
-            document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+            var components = document.Components ??= new OpenApiComponents();
+            components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+            components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
             {
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
@@ -64,12 +65,10 @@ try
                 Description = "Enter a valid JWT bearer token.",
             };
 
-            document.SecurityRequirements.Add(new OpenApiSecurityRequirement
+            document.Security ??= [];
+            document.Security.Add(new OpenApiSecurityRequirement
             {
-                [new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference { Id = "Bearer", Type = ReferenceType.SecurityScheme },
-                }] = [],
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
             });
 
             return Task.CompletedTask;

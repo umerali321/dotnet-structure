@@ -4,12 +4,15 @@ Instructions for any AI coding agent (Claude Code, Cursor, Copilot, Codex CLI, W
 
 ## What this is
 
-`SkillsetsBackend` — a .NET 9 Clean Architecture Web API skeleton. As of now it is still a **bare skeleton**: infrastructure and wiring are in place, no domain entities/features exist yet.
+`SkillsetsBackend` — a .NET 10 Clean Architecture Web API skeleton. As of now it is still a **bare skeleton**: infrastructure and wiring are in place, no domain entities/features exist yet.
 
 ## Non-negotiable facts (do not "fix" these)
 
-- **Target framework is `net9.0`**, set once in `Directory.Build.props`, not net10 — Visual Studio compatibility. Do not bump it without being asked.
+- **Target framework is `net10.0`**, set once in `Directory.Build.props`. Requires Visual Studio 17.14+/18.0+ with .NET 10 tooling — if VS reports NETSDK1045, that's a VS/tooling problem to fix, not a reason to downgrade the target framework. Do not change it without being asked.
+- **`Microsoft.OpenApi` is pinned to an explicit version in `SkillsetsBackend.API.csproj`** (currently 2.9.0) because `Microsoft.AspNetCore.OpenApi` 10.x transitively pulls `Microsoft.OpenApi` 2.0.0, which has a known high-severity CVE (NU1903). Keep this explicit override; don't remove it even if it looks redundant.
 - **API documentation is Scalar, not Swagger.** `Microsoft.AspNetCore.OpenApi` generates the spec, `Scalar.AspNetCore` serves the UI at `/scalar/v1`. Never add `Swashbuckle.AspNetCore` back.
+- **`Microsoft.OpenApi` 2.x uses the flat `Microsoft.OpenApi` namespace**, not `Microsoft.OpenApi.Models`. Security scheme references use `OpenApiSecuritySchemeReference`, not the old `.Reference =` pattern. `OpenApiDocument.Security` (not `SecurityRequirements`) holds global security requirements. See the document transformer in `Program.cs` for the working pattern.
+- **`AV0029`/`AV0030` are suppressed in `SkillsetsBackend.API.csproj`** — the `Asp.Versioning.Mvc.ApiExplorer` 10.x analyzer suggests `AddApiVersioning().AddOpenApi()` and `MapOpenApi().WithDocumentPerVersion()`, but neither method exists in any published Asp.Versioning package (verified by reflection). Don't "fix" the code to use them — they don't compile. Revisit only if a future Asp.Versioning release actually ships that API.
 - **Naming is `SkillsetsBackend.*`** across every project, namespace, and assembly (`SkillsetsBackend.API`, `.Application`, `.Domain`, `.Infrastructure`, `.Shared`). Keep it consistent for anything new.
 - **CORS is intentionally wide open** (`AllowAnyOrigin/Method/Header`, policy `AllowAll` in `Program.cs`). Don't narrow it unless asked.
 - **No secrets or connection info in code, ever.** The SQL Server connection string lives only in `ConnectionStrings:DefaultConnection` in `appsettings.json` / environment-specific config / `ConnectionStrings__DefaultConnection` env var. `Infrastructure/DependencyInjection.cs` fails fast with a clear error if it's missing. Never hardcode a server, database, username, or password anywhere.

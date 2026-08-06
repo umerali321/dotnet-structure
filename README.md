@@ -1,6 +1,6 @@
 # SkillsetsBackend
 
-A .NET 9 solution scaffolded with Clean Architecture: Domain, Application, Infrastructure, and API layers, separated by dependency direction (API → Application/Infrastructure → Domain, all → Shared).
+A .NET 10 solution scaffolded with Clean Architecture: Domain, Application, Infrastructure, and API layers, separated by dependency direction (API → Application/Infrastructure → Domain, all → Shared).
 
 ## Solution structure
 
