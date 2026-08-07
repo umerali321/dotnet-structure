@@ -6,11 +6,15 @@ public class RefreshToken : BaseEntity, IAggregateRoot
 {
     public string Token { get; private set; } = string.Empty;
 
-    public Guid UserId { get; private set; }
+    public string UserId { get; private set; } = string.Empty;
 
     public string Email { get; private set; } = string.Empty;
 
     public string Role { get; private set; } = string.Empty;
+
+    public int? CompanyId { get; private set; }
+
+    public string? CompanyName { get; private set; }
 
     public DateTimeOffset ExpiresAt { get; private set; }
 
@@ -32,12 +36,22 @@ public class RefreshToken : BaseEntity, IAggregateRoot
     {
     }
 
-    public RefreshToken(string token, Guid userId, string email, string role, DateTimeOffset expiresAt, string? createdByIp)
+    public RefreshToken(
+        string token,
+        string userId,
+        string email,
+        string role,
+        int? companyId,
+        string? companyName,
+        DateTimeOffset expiresAt,
+        string? createdByIp)
     {
         Token = token;
         UserId = userId;
         Email = email;
         Role = role;
+        CompanyId = companyId;
+        CompanyName = companyName;
         ExpiresAt = expiresAt;
         CreatedByIp = createdByIp;
         CreatedAt = DateTimeOffset.UtcNow;

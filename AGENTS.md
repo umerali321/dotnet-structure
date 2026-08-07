@@ -4,7 +4,7 @@ Instructions for any AI coding agent (Claude Code, Cursor, Copilot, Codex CLI, W
 
 ## What this is
 
-`SkillsetsBackend` — a .NET 10 Clean Architecture Web API. Base infrastructure (EF Core, JWT, Scalar, Serilog, CORS, versioning) plus a complete SuperAdmin authentication module are built. No other domain entities/features exist yet, and Company Admin / Employee accounts are intentionally not implemented (see "Authentication module" below).
+`SkillsetsBackend` — a .NET 10 Clean Architecture Web API sitting in front of an existing, live SQL Server database ("SoftSkillSet") with ~145K real users. Base infrastructure (EF Core, JWT, Scalar, Serilog, CORS, versioning) plus a complete authentication + multi-company-context module are built, authenticating against the real legacy data. No other domain entities/features exist yet (see "Authentication module" below).
 
 ## Non-negotiable facts (do not "fix" these)
 
@@ -21,14 +21,39 @@ Instructions for any AI coding agent (Claude Code, Cursor, Copilot, Codex CLI, W
 
 ## Authentication module
 
-A complete SuperAdmin JWT authentication module exists at `Application/Auth/*`, `Infrastructure/Auth/*`, `API/Controllers/AuthController.cs`. Read this before touching any of it:
+A complete JWT authentication + multi-company-context module exists at `Application/Auth/*`, `Infrastructure/Auth/*`, `Domain/Identity/*`, `API/Controllers/AuthController.cs`, authenticating against the real `SoftSkillSet` database. Read this before touching any of it.
 
-- **There is exactly one SuperAdmin, and it is never stored in the database.** Its identity lives in configuration (`SuperAdmin:Id`, `SuperAdmin:Email`, `SuperAdmin:PasswordHash` — a PBKDF2 hash, generated via `Microsoft.AspNetCore.Identity.PasswordHasher<T>`, never plaintext) and is validated by `Infrastructure/Auth/SuperAdminAuthenticator.cs`. Do not add a SuperAdmin database table or move these credentials into `ApplicationDbContext`.
-  - Dev default: `superadmin@skillsetsbackend.local` / `SuperAdmin@123`. This must be replaced (via user-secrets/environment variables, never committed) before any real deployment.
-- **Refresh tokens are database-ready but not database-backed yet — this is deliberate, not incomplete.** `Domain/Identity/RefreshToken.cs` (entity), `Infrastructure/Persistence/Configurations/RefreshTokenConfiguration.cs` (EF config), and `ApplicationDbContext.RefreshTokens` (DbSet) all exist and are migration-ready. The *active* `IRefreshTokenRepository` implementation registered in `Infrastructure/DependencyInjection.cs` is `InMemoryRefreshTokenRepository` (in-process, lost on restart) — a clearly-labeled placeholder. **When the database is connected**: write an EF-Core-backed `IRefreshTokenRepository` implementation using `ApplicationDbContext.RefreshTokens`, swap the one DI registration line, run `dotnet ef migrations add InitialCreate --project src/Infrastructure --startup-project src/API`. No command, handler, controller, or interface changes needed.
-- **Auth endpoints**: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` (all `[AllowAnonymous]` — refresh/logout trust the refresh token itself as the credential), `GET /api/v1/auth/me` (`[Authorize(Policy = Roles.SuperAdmin)]`, proves token validation end-to-end).
-- **JWT**: access token 30 min, refresh token 7 days (`Jwt:AccessTokenExpiryMinutes` / `Jwt:RefreshTokenExpiryDays`). Refresh rotates the token (old one is revoked and linked via `ReplacedByToken`, reuse of a revoked/expired token is rejected with 401).
-- **Roles**: `Domain/Identity/Roles.cs` defines `SuperAdmin`, `CompanyAdmin`, `Employee` as string constants. Only `SuperAdmin` is actually issued/usable today — `CompanyAdmin`/`Employee` (and any Company entity/endpoints) are intentionally not implemented; don't build them unless explicitly asked. Authorization policy names equal the role name (`options.AddPolicy(Roles.SuperAdmin, ...)` in `Infrastructure/DependencyInjection.cs`) — reuse that pattern rather than inventing new policy-name constants.
+### SuperAdmin — config-based, not in the database
+
+Exactly one SuperAdmin exists. Its identity lives in configuration (`SuperAdmin:Id`, `SuperAdmin:Email`, `SuperAdmin:PasswordHash` — a real PBKDF2 hash via `Microsoft.AspNetCore.Identity.PasswordHasher<T>`) and is validated by `Infrastructure/Auth/SuperAdminAuthenticator.cs`, checked *before* any database lookup in `LoginCommandHandler`. Never add a SuperAdmin database row or move these credentials into `ApplicationDbContext`. Dev default: `superadmin@skillsetsbackend.local` / `SuperAdmin@123` — replace via user-secrets/env vars before any real deployment, never commit real credentials.
+
+### Real users — existing `Users`/`UserCompanyRoles`/`Companies`/`Roles` tables
+
+- **Legacy password verification is a direct comparison, not a hash check — this is intentional, not a bug.** `Users.PasswordHash` (despite its name) holds plaintext values 2-10 characters long (94.5% are exactly 4-digit numeric PINs) across all 145,084 users; `UserCredentials` is fully unused (0 rows) today. `Infrastructure/Auth/LegacyCredentialVerifier.cs` does a fixed-time string comparison against whichever value `IUserDirectory.FindByIdentifierAsync` returns (`UserCredentials` first if ever populated, else `Users.PasswordHash`). **Never replace this with real hash verification** — it would reject every real user. Do not change stored values either (`Do not change legacy passwords` is an explicit product requirement, not just caution).
+- **Login identifier**: `Users.Email` or `Users.Username` (verified no duplicates exist in production data), matched case-sensitively via SQL. `Users`, `Companies`, `Roles`, `UserCompanyRoles`, `UserCredentials` (`Domain/Identity/*`) are **read-only entities mapping to pre-existing tables** — private setters, no public constructor, no create/update path exists or should be added without being asked.
+- **A user can hold multiple active roles at the same company** (e.g. both Student and Manager) — `UserDirectory` collapses these to one entry per company, preferring the higher-privilege role (`Manager` > `Student`), so company selection is deterministic. Don't reintroduce raw per-row results without that collapse.
+- **Role normalization**: `Roles.Normalize()` collapses the DB's `Admin` and `Manager` role names to the single app role `Manager` (per product requirement — Admin/Manager are the same role). The DB `Roles` lookup table also has an `FDM` value that is currently unassigned to anyone and unhandled by any policy — leave it alone unless asked.
+
+### Company context (multi-tenant JWT claims)
+
+- On login, `CompanyContextResolver.Resolve()` decides the outcome from the user's active `UserCompanyRoles` (respecting `IsActive`, `Company.IsActive`, and the `StartDate`/`EndDate` validity window):
+  - **Exactly one active company** → auto-selected immediately; the access token carries `company_id`/`company_name` claims (`AuthClaimTypes`) and the real `Role` claim for that company.
+  - **Zero or multiple active companies** → `Role` claim is the sentinel `CompanyContextResolver.UnassignedRole` ("Unassigned"), no `company_id` claim; the login response's `companies` array lists what's available. The client must call `POST /api/v1/auth/switch-company` to obtain a company-scoped token.
+- **`POST /api/v1/auth/switch-company`** (`[Authorize]`, any authenticated non-SuperAdmin user): validates membership in the requested company via `IUserDirectory.GetActiveCompanyRoleAsync`, then issues a fresh token pair. SuperAdmin calling this gets a 403 (`UnauthorizedAccessException` → 403 in the exception middleware) — SuperAdmin is not scoped to one company.
+- **Refresh preserves company context**: if the token being refreshed already had a company selected, `RefreshTokenCommandHandler` re-verifies that membership is still active (if it was revoked mid-session, refresh fails with 401, forcing re-login) rather than trusting the stale claim.
+- **`ICurrentCompanyContext`** (`Infrastructure/Auth/CurrentCompanyContext.cs`) exposes the active `CompanyId`/`CompanyName`/`Role`/`IsSuperAdmin` from the current request's claims — inject this in any future company-scoped handler to filter queries, rather than reading claims manually.
+- **`CompanyContext` authorization policy** (`Infrastructure/Authorization/CompanyContextRequirement.cs`) requires a `company_id` claim to be present (SuperAdmin always passes). Apply `[Authorize(Policy = "CompanyContext")]` to any future company-scoped controller/endpoint — this is prepared infrastructure, not yet attached to any business endpoint since none exist yet.
+
+### Refresh tokens — now database-backed for real
+
+`Domain/Identity/RefreshToken.cs`, its EF configuration, and `ApplicationDbContext.RefreshTokens` are backed by a real `RefreshTokens` table (added via the `InitialCreate` migration — **additive only**, no other table was touched; see the migration file's comment). `Infrastructure/Auth/RefreshTokenRepository.cs` is the active, EF-Core-backed `IRefreshTokenRepository` implementation (Scoped, not Singleton — it depends on the scoped `ApplicationDbContext`). There is no in-memory fallback anymore.
+
+### Endpoints, JWT, roles
+
+- `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` — all `[AllowAnonymous]` (refresh/logout trust the refresh token itself as the credential). `POST /api/v1/auth/switch-company` and `GET /api/v1/auth/me` — `[Authorize]` (any authenticated user; `/me` returns id/email/role/companyId/companyName from claims).
+- JWT: access token 30 min, refresh token 7 days (`Jwt:AccessTokenExpiryMinutes` / `Jwt:RefreshTokenExpiryDays`). Refresh rotates the token (old one revoked, linked via `ReplacedByToken`; reuse of a revoked/expired token is rejected with 401).
+- **Roles**: `Domain/Identity/Roles.cs` defines `SuperAdmin`, `Manager`, `Student` (matches the real system — Company Admin/Employee were earlier placeholders and no longer exist). Authorization policy names equal the role name (`options.AddPolicy(Roles.SuperAdmin, ...)`) — reuse that pattern, plus the separate `"CompanyContext"` policy described above.
+- **`dotnet-ef` is installed as a global tool** (`dotnet tool install --global dotnet-ef`) and `Microsoft.EntityFrameworkCore.Design` is referenced by both `Infrastructure` and the `API` startup project (required for the tooling to resolve the startup project) — don't remove either.
 
 ## Layer dependency rule (enforced by project references — do not violate)
 
@@ -47,10 +72,10 @@ Domain never references anything above it. Application never references Infrastr
 SkillsetsBackend.slnx
 Directory.Build.props        common TargetFramework/Nullable/ImplicitUsings for every project
 src/
-  API/            Controllers/ (incl. AuthController), Program.cs (composition root), Middleware/, appsettings*.json
-  Application/    Common/Exceptions, Common/Interfaces, Auth/ (Commands, Interfaces, DTOs), DependencyInjection.cs — use-case layer, no framework deps
-  Domain/         Common/ (BaseEntity, IAggregateRoot), Identity/ (Roles, RefreshToken) — zero dependencies on other layers
-  Infrastructure/ Persistence/ (ApplicationDbContext, Configurations/), Options/ (JwtSettings, SuperAdminSettings), Auth/ (PasswordHasher, SuperAdminAuthenticator, TokenService, InMemoryRefreshTokenRepository), DependencyInjection.cs
+  API/            Controllers/ (AuthController), Program.cs (composition root), Middleware/, appsettings*.json
+  Application/    Common/Exceptions, Common/Interfaces, Auth/ (Commands/{Login,Refresh,Logout,SwitchCompany}, Interfaces, DTOs, AuthClaimsFactory, CompanyContextResolver), DependencyInjection.cs — use-case layer, no framework deps
+  Domain/         Common/ (BaseEntity, IAggregateRoot), Identity/ (Roles, RefreshToken, AppUser, Company, Role, UserCompanyRole, UserCredential) — zero dependencies on other layers
+  Infrastructure/ Persistence/ (ApplicationDbContext, Configurations/, Migrations/), Options/ (JwtSettings, SuperAdminSettings), Auth/ (PasswordHasher, SuperAdminAuthenticator, TokenService, LegacyCredentialVerifier, UserDirectory, RefreshTokenRepository, CurrentCompanyContext), Authorization/ (CompanyContextRequirement), DependencyInjection.cs
   Shared/         Common/Result.cs, Common/PaginatedList.cs — cross-cutting kernel, zero dependencies
 tests/
   UnitTests/         targets Domain + Application
@@ -79,3 +104,11 @@ curl -X POST http://localhost:5175/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"superadmin@skillsetsbackend.local","password":"SuperAdmin@123"}'
 ```
+
+## Database — this is a live production database with real users
+
+`ConnectionStrings:DefaultConnection` points at the real `SoftSkillSet` SQL Server database (~145K users, 618 companies) via `dotnet user-secrets` locally — never put real credentials in `appsettings.json`. Before running any EF Core migration command against it:
+
+1. `dotnet ef migrations script` first and read the SQL — never run `database update` blind.
+2. Every existing table (`Users`, `Companies`, `Roles`, `UserCompanyRoles`, `UserCredentials`, and the 12 others listed in the DB schema) must appear **only** as `IEntityTypeConfiguration` mapping to it, never as a `CreateTable` in a migration. If `dotnet ef migrations add` generates `CreateTable` for any of them (it will, the first time a fresh migration history sees them), manually strip that call from the migration's `Up()`/`Down()` before applying — keep only genuinely new tables (see `InitialCreate`'s comment for the precedent).
+3. These entities (`Domain/Identity/AppUser`, `Company`, `Role`, `UserCompanyRole`, `UserCredential`) are read-only by design (private setters, no public constructor) — do not add a write path to them without being explicitly asked, and never write code that updates `Users.PasswordHash` or any other legacy column.

@@ -18,14 +18,19 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 
         builder.HasIndex(x => x.Token).IsUnique();
 
+        builder.Property(x => x.UserId)
+            .IsRequired()
+            .HasMaxLength(64);
+
         builder.Property(x => x.Email)
             .IsRequired()
-            .HasMaxLength(256);
+            .HasMaxLength(320);
 
         builder.Property(x => x.Role)
             .IsRequired()
             .HasMaxLength(64);
 
+        builder.Property(x => x.CompanyName).HasMaxLength(255);
         builder.Property(x => x.CreatedByIp).HasMaxLength(64);
         builder.Property(x => x.RevokedByIp).HasMaxLength(64);
         builder.Property(x => x.ReplacedByToken).HasMaxLength(512);

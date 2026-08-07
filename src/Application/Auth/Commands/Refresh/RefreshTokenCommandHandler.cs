@@ -11,15 +11,18 @@ public class RefreshTokenCommandHandler
 {
     private readonly IValidator<RefreshTokenCommand> _validator;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IUserDirectory _userDirectory;
     private readonly ITokenService _tokenService;
 
     public RefreshTokenCommandHandler(
         IValidator<RefreshTokenCommand> validator,
         IRefreshTokenRepository refreshTokenRepository,
+        IUserDirectory userDirectory,
         ITokenService tokenService)
     {
         _validator = validator;
         _refreshTokenRepository = refreshTokenRepository;
+        _userDirectory = userDirectory;
         _tokenService = tokenService;
     }
 
@@ -37,16 +40,57 @@ public class RefreshTokenCommandHandler
             throw new AuthenticationFailedException("Invalid or expired refresh token.");
         }
 
-        var claims = AuthClaimsFactory.Create(existing.UserId, existing.Email, existing.Role);
+        string role;
+        CompanyDto? currentCompany;
+        IReadOnlyList<CompanyDto> companies;
+
+        if (existing.Role == Roles.SuperAdmin)
+        {
+            role = Roles.SuperAdmin;
+            currentCompany = null;
+            companies = [];
+        }
+        else
+        {
+            var userId = int.Parse(existing.UserId);
+
+            if (existing.CompanyId is not null)
+            {
+                var stillActive = await _userDirectory.GetActiveCompanyRoleAsync(userId, existing.CompanyId.Value, cancellationToken);
+                if (stillActive is null)
+                {
+                    throw new AuthenticationFailedException("Company access has changed. Please sign in again.");
+                }
+
+                role = Roles.Normalize(stillActive.RoleName);
+                currentCompany = new CompanyDto(stillActive.CompanyId, stillActive.CompanyName, role);
+                companies = [currentCompany];
+            }
+            else
+            {
+                var activeCompanyRoles = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);
+                (role, currentCompany, companies) = CompanyContextResolver.Resolve(activeCompanyRoles);
+            }
+        }
+
+        var claims = AuthClaimsFactory.Create(existing.UserId, existing.Email, role, currentCompany?.CompanyId, currentCompany?.CompanyName);
         var (accessToken, accessTokenExpiresAt) = _tokenService.GenerateAccessToken(claims);
         var (newRefreshTokenValue, newRefreshTokenExpiresAt) = _tokenService.GenerateRefreshToken();
 
-        var newRefreshToken = new RefreshToken(newRefreshTokenValue, existing.UserId, existing.Email, existing.Role, newRefreshTokenExpiresAt, ipAddress);
+        var newRefreshToken = new RefreshToken(
+            newRefreshTokenValue,
+            existing.UserId,
+            existing.Email,
+            role,
+            currentCompany?.CompanyId,
+            currentCompany?.CompanyName,
+            newRefreshTokenExpiresAt,
+            ipAddress);
 
         existing.Revoke(ipAddress, newRefreshTokenValue);
         await _refreshTokenRepository.UpdateAsync(existing, cancellationToken);
         await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
 
-        return new AuthResultDto(accessToken, accessTokenExpiresAt, newRefreshTokenValue, newRefreshTokenExpiresAt);
+        return new AuthResultDto(accessToken, accessTokenExpiresAt, newRefreshTokenValue, newRefreshTokenExpiresAt, role, currentCompany, companies);
     }
 }

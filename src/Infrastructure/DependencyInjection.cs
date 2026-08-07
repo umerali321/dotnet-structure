@@ -3,9 +3,12 @@ using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Infrastructure.Auth;
+using SkillsetsBackend.Infrastructure.Authorization;
 using SkillsetsBackend.Infrastructure.Options;
 using SkillsetsBackend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,11 +57,15 @@ public static class DependencyInjection
                 };
             });
 
+        services.AddHttpContextAccessor();
+        services.AddSingleton<IAuthorizationHandler, CompanyContextHandler>();
+
         services.AddAuthorization(options =>
         {
             options.AddPolicy(Roles.SuperAdmin, policy => policy.RequireRole(Roles.SuperAdmin));
-            options.AddPolicy(Roles.CompanyAdmin, policy => policy.RequireRole(Roles.CompanyAdmin));
-            options.AddPolicy(Roles.Employee, policy => policy.RequireRole(Roles.Employee));
+            options.AddPolicy(Roles.Manager, policy => policy.RequireRole(Roles.Manager));
+            options.AddPolicy(Roles.Student, policy => policy.RequireRole(Roles.Student));
+            options.AddPolicy("CompanyContext", policy => policy.Requirements.Add(new CompanyContextRequirement()));
         });
 
         services.AddOptions<SuperAdminSettings>()
@@ -78,11 +85,13 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ISuperAdminAuthenticator, SuperAdminAuthenticator>();
         services.AddSingleton<ITokenService, TokenService>();
+        services.AddSingleton<ILegacyCredentialVerifier, LegacyCredentialVerifier>();
 
-        // TODO: swap for an EF-Core-backed IRefreshTokenRepository once a database is connected.
-        // See Infrastructure/Auth/InMemoryRefreshTokenRepository.cs for details - no other code
-        // needs to change.
-        services.AddSingleton<IRefreshTokenRepository, InMemoryRefreshTokenRepository>();
+        // Scoped: both depend on the scoped ApplicationDbContext.
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
+
+        services.AddScoped<ICurrentCompanyContext, CurrentCompanyContext>();
 
         return services;
     }

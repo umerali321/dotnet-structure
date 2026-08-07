@@ -12,10 +12,19 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
     }
 
-    // Schema is migration-ready; RefreshTokens is not yet read from/written to via EF Core.
-    // IRefreshTokenRepository currently has an in-memory implementation - see
-    // Infrastructure/Auth/InMemoryRefreshTokenRepository.cs.
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    // The following map to existing tables in the SoftSkillSet database and are read-only for
+    // this phase - see AppUser/Company/Role/UserCompanyRole/UserCredential in Domain/Identity.
+    public DbSet<AppUser> Users => Set<AppUser>();
+
+    public DbSet<Company> Companies => Set<Company>();
+
+    public DbSet<Role> Roles => Set<Role>();
+
+    public DbSet<UserCompanyRole> UserCompanyRoles => Set<UserCompanyRole>();
+
+    public DbSet<UserCredential> UserCredentials => Set<UserCredential>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

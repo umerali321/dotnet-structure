@@ -1,0 +1,23 @@
+namespace SkillsetsBackend.Application.Auth.Interfaces;
+
+/// <summary>Read access to the existing legacy Users/Companies/Roles/UserCompanyRoles data.</summary>
+public interface IUserDirectory
+{
+    /// <summary>Finds an active user by email or username (case-insensitive).</summary>
+    Task<DirectoryUser?> FindByIdentifierAsync(string identifier, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<DirectoryCompanyRole>> GetActiveCompanyRolesAsync(int userId, CancellationToken cancellationToken = default);
+
+    Task<DirectoryCompanyRole?> GetActiveCompanyRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default);
+}
+
+public record DirectoryUser(
+    int UserId,
+    string? Email,
+    string? Username,
+    string? FirstName,
+    string? LastName,
+    string? LegacyPasswordValue,
+    bool IsActive);
+
+public record DirectoryCompanyRole(int CompanyId, string CompanyName, byte RoleId, string RoleName);
