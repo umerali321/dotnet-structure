@@ -20,4 +20,10 @@ public record DirectoryUser(
     string? LegacyPasswordValue,
     bool IsActive);
 
-public record DirectoryCompanyRole(int CompanyId, string CompanyName, byte RoleId, string RoleName);
+public record DirectoryCompanyRole(
+    int CompanyId,
+    string CompanyName,
+    byte RoleId,
+    string RoleName,
+    DateOnly? StartDate,
+    DateOnly? EndDate);

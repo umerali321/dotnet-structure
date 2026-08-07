@@ -1,6 +1,6 @@
 namespace SkillsetsBackend.Domain.Identity;
 
-/// <summary>Maps to the existing "UserCompanyRoles" table. Read-only for now.</summary>
+/// <summary>Maps to the existing "UserCompanyRoles" table.</summary>
 public class UserCompanyRole
 {
     public int UserCompanyRoleId { get; private set; }
@@ -25,5 +25,21 @@ public class UserCompanyRole
 
     private UserCompanyRole()
     {
+    }
+
+    public UserCompanyRole(int userId, int companyId, byte roleId, DateOnly? startDate)
+    {
+        UserId = userId;
+        CompanyId = companyId;
+        RoleId = roleId;
+        StartDate = startDate;
+        IsActive = true;
+        CreatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Deactivate(DateOnly? endDate)
+    {
+        IsActive = false;
+        EndDate = endDate;
     }
 }

@@ -2,26 +2,22 @@ namespace SkillsetsBackend.Shared.Common;
 
 public class PaginatedList<T>
 {
-    public PaginatedList(IReadOnlyCollection<T> items, int totalCount, int pageNumber, int pageSize)
+    public PaginatedList(IReadOnlyCollection<T> items, int totalCount, int page, int pageSize)
     {
         Items = items;
         TotalCount = totalCount;
-        PageNumber = pageNumber;
+        Page = page;
         PageSize = pageSize;
-        TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        TotalPages = pageSize <= 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 
     public IReadOnlyCollection<T> Items { get; }
 
-    public int PageNumber { get; }
+    public int Page { get; }
 
     public int PageSize { get; }
 
     public int TotalCount { get; }
 
     public int TotalPages { get; }
-
-    public bool HasPreviousPage => PageNumber > 1;
-
-    public bool HasNextPage => PageNumber < TotalPages;
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SkillsetsBackend.Domain.Identity;
+using SkillsetsBackend.Infrastructure.Persistence.Conversions;
 
 namespace SkillsetsBackend.Infrastructure.Persistence.Configurations;
 
@@ -22,5 +23,8 @@ public class UserCompanyRoleConfiguration : IEntityTypeConfiguration<UserCompany
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasIndex(x => x.UserId);
+
+        // See AppUserConfiguration - existing column is datetime2, not datetimeoffset.
+        builder.Property(x => x.CreatedAt).HasConversion(DateTimeOffsetToDateTime2Converter.Instance);
     }
 }

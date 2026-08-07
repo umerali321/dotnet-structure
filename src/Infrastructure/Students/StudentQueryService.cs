@@ -1,0 +1,177 @@
+using Microsoft.EntityFrameworkCore;
+using SkillsetsBackend.Application.Students.DTOs;
+using SkillsetsBackend.Application.Students.Interfaces;
+using SkillsetsBackend.Domain.Identity;
+using SkillsetsBackend.Infrastructure.Persistence;
+using SkillsetsBackend.Shared.Common;
+
+namespace SkillsetsBackend.Infrastructure.Students;
+
+public class StudentQueryService : IStudentQueryService
+{
+    private readonly ApplicationDbContext _dbContext;
+
+    public StudentQueryService(ApplicationDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<PaginatedList<StudentListItemDto>> ListAsync(StudentListQueryOptions options, CancellationToken cancellationToken = default)
+    {
+        var query =
+            from sp in _dbContext.StudentProfiles.AsNoTracking()
+            join u in _dbContext.Users.AsNoTracking() on sp.UserId equals u.UserId
+            select new { sp, u };
+
+        if (options.RestrictToCompanyIds is not null)
+        {
+            var allowed = options.RestrictToCompanyIds;
+            query = query.Where(x => _dbContext.UserCompanyRoles.Any(ucr =>
+                ucr.UserId == x.u.UserId && ucr.IsActive && allowed.Contains(ucr.CompanyId)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Search))
+        {
+            var term = $"%{EscapeLike(options.Search.Trim())}%";
+            query = query.Where(x =>
+                EF.Functions.Like(x.u.FirstName, term, "\\") ||
+                EF.Functions.Like(x.u.LastName, term, "\\") ||
+                EF.Functions.Like(x.u.Email, term, "\\") ||
+                EF.Functions.Like(x.u.Username, term, "\\") ||
+                _dbContext.UserCompanyRoles.Any(ucr => ucr.UserId == x.u.UserId && ucr.IsActive &&
+                    (EF.Functions.Like(ucr.Company.CompanyCode, term, "\\") || EF.Functions.Like(ucr.Company.CompanyName, term, "\\"))));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.StudentType))
+        {
+            query = query.Where(x => x.sp.StudentType == options.StudentType);
+        }
+
+        if (options.IsActive.HasValue)
+        {
+            query = query.Where(x => x.u.IsActive == options.IsActive.Value);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // A stable tiebreaker (UserId) is always appended last so Skip/Take pagination is
+        // deterministic across requests, regardless of which primary sort is requested.
+        var ordered = options.SortBy?.ToLowerInvariant() switch
+        {
+            "firstname" => options.SortDescending
+                ? query.OrderByDescending(x => x.u.FirstName).ThenBy(x => x.u.UserId)
+                : query.OrderBy(x => x.u.FirstName).ThenBy(x => x.u.UserId),
+            "lastname" => options.SortDescending
+                ? query.OrderByDescending(x => x.u.LastName).ThenBy(x => x.u.UserId)
+                : query.OrderBy(x => x.u.LastName).ThenBy(x => x.u.UserId),
+            "email" => options.SortDescending
+                ? query.OrderByDescending(x => x.u.Email).ThenBy(x => x.u.UserId)
+                : query.OrderBy(x => x.u.Email).ThenBy(x => x.u.UserId),
+            "username" => options.SortDescending
+                ? query.OrderByDescending(x => x.u.Username).ThenBy(x => x.u.UserId)
+                : query.OrderBy(x => x.u.Username).ThenBy(x => x.u.UserId),
+            "createdat" => options.SortDescending
+                ? query.OrderByDescending(x => x.sp.CreatedAt).ThenBy(x => x.u.UserId)
+                : query.OrderBy(x => x.sp.CreatedAt).ThenBy(x => x.u.UserId),
+            _ => query.OrderBy(x => x.u.UserId),
+        };
+
+        var page = await ordered
+            .Skip((options.Page - 1) * options.PageSize)
+            .Take(options.PageSize)
+            .Select(x => new
+            {
+                x.u.UserId,
+                x.u.FirstName,
+                x.u.LastName,
+                x.u.Email,
+                x.u.Username,
+                x.u.Phone,
+                x.sp.StudentType,
+                x.u.IsActive,
+                x.sp.CreatedAt,
+            })
+            .ToListAsync(cancellationToken);
+
+        var companiesByUser = await LoadCompaniesAsync(page.Select(x => x.UserId), cancellationToken);
+
+        var items = page
+            .Select(x => new StudentListItemDto(
+                x.UserId, x.FirstName, x.LastName, x.Email, x.Username, x.Phone, x.StudentType, x.IsActive, x.CreatedAt,
+                companiesByUser.TryGetValue(x.UserId, out var companies) ? companies : []))
+            .ToList();
+
+        return new PaginatedList<StudentListItemDto>(items, totalCount, options.Page, options.PageSize);
+    }
+
+    public async Task<StudentDetailDto?> GetDetailAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var record = await (
+            from sp in _dbContext.StudentProfiles.AsNoTracking()
+            join u in _dbContext.Users.AsNoTracking() on sp.UserId equals u.UserId
+            where u.UserId == userId
+            select new
+            {
+                u.UserId,
+                u.FirstName,
+                u.LastName,
+                u.Email,
+                u.Username,
+                u.Phone,
+                sp.StudentType,
+                u.IsActive,
+                sp.CreatedAt,
+                sp.UpdatedAt,
+                sp.CreatedBy,
+                sp.UpdatedBy,
+            }).FirstOrDefaultAsync(cancellationToken);
+
+        if (record is null)
+        {
+            return null;
+        }
+
+        var companiesByUser = await LoadCompaniesAsync([userId], cancellationToken);
+        var companies = companiesByUser.TryGetValue(userId, out var list) ? list : [];
+
+        return new StudentDetailDto(
+            record.UserId, record.FirstName, record.LastName, record.Email, record.Username, record.Phone,
+            record.StudentType, record.IsActive, record.CreatedAt, record.UpdatedAt, record.CreatedBy, record.UpdatedBy,
+            companies);
+    }
+
+    private async Task<Dictionary<int, IReadOnlyList<StudentCompanyRoleDto>>> LoadCompaniesAsync(
+        IEnumerable<int> userIds, CancellationToken cancellationToken)
+    {
+        var ids = userIds.ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await _dbContext.UserCompanyRoles
+            .AsNoTracking()
+            .Where(ucr => ids.Contains(ucr.UserId) && ucr.IsActive)
+            .Select(ucr => new
+            {
+                ucr.UserId,
+                ucr.CompanyId,
+                ucr.Company.CompanyName,
+                ucr.Role.RoleName,
+                ucr.StartDate,
+                ucr.EndDate,
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(x => x.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<StudentCompanyRoleDto>)g
+                    .Select(x => new StudentCompanyRoleDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate))
+                    .ToList());
+    }
+
+    private static string EscapeLike(string value) =>
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
+}

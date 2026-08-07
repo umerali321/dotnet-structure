@@ -14,8 +14,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
-    // The following map to existing tables in the SoftSkillSet database and are read-only for
-    // this phase - see AppUser/Company/Role/UserCompanyRole/UserCredential in Domain/Identity.
+    // The following map to existing tables in the SoftSkillSet database.
+    // Companies/Roles/UserCredentials are read-only; Users/UserCompanyRoles/StudentProfiles are
+    // writable for student management - see Domain/Identity.
     public DbSet<AppUser> Users => Set<AppUser>();
 
     public DbSet<Company> Companies => Set<Company>();
@@ -25,6 +26,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<UserCompanyRole> UserCompanyRoles => Set<UserCompanyRole>();
 
     public DbSet<UserCredential> UserCredentials => Set<UserCredential>();
+
+    public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

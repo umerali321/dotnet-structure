@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Process -Name \"SkillsetsBackend.API\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "Bash(curl -s -m 10 -w '\\\\nHTTP:%{http_code}\\\\n' http://localhost:5175/api/v1/students?pageSize=1 -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash('/c/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/sqlcmd' -S 144.76.246.72 -d SoftSkillSet -U WORKWELL -P A12dadf125@@@ -C -Q ' *)",
+      "Bash(find '/c/Users/umer.ali/Downloads/new/angular softskill' -maxdepth 1 -iname tailwind.config*)",
+      "Bash(mkdir -p \"/c/Users/umer.ali/Downloads/new/angular softskill/src/app/students\")",
+      "Bash(powershell -NoProfile -Command \"try { Get-NetTCPConnection -LocalPort 5175,7135,4200 -ErrorAction Stop | Select-Object LocalPort,State,OwningProcess } catch { Write-Output 'no listeners' }\")",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter 'ProcessId=22272' | Select-Object ProcessId,Name,CommandLine | Format-List\")",
+      "Bash(npx playwright *)",
+      "Bash(node debug.mjs)",
+      "Bash(curl -s http://localhost:4200/main.js)",
+      "Bash(echo \"---exit: $?\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4200/)",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 22272 -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500; try { Get-NetTCPConnection -LocalPort 4200 -ErrorAction Stop } catch { Write-Output 'port 4200 free' }\")",
+      "Bash(nohup npx ng serve --port 4200)",
+      "Bash(disown)",
+      "Bash(echo \"started with pid $!\")",
+      "Bash(break)",
+      "Bash(node smoke.mjs)",
+      "Bash(node smoke_superadmin.mjs)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\services",
+      "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\app",
+      "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\shared\\UI\\generic-table"
+    ]
+  }
+}
