@@ -45,7 +45,7 @@ public class SwitchCompanyCommandHandler
         }
 
         var userId = int.Parse(currentUserId);
-        var target = await _userDirectory.GetActiveCompanyRoleAsync(userId, command.CompanyId, cancellationToken);
+        var target = await _userDirectory.GetActiveCompanyRoleAsync(userId, command.CompanyId, command.Role, cancellationToken);
         if (target is null)
         {
             throw new UnauthorizedAccessException("You do not have access to that company.");

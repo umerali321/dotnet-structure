@@ -18,16 +18,25 @@ public class StudentQueryService : IStudentQueryService
 
     public async Task<PaginatedList<StudentListItemDto>> ListAsync(StudentListQueryOptions options, CancellationToken cancellationToken = default)
     {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var studentMemberships = _dbContext.UserCompanyRoles.AsNoTracking().Where(ucr =>
+            ucr.IsActive
+            && ucr.Company.IsActive
+            && ucr.Role.RoleName == Roles.Student
+            && (ucr.StartDate == null || ucr.StartDate <= today)
+            && (ucr.EndDate == null || ucr.EndDate >= today));
+
         var query =
             from sp in _dbContext.StudentProfiles.AsNoTracking()
             join u in _dbContext.Users.AsNoTracking() on sp.UserId equals u.UserId
+            where studentMemberships.Any(membership => membership.UserId == u.UserId)
             select new { sp, u };
 
         if (options.RestrictToCompanyIds is not null)
         {
             var allowed = options.RestrictToCompanyIds;
-            query = query.Where(x => _dbContext.UserCompanyRoles.Any(ucr =>
-                ucr.UserId == x.u.UserId && ucr.IsActive && allowed.Contains(ucr.CompanyId)));
+            query = query.Where(x => studentMemberships.Any(membership =>
+                membership.UserId == x.u.UserId && allowed.Contains(membership.CompanyId)));
         }
 
         if (!string.IsNullOrWhiteSpace(options.Search))
@@ -38,8 +47,8 @@ public class StudentQueryService : IStudentQueryService
                 EF.Functions.Like(x.u.LastName, term, "\\") ||
                 EF.Functions.Like(x.u.Email, term, "\\") ||
                 EF.Functions.Like(x.u.Username, term, "\\") ||
-                _dbContext.UserCompanyRoles.Any(ucr => ucr.UserId == x.u.UserId && ucr.IsActive &&
-                    (EF.Functions.Like(ucr.Company.CompanyCode, term, "\\") || EF.Functions.Like(ucr.Company.CompanyName, term, "\\"))));
+                studentMemberships.Any(membership => membership.UserId == x.u.UserId &&
+                    (EF.Functions.Like(membership.Company.CompanyCode, term, "\\") || EF.Functions.Like(membership.Company.CompanyName, term, "\\"))));
         }
 
         if (!string.IsNullOrWhiteSpace(options.StudentType))
@@ -93,7 +102,7 @@ public class StudentQueryService : IStudentQueryService
             })
             .ToListAsync(cancellationToken);
 
-        var companiesByUser = await LoadCompaniesAsync(page.Select(x => x.UserId), cancellationToken);
+        var companiesByUser = await LoadCompaniesAsync(page.Select(x => x.UserId), today, cancellationToken);
 
         var items = page
             .Select(x => new StudentListItemDto(
@@ -131,7 +140,7 @@ public class StudentQueryService : IStudentQueryService
             return null;
         }
 
-        var companiesByUser = await LoadCompaniesAsync([userId], cancellationToken);
+        var companiesByUser = await LoadCompaniesAsync([userId], DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken);
         var companies = companiesByUser.TryGetValue(userId, out var list) ? list : [];
 
         return new StudentDetailDto(
@@ -141,7 +150,7 @@ public class StudentQueryService : IStudentQueryService
     }
 
     private async Task<Dictionary<int, IReadOnlyList<StudentCompanyRoleDto>>> LoadCompaniesAsync(
-        IEnumerable<int> userIds, CancellationToken cancellationToken)
+        IEnumerable<int> userIds, DateOnly today, CancellationToken cancellationToken)
     {
         var ids = userIds.ToList();
         if (ids.Count == 0)
@@ -151,7 +160,12 @@ public class StudentQueryService : IStudentQueryService
 
         var rows = await _dbContext.UserCompanyRoles
             .AsNoTracking()
-            .Where(ucr => ids.Contains(ucr.UserId) && ucr.IsActive)
+            .Where(ucr => ids.Contains(ucr.UserId)
+                && ucr.IsActive
+                && ucr.Company.IsActive
+                && ucr.Role.RoleName == Roles.Student
+                && (ucr.StartDate == null || ucr.StartDate <= today)
+                && (ucr.EndDate == null || ucr.EndDate >= today))
             .Select(ucr => new
             {
                 ucr.UserId,

@@ -56,7 +56,8 @@ public class RefreshTokenCommandHandler
 
             if (existing.CompanyId is not null)
             {
-                var stillActive = await _userDirectory.GetActiveCompanyRoleAsync(userId, existing.CompanyId.Value, cancellationToken);
+                var stillActive = await _userDirectory.GetActiveCompanyRoleAsync(
+                    userId, existing.CompanyId.Value, existing.Role, cancellationToken);
                 if (stillActive is null)
                 {
                     throw new AuthenticationFailedException("Company access has changed. Please sign in again.");
@@ -64,7 +65,9 @@ public class RefreshTokenCommandHandler
 
                 role = Roles.Normalize(stillActive.RoleName);
                 currentCompany = new CompanyDto(stillActive.CompanyId, stillActive.CompanyName, role);
-                companies = [currentCompany];
+                companies = (await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken))
+                    .Select(x => new CompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName)))
+                    .ToList();
             }
             else
             {

@@ -1,3 +1,3 @@
 namespace SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 
-public record SwitchCompanyCommand(int CompanyId);
+public record SwitchCompanyCommand(int CompanyId, string Role);

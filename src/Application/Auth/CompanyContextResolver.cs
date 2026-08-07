@@ -10,7 +10,7 @@ public static class CompanyContextResolver
 
     /// <summary>
     /// Resolves the effective role, current company (auto-selected only when the user has
-    /// exactly one active company), and the full list of active companies for a user.
+    /// exactly one active company-role membership), and all active company-role choices.
     /// </summary>
     public static (string Role, CompanyDto? Current, IReadOnlyList<CompanyDto> Companies) Resolve(
         IReadOnlyList<DirectoryCompanyRole> activeRoles)

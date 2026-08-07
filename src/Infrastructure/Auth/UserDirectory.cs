@@ -47,18 +47,22 @@ public class UserDirectory : IUserDirectory
     {
         var rows = await QueryActiveCompanyRoles(userId, companyId: null).ToListAsync(cancellationToken);
 
-        // A user can have more than one active role at the same company (e.g. Student and
-        // Manager); collapse to one entry per company, preferring the higher-privilege role.
+        // Preserve each active role at a company. A user who is both Student and Manager must
+        // explicitly choose which role they are using for the current session.
         return rows
-            .GroupBy(x => x.CompanyId)
-            .Select(g => g.OrderByDescending(x => RolePriority(x.RoleName)).First())
+            .GroupBy(x => new { x.CompanyId, Role = Roles.Normalize(x.RoleName) })
+            .Select(g => g.First())
             .ToList();
     }
 
-    public async Task<DirectoryCompanyRole?> GetActiveCompanyRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default)
+    public async Task<DirectoryCompanyRole?> GetActiveCompanyRoleAsync(
+        int userId,
+        int companyId,
+        string role,
+        CancellationToken cancellationToken = default)
     {
         var rows = await QueryActiveCompanyRoles(userId, companyId).ToListAsync(cancellationToken);
-        return rows.OrderByDescending(x => RolePriority(x.RoleName)).FirstOrDefault();
+        return rows.FirstOrDefault(x => Roles.Normalize(x.RoleName) == role);
     }
 
     private IQueryable<DirectoryCompanyRole> QueryActiveCompanyRoles(int userId, int? companyId)
@@ -76,11 +80,4 @@ public class UserDirectory : IUserDirectory
             .Select(ucr => new DirectoryCompanyRole(
                 ucr.CompanyId, ucr.Company.CompanyName, ucr.RoleId, ucr.Role.RoleName, ucr.StartDate, ucr.EndDate));
     }
-
-    private static int RolePriority(string dbRoleName) => Roles.Normalize(dbRoleName) switch
-    {
-        Roles.Manager => 2,
-        Roles.Student => 1,
-        _ => 0,
-    };
 }

@@ -8,7 +8,12 @@ public interface IUserDirectory
 
     Task<IReadOnlyList<DirectoryCompanyRole>> GetActiveCompanyRolesAsync(int userId, CancellationToken cancellationToken = default);
 
-    Task<DirectoryCompanyRole?> GetActiveCompanyRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default);
+    /// <summary>Gets one specific active company-role membership for an explicit session selection.</summary>
+    Task<DirectoryCompanyRole?> GetActiveCompanyRoleAsync(
+        int userId,
+        int companyId,
+        string role,
+        CancellationToken cancellationToken = default);
 }
 
 public record DirectoryUser(
