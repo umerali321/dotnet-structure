@@ -78,6 +78,14 @@ public class AppUser : IAggregateRoot
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void UpdatePersonalInfo(string firstName, string lastName, string? phone)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        Phone = phone;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void SetPassword(string legacyPasswordValue)
     {
         PasswordHash = legacyPasswordValue;

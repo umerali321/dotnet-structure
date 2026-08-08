@@ -45,17 +45,16 @@ public class UpdateStudentCommandHandler
 
             var currentProfile = await _repository.GetProfileByUserIdAsync(userId, cancellationToken);
             var restrictedFieldsChanged =
-                command.FirstName != user.FirstName ||
-                command.LastName != user.LastName ||
+                command.Email != user.Email ||
                 command.Username != user.Username ||
                 command.StudentType != currentProfile?.StudentType;
 
             if (restrictedFieldsChanged)
             {
-                throw new UnauthorizedAccessException("You are only allowed to update your email and phone.");
+                throw new UnauthorizedAccessException("You are only allowed to update your first name, last name, and phone.");
             }
 
-            user.UpdateContactInfo(command.Email, command.Phone);
+            user.UpdatePersonalInfo(command.FirstName, command.LastName, command.Phone);
         }
         else
         {
