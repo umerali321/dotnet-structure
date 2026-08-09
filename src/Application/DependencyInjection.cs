@@ -21,6 +21,20 @@ using SkillsetsBackend.Application.Managers.Queries.GetManagerById;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerCompanies;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerRoles;
 using SkillsetsBackend.Application.Managers.Queries.ListManagers;
+using SkillsetsBackend.Application.Faqs.Queries.ListFaqs;
+using SkillsetsBackend.Application.Faqs.Queries.GetFaqById;
+using SkillsetsBackend.Application.Faqs.Commands.CreateFaq;
+using SkillsetsBackend.Application.Faqs.Commands.UpdateFaq;
+using SkillsetsBackend.Application.Faqs.Commands.DeactivateFaq;
+using SkillsetsBackend.Application.SupportContacts.Queries.ListSupportContacts;
+using SkillsetsBackend.Application.SupportContacts.Queries.GetSupportContactById;
+using SkillsetsBackend.Application.SupportContacts.Commands.CreateSupportContact;
+using SkillsetsBackend.Application.SupportContacts.Commands.UpdateSupportContact;
+using SkillsetsBackend.Application.SupportContacts.Commands.DeactivateSupportContact;
+using SkillsetsBackend.Application.Support.Queries.ListSupportRequests;
+using SkillsetsBackend.Application.Support.Queries.GetSupportRequestById;
+using SkillsetsBackend.Application.Support.Commands.CreateSupportRequest;
+using SkillsetsBackend.Application.Support.Commands.UpdateSupportRequestStatus;
 
 namespace SkillsetsBackend.Application;
 
@@ -52,6 +66,22 @@ public static class DependencyInjection
         services.AddScoped<CreateManagerCommandHandler>();
         services.AddScoped<UpdateManagerCommandHandler>();
         services.AddScoped<ChangeManagerPasswordCommandHandler>();
+
+        services.AddScoped<ListFaqsQueryHandler>();
+        services.AddScoped<GetFaqByIdQueryHandler>();
+        services.AddScoped<CreateFaqCommandHandler>();
+        services.AddScoped<UpdateFaqCommandHandler>();
+        services.AddScoped<DeactivateFaqCommandHandler>();
+        services.AddScoped<ListSupportContactsQueryHandler>();
+        services.AddScoped<GetSupportContactByIdQueryHandler>();
+        services.AddScoped<CreateSupportContactCommandHandler>();
+        services.AddScoped<UpdateSupportContactCommandHandler>();
+        services.AddScoped<DeactivateSupportContactCommandHandler>();
+
+        services.AddScoped<ListSupportRequestsQueryHandler>();
+        services.AddScoped<GetSupportRequestByIdQueryHandler>();
+        services.AddScoped<CreateSupportRequestCommandHandler>();
+        services.AddScoped<UpdateSupportRequestStatusCommandHandler>();
 
         return services;
     }

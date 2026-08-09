@@ -1,0 +1,3 @@
+namespace SkillsetsBackend.Application.Support.Commands.UpdateSupportRequestStatus;
+
+public record UpdateSupportRequestStatusCommand(string Status);

@@ -1,6 +1,7 @@
 using System.Reflection;
 using SkillsetsBackend.Application.Common.Interfaces;
 using SkillsetsBackend.Domain.Identity;
+using SkillsetsBackend.Domain.Support;
 using Microsoft.EntityFrameworkCore;
 
 namespace SkillsetsBackend.Infrastructure.Persistence;
@@ -28,6 +29,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<UserCredential> UserCredentials => Set<UserCredential>();
 
     public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
+
+    // Brand-new tables (not legacy) backing Settings -> FAQ Management / Customer Support.
+    public DbSet<Faq> Faqs => Set<Faq>();
+
+    public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
+
+    public DbSet<SupportContact> SupportContacts => Set<SupportContact>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

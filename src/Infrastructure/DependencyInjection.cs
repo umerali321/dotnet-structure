@@ -12,6 +12,12 @@ using SkillsetsBackend.Application.Companies.Interfaces;
 using SkillsetsBackend.Infrastructure.Companies;
 using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Infrastructure.Managers;
+using SkillsetsBackend.Application.Faqs.Interfaces;
+using SkillsetsBackend.Infrastructure.Faqs;
+using SkillsetsBackend.Application.SupportContacts.Interfaces;
+using SkillsetsBackend.Infrastructure.SupportContacts;
+using SkillsetsBackend.Application.Support.Interfaces;
+using SkillsetsBackend.Infrastructure.Support;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -103,6 +109,9 @@ public static class DependencyInjection
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<ICompanyQueryService, CompanyQueryService>();
         services.AddScoped<IManagerQueryService, ManagerQueryService>();
+        services.AddScoped<IFaqRepository, FaqRepository>();
+        services.AddScoped<ISupportContactRepository, SupportContactRepository>();
+        services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
 
         return services;
     }
