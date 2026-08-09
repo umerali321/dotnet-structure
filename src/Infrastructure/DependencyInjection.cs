@@ -18,6 +18,8 @@ using SkillsetsBackend.Application.SupportContacts.Interfaces;
 using SkillsetsBackend.Infrastructure.SupportContacts;
 using SkillsetsBackend.Application.Support.Interfaces;
 using SkillsetsBackend.Infrastructure.Support;
+using SkillsetsBackend.Application.Skillsoft.Interfaces;
+using SkillsetsBackend.Infrastructure.Skillsoft;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -113,6 +115,15 @@ public static class DependencyInjection
         services.AddScoped<IFaqRepository, FaqRepository>();
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
+
+        // Skillsoft SAML SSO - deliberately NOT eagerly validated at startup like SuperAdminSettings
+        // above: this is an optional third-party integration (see SkillsoftSsoSettings) and the
+        // rest of the app must keep working even before Skillsoft's account team has confirmed
+        // the real IdP/SP configuration. SkillsoftSsoService fails clearly at the point of use instead.
+        services.AddMemoryCache();
+        services.AddOptions<SkillsoftSsoSettings>()
+            .Bind(configuration.GetSection(SkillsoftSsoSettings.SectionName));
+        services.AddScoped<ISkillsoftSsoService, SkillsoftSsoService>();
 
         return services;
     }

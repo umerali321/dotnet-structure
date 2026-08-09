@@ -1,6 +1,7 @@
 using System.Reflection;
 using SkillsetsBackend.Application.Common.Interfaces;
 using SkillsetsBackend.Domain.Identity;
+using SkillsetsBackend.Domain.Skillsoft;
 using SkillsetsBackend.Domain.Support;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     // The following map to existing tables in the SoftSkillSet database.
-    // Companies/Roles/UserCredentials are read-only; Users/UserCompanyRoles/StudentProfiles are
     // writable for student management - see Domain/Identity.
     public DbSet<AppUser> Users => Set<AppUser>();
 
@@ -30,7 +30,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
 
-    // Brand-new tables (not legacy) backing Settings -> FAQ Management / Customer Support.
+    public DbSet<ActiveLibraryCard> ActiveLibraryCards => Set<ActiveLibraryCard>();
+
     public DbSet<Faq> Faqs => Set<Faq>();
 
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();

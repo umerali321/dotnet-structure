@@ -246,6 +246,10 @@ ClientBin/
 *.jfm
 *.pfx
 *.publishsettings
+
+# Skillsoft SAML IdP private key material (public cert is already inlined in
+# docs/skillsoft-sso-handoff.md, which IS meant to be shared/committed).
+docs/skillsoft-idp-cert/
 orleans.codegen.cs
 
 # Including strong name files can present a security risk
