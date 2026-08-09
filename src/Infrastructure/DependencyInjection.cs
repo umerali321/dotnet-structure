@@ -39,7 +39,8 @@ public static class DependencyInjection
                 "Connection string 'DefaultConnection' is not configured. Set it in appsettings.json, an environment-specific appsettings file, or the ConnectionStrings__DefaultConnection environment variable.");
         }
 
-        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure(3)));
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
