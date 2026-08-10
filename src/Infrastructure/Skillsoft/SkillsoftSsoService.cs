@@ -1,12 +1,6 @@
-using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
-using ITfoxtec.Identity.Saml2;
-using ITfoxtec.Identity.Saml2.Schemas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens.Saml2;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
@@ -23,20 +17,17 @@ public class SkillsoftSsoService : ISkillsoftSsoService
     private readonly IUserDirectory _userDirectory;
     private readonly IMemoryCache _cache;
     private readonly SkillsoftSsoSettings _settings;
-    private readonly IHostEnvironment _hostEnvironment;
 
     public SkillsoftSsoService(
         ApplicationDbContext dbContext,
         IUserDirectory userDirectory,
         IMemoryCache cache,
-        IOptions<SkillsoftSsoSettings> settings,
-        IHostEnvironment hostEnvironment)
+        IOptions<SkillsoftSsoSettings> settings)
     {
         _dbContext = dbContext;
         _userDirectory = userDirectory;
         _cache = cache;
         _settings = settings.Value;
-        _hostEnvironment = hostEnvironment;
     }
 
     public async Task<string> CreateLaunchTicketAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)
@@ -70,13 +61,12 @@ public class SkillsoftSsoService : ISkillsoftSsoService
 
         _cache.Remove(cacheKey);
 
-        var (card, user) = await ResolveEntitlementAsync(payload.UserId, payload.CompanyId, cancellationToken);
+        var card = await ResolveEntitlementAsync(payload.UserId, payload.CompanyId, cancellationToken);
 
-        return BuildSignedResponse(card.UserId, user.Email ?? card.Email ?? string.Empty, card.FirstName, card.LastName);
+        return BuildBypassLoginRedirect(card);
     }
 
-
-    private async Task<(Domain.Skillsoft.ActiveLibraryCard Card, DirectoryUser User)> ResolveEntitlementAsync(
+    private async Task<Domain.Skillsoft.ActiveLibraryCard> ResolveEntitlementAsync(
         int userId, int companyId, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users.AsNoTracking()
@@ -88,9 +78,6 @@ public class SkillsoftSsoService : ISkillsoftSsoService
         {
             throw new UnauthorizedAccessException("Your account has no email on file - Skillsoft access requires one.");
         }
-
-        var directoryUser = await _userDirectory.FindByIdentifierAsync(user.Email, cancellationToken)
-            ?? throw new UnauthorizedAccessException("Account not found.");
 
         var companyCode = await _dbContext.Companies.AsNoTracking()
             .Where(c => c.CompanyId == companyId)
@@ -117,79 +104,22 @@ public class SkillsoftSsoService : ISkillsoftSsoService
             throw new UnauthorizedAccessException("You do not have an active Skillsoft library card for this company.");
         }
 
-        return (card, directoryUser);
+        return card;
     }
 
-    private SkillsoftLaunchResult BuildSignedResponse(string skillsoftUserId, string email, string firstName, string lastName)
+    private SkillsoftLaunchResult BuildBypassLoginRedirect(Domain.Skillsoft.ActiveLibraryCard card)
     {
-        if (string.IsNullOrWhiteSpace(_settings.SkillsoftAcsUrl) || string.IsNullOrWhiteSpace(_settings.SkillsoftSpEntityId) || string.IsNullOrWhiteSpace(_settings.IdpEntityId))
+        if (string.IsNullOrWhiteSpace(_settings.BypassLoginBaseUrl))
         {
-            throw new InvalidOperationException(
-                "Skillsoft SSO is not configured yet. Set SkillsoftSso:IdpEntityId, SkillsoftSso:SkillsoftAcsUrl and " +
-                "SkillsoftSso:SkillsoftSpEntityId (from Skillsoft's account team) before this can be used. " +
-                "See docs/skillsoft-sso-checklist.md.");
+            throw new InvalidOperationException("Skillsoft BypassLogin is not configured. Set SkillsoftSso:BypassLoginBaseUrl.");
         }
 
-        var certificate = LoadSigningCertificate();
+        var url = $"{_settings.BypassLoginBaseUrl}" +
+            $"?userName={Uri.EscapeDataString(card.UserId)}" +
+            $"&password={Uri.EscapeDataString(card.Password)}" +
+            $"&restype={Uri.EscapeDataString(_settings.BypassLoginRestype)}";
 
-        var config = new Saml2Configuration
-        {
-            Issuer = _settings.IdpEntityId,
-            SigningCertificate = certificate,
-        };
-        config.AllowedAudienceUris.Add(_settings.SkillsoftSpEntityId);
-
-        var claims = new List<Claim>
-        {
-            new(_settings.FirstNameAttributeName, firstName),
-            new(_settings.LastNameAttributeName, lastName),
-            new(_settings.EmailAttributeName, email),
-        };
-
-        var response = new Saml2AuthnResponse(config)
-        {
-            Status = Saml2StatusCodes.Success,
-            Destination = new Uri(_settings.SkillsoftAcsUrl),
-            NameId = new Saml2NameIdentifier(skillsoftUserId, new Uri(_settings.NameIdFormat)),
-            ClaimsIdentity = new ClaimsIdentity(claims),
-        };
-        response.CreateSecurityToken(
-            _settings.SkillsoftSpEntityId,
-            subjectConfirmationLifetime: 5,
-            issuedTokenLifetime: Math.Max(1, _settings.AssertionValiditySeconds / 60));
-
-        var binding = new Saml2PostBinding();
-        binding.Bind(response);
-
-        return new SkillsoftLaunchResult(binding.PostContent);
-    }
-
-    private X509Certificate2 LoadSigningCertificate()
-    {
-        if (!string.IsNullOrWhiteSpace(_settings.SigningCertificateBase64))
-        {
-            return X509CertificateLoader.LoadPkcs12(
-                Convert.FromBase64String(_settings.SigningCertificateBase64),
-                _settings.SigningCertificatePassword,
-                X509KeyStorageFlags.EphemeralKeySet);
-        }
-
-        if (!string.IsNullOrWhiteSpace(_settings.SigningCertificatePath))
-        {
-            return X509CertificateLoader.LoadPkcs12FromFile(
-                _settings.SigningCertificatePath,
-                _settings.SigningCertificatePassword,
-                X509KeyStorageFlags.EphemeralKeySet);
-        }
-
-        if (_settings.AllowDevSelfSignedCertificate && _hostEnvironment.IsDevelopment())
-        {
-            return DevSelfSignedCertificate.GetOrCreate();
-        }
-
-        throw new InvalidOperationException(
-            "No Skillsoft SSO signing certificate is configured. Set SkillsoftSso:SigningCertificateBase64 " +
-            "(+ SigningCertificatePassword) or SkillsoftSso:SigningCertificatePath. See docs/skillsoft-sso-checklist.md.");
+        return new SkillsoftLaunchResult(url);
     }
 
     private record LaunchTicketPayload(int UserId, int CompanyId);

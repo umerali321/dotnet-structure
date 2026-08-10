@@ -116,10 +116,6 @@ public static class DependencyInjection
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
 
-        // Skillsoft SAML SSO - deliberately NOT eagerly validated at startup like SuperAdminSettings
-        // above: this is an optional third-party integration (see SkillsoftSsoSettings) and the
-        // rest of the app must keep working even before Skillsoft's account team has confirmed
-        // the real IdP/SP configuration. SkillsoftSsoService fails clearly at the point of use instead.
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()
             .Bind(configuration.GetSection(SkillsoftSsoSettings.SectionName));

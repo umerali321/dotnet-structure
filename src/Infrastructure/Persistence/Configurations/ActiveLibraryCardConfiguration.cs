@@ -18,6 +18,7 @@ public class ActiveLibraryCardConfiguration : IEntityTypeConfiguration<ActiveLib
         builder.Property(x => x.LastName).HasColumnName("Last_Name").HasMaxLength(50);
         builder.Property(x => x.Email).HasColumnName("Email").HasMaxLength(50);
         builder.Property(x => x.UserId).HasColumnName("User_ID").HasMaxLength(50);
+        builder.Property(x => x.Password).HasColumnName("Password").HasMaxLength(50);
         builder.Property(x => x.StartDate).HasColumnName("Start_Date");
         builder.Property(x => x.EndDate).HasColumnName("End_Date");
         builder.Property(x => x.FdmName).HasColumnName("FDM_Name").HasMaxLength(50);

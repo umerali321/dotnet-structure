@@ -18,6 +18,8 @@ public class ActiveLibraryCard : IAggregateRoot
 
     public string UserId { get; private set; } = string.Empty;
 
+    public string Password { get; private set; } = string.Empty;
+
     public DateTime StartDate { get; private set; }
 
     public DateTime EndDate { get; private set; }

@@ -9,4 +9,4 @@ public interface ISkillsoftSsoService
     Task<SkillsoftLaunchResult> ConsumeLaunchTicketAsync(string ticket, CancellationToken cancellationToken = default);
 }
 
-public record SkillsoftLaunchResult(string AutoPostHtml);
+public record SkillsoftLaunchResult(string RedirectUrl);

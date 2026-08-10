@@ -40,7 +40,8 @@ public class SkillsoftController : ControllerBase
     public async Task<IActionResult> Launch([FromQuery] string ticket, CancellationToken cancellationToken)
     {
         var result = await _ssoService.ConsumeLaunchTicketAsync(ticket, cancellationToken);
-        return Content(result.AutoPostHtml, "text/html");
+
+        return Redirect(result.RedirectUrl);
     }
 
     private CallerContext GetCaller() => new(
