@@ -20,6 +20,7 @@ using SkillsetsBackend.Application.Support.Interfaces;
 using SkillsetsBackend.Infrastructure.Support;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Infrastructure.Skillsoft;
+using SkillsetsBackend.Infrastructure.Skillsoft.Olsa;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -119,7 +120,14 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()
             .Bind(configuration.GetSection(SkillsoftSsoSettings.SectionName));
+        services.AddOptions<SkillsoftOlsaSettings>()
+            .Bind(configuration.GetSection(SkillsoftOlsaSettings.SectionName));
+        services.AddHttpClient<OlsaSoapClient>();
+        services.AddScoped<ActiveLibraryCardResolver>();
+        services.AddScoped<SkillsoftAccessGuard>();
         services.AddScoped<ISkillsoftSsoService, SkillsoftSsoService>();
+        services.AddScoped<ISkillsoftCatalogService, SkillsoftCatalogService>();
+        services.AddScoped<ISkillsoftTranscriptService, SkillsoftTranscriptService>();
 
         return services;
     }

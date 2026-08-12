@@ -1,11 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Infrastructure.Options;
-using SkillsetsBackend.Infrastructure.Persistence;
+using SkillsetsBackend.Infrastructure.Skillsoft.Olsa;
 
 namespace SkillsetsBackend.Infrastructure.Skillsoft;
 
@@ -13,39 +11,37 @@ public class SkillsoftSsoService : ISkillsoftSsoService
 {
     private const string TicketCacheKeyPrefix = "skillsoft-launch-ticket:";
 
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IUserDirectory _userDirectory;
+    private readonly SkillsoftAccessGuard _accessGuard;
+    private readonly ActiveLibraryCardResolver _cardResolver;
     private readonly IMemoryCache _cache;
     private readonly SkillsoftSsoSettings _settings;
+    private readonly OlsaSoapClient _olsaClient;
+    private readonly SkillsoftOlsaSettings _olsaSettings;
 
     public SkillsoftSsoService(
-        ApplicationDbContext dbContext,
-        IUserDirectory userDirectory,
+        SkillsoftAccessGuard accessGuard,
+        ActiveLibraryCardResolver cardResolver,
         IMemoryCache cache,
-        IOptions<SkillsoftSsoSettings> settings)
+        IOptions<SkillsoftSsoSettings> settings,
+        OlsaSoapClient olsaClient,
+        IOptions<SkillsoftOlsaSettings> olsaSettings)
     {
-        _dbContext = dbContext;
-        _userDirectory = userDirectory;
+        _accessGuard = accessGuard;
+        _cardResolver = cardResolver;
         _cache = cache;
         _settings = settings.Value;
+        _olsaClient = olsaClient;
+        _olsaSettings = olsaSettings.Value;
     }
 
     public async Task<string> CreateLaunchTicketAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)
     {
-        var userId = caller.DbUserId ?? throw new UnauthorizedAccessException("Not authenticated.");
-
-        var activeCompanyRoles = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);
-        if (!activeCompanyRoles.Any(r => r.CompanyId == companyId))
-        {
-            throw new UnauthorizedAccessException("You do not have an active role at that company.");
-        }
-
-        await ResolveEntitlementAsync(userId, companyId, cancellationToken);
+        await _accessGuard.ResolveForCallerAsync(caller, companyId, cancellationToken);
 
         var ticket = Guid.NewGuid().ToString("N");
         _cache.Set(
             TicketCacheKeyPrefix + ticket,
-            new LaunchTicketPayload(userId, companyId),
+            new LaunchTicketPayload(caller.DbUserId!.Value, companyId),
             TimeSpan.FromSeconds(Math.Max(5, _settings.LaunchTicketExpirySeconds)));
 
         return ticket;
@@ -61,50 +57,24 @@ public class SkillsoftSsoService : ISkillsoftSsoService
 
         _cache.Remove(cacheKey);
 
-        var card = await ResolveEntitlementAsync(payload.UserId, payload.CompanyId, cancellationToken);
+        var card = await _cardResolver.ResolveAsync(payload.UserId, payload.CompanyId, cancellationToken);
 
         return BuildBypassLoginRedirect(card);
     }
 
-    private async Task<Domain.Skillsoft.ActiveLibraryCard> ResolveEntitlementAsync(
-        int userId, int companyId, CancellationToken cancellationToken)
+    public async Task<string> GetCourseLaunchUrlAsync(CallerContext caller, int companyId, string assetId, CancellationToken cancellationToken = default)
     {
-        var user = await _dbContext.Users.AsNoTracking()
-            .Where(u => u.UserId == userId)
-            .Select(u => new { u.Email })
-            .FirstOrDefaultAsync(cancellationToken);
+        var card = await _accessGuard.ResolveForCallerAsync(caller, companyId, cancellationToken);
 
-        if (user?.Email is null)
-        {
-            throw new UnauthorizedAccessException("Your account has no email on file - Skillsoft access requires one.");
-        }
-
-        var companyCode = await _dbContext.Companies.AsNoTracking()
-            .Where(c => c.CompanyId == companyId)
-            .Select(c => c.CompanyCode)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (string.IsNullOrEmpty(companyCode))
-        {
-            throw new UnauthorizedAccessException("Company not found.");
-        }
-
-        var today = DateTime.UtcNow.Date;
-
-        var card = await _dbContext.ActiveLibraryCards.AsNoTracking()
-            .Where(c => c.CompanyCode == companyCode
-                && c.Email != null && c.Email.ToLower() == user.Email.ToLower()
-                && c.StartDate <= today
-                && c.EndDate >= today)
-            .OrderByDescending(c => c.EndDate)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (card is null)
-        {
-            throw new UnauthorizedAccessException("You do not have an active Skillsoft library card for this company.");
-        }
-
-        return card;
+        return await _olsaClient.GetMultiActionSignOnUrlAsync(
+            _olsaSettings.CustomerId,
+            actionType: "launch",
+            assetId: assetId,
+            userName: card.UserId,
+            password: card.Password,
+            firstName: card.FirstName,
+            lastName: card.LastName,
+            cancellationToken);
     }
 
     private SkillsoftLaunchResult BuildBypassLoginRedirect(Domain.Skillsoft.ActiveLibraryCard card)

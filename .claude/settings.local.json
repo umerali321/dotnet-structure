@@ -20,12 +20,28 @@
       "Bash(echo \"started with pid $!\")",
       "Bash(break)",
       "Bash(node smoke.mjs)",
-      "Bash(node smoke_superadmin.mjs)"
+      "Bash(node smoke_superadmin.mjs)",
+      "Read(//c/Users/mu821/AppData/Local/Temp/claude/d--softskill-data-CODE-softskill-dotnet-structure/748d0001-b4ce-4941-a9d2-74a4a0c7821d/scratchpad/skillport-docs/**)",
+      "Bash(pdftotext -layout admin_guide_8.pdf admin_guide_8.txt)",
+      "Bash(pdftotext -layout olsa_integration_guide.pdf olsa_integration_guide.txt)",
+      "Bash(cd \"/d/softskill data/CODE/softskill/skillsoft-angular\" && grep -n \"case '\" \"src/shared/UI/icon/icon.component.ts\" 2>/dev/null | head -60 || find src/shared/UI/icon -type f)",
+      "Read(//d/softskill data/CODE/softskill/skillsoft-angular/**)",
+      "Bash(rm -rf \"/d/softskill data/CODE/softskill/skillsoft-angular/dist\")",
+      "Bash(tasklist)",
+      "Bash(curl -sk -m 20 -w '\\\\nHTTP_STATUS:%{http_code} TIME:%{time_total}s\\\\n' -X POST https://localhost:7135/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"superadmin@skillsetsbackend.local\",\"password\":\"SuperAdmin@123\"}')",
+      "Bash(sc query *)",
+      "Bash(dotnet user-secrets *)",
+      "Bash(sqlcmd -S . -E -Q \"SELECT name FROM sys.databases\" -C)",
+      "Read(//c/Program Files/Microsoft SQL Server/**)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 23680 //F)",
+      "Bash(taskkill //PID 27172 //F)"
     ],
     "additionalDirectories": [
       "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\services",
       "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\app",
-      "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\shared\\UI\\generic-table"
+      "C:\\Users\\umer.ali\\Downloads\\new\\angular softskill\\src\\shared\\UI\\generic-table",
+      "D:\\softskill data\\CODE\\softskill\\skillsoft-angular\\dist"
     ]
   }
 }
