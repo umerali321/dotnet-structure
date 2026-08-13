@@ -10,4 +10,5 @@ public record StudentListItemDto(
     string? StudentType,
     bool IsActive,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<StudentCompanyRoleDto> Companies);
+    IReadOnlyList<StudentCompanyRoleDto> Companies,
+    bool HasSkillportAccount);

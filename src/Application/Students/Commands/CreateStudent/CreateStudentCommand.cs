@@ -9,4 +9,5 @@ public record CreateStudentCommand(
     string Password,
     string? StudentType,
     int CompanyId,
-    DateOnly? StartDate);
+    DateOnly? StartDate,
+    bool CreateInSkillport = false);

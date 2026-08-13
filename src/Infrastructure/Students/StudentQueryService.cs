@@ -3,6 +3,7 @@ using SkillsetsBackend.Application.Students.DTOs;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Infrastructure.Persistence;
+using SkillsetsBackend.Infrastructure.Skillsoft;
 using SkillsetsBackend.Shared.Common;
 
 namespace SkillsetsBackend.Infrastructure.Students;
@@ -102,12 +103,15 @@ public class StudentQueryService : IStudentQueryService
             })
             .ToListAsync(cancellationToken);
 
-        var companiesByUser = await LoadCompaniesAsync(page.Select(x => x.UserId), today, cancellationToken);
+        var (companiesByUser, companyCodesByUser) = await LoadCompaniesAsync(page.Select(x => x.UserId), today, cancellationToken);
+        var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(
+            _dbContext, companyCodesByUser.Values.SelectMany(codes => codes), cancellationToken);
 
         var items = page
             .Select(x => new StudentListItemDto(
                 x.UserId, x.FirstName, x.LastName, x.Email, x.Username, x.Phone, x.StudentType, x.IsActive, x.CreatedAt,
-                companiesByUser.TryGetValue(x.UserId, out var companies) ? companies : []))
+                companiesByUser.TryGetValue(x.UserId, out var companies) ? companies : [],
+                HasActiveSkillportCard(x.UserId, x.Email, companyCodesByUser, activePairs)))
             .ToList();
 
         return new PaginatedList<StudentListItemDto>(items, totalCount, options.Page, options.PageSize);
@@ -140,22 +144,24 @@ public class StudentQueryService : IStudentQueryService
             return null;
         }
 
-        var companiesByUser = await LoadCompaniesAsync([userId], DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken);
+        var (companiesByUser, companyCodesByUser) = await LoadCompaniesAsync([userId], DateOnly.FromDateTime(DateTime.UtcNow), cancellationToken);
         var companies = companiesByUser.TryGetValue(userId, out var list) ? list : [];
+        var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(
+            _dbContext, companyCodesByUser.Values.SelectMany(codes => codes), cancellationToken);
 
         return new StudentDetailDto(
             record.UserId, record.FirstName, record.LastName, record.Email, record.Username, record.Phone,
             record.StudentType, record.IsActive, record.CreatedAt, record.UpdatedAt, record.CreatedBy, record.UpdatedBy,
-            companies);
+            companies, HasActiveSkillportCard(userId, record.Email, companyCodesByUser, activePairs));
     }
 
-    private async Task<Dictionary<int, IReadOnlyList<StudentCompanyRoleDto>>> LoadCompaniesAsync(
+    private async Task<(Dictionary<int, IReadOnlyList<StudentCompanyRoleDto>> Companies, Dictionary<int, List<string>> CompanyCodes)> LoadCompaniesAsync(
         IEnumerable<int> userIds, DateOnly today, CancellationToken cancellationToken)
     {
         var ids = userIds.ToList();
         if (ids.Count == 0)
         {
-            return [];
+            return ([], []);
         }
 
         var rows = await _dbContext.UserCompanyRoles
@@ -171,19 +177,38 @@ public class StudentQueryService : IStudentQueryService
                 ucr.UserId,
                 ucr.CompanyId,
                 ucr.Company.CompanyName,
+                ucr.Company.CompanyCode,
                 ucr.Role.RoleName,
                 ucr.StartDate,
                 ucr.EndDate,
             })
             .ToListAsync(cancellationToken);
 
-        return rows
+        var companies = rows
             .GroupBy(x => x.UserId)
             .ToDictionary(
                 g => g.Key,
                 g => (IReadOnlyList<StudentCompanyRoleDto>)g
                     .Select(x => new StudentCompanyRoleDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate))
                     .ToList());
+
+        var companyCodes = rows
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.CompanyCode).ToList());
+
+        return (companies, companyCodes);
+    }
+
+    private static bool HasActiveSkillportCard(
+        int userId, string? email, Dictionary<int, List<string>> companyCodesByUser, HashSet<(string CompanyCode, string EmailLower)> activePairs)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !companyCodesByUser.TryGetValue(userId, out var codes))
+        {
+            return false;
+        }
+
+        var emailLower = email.ToLower();
+        return codes.Any(code => activePairs.Contains((code, emailLower)));
     }
 
     private static string EscapeLike(string value) =>

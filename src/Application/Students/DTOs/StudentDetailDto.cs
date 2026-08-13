@@ -13,4 +13,5 @@ public record StudentDetailDto(
     DateTimeOffset? UpdatedAt,
     string? CreatedBy,
     string? UpdatedBy,
-    IReadOnlyList<StudentCompanyRoleDto> Companies);
+    IReadOnlyList<StudentCompanyRoleDto> Companies,
+    bool HasSkillportAccount);

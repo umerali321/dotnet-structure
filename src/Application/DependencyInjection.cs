@@ -8,6 +8,7 @@ using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
+using SkillsetsBackend.Application.Students.Commands.ProvisionStudentSkillport;
 using SkillsetsBackend.Application.Students.Commands.UpdateStudent;
 using SkillsetsBackend.Application.Students.Queries.GetStudentById;
 using SkillsetsBackend.Application.Students.Queries.GetStudentCompanies;
@@ -17,6 +18,7 @@ using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
 using SkillsetsBackend.Application.Companies.Commands.CreateCompany;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
+using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerById;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerCompanies;
@@ -58,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<UpdateStudentCommandHandler>();
         services.AddScoped<ChangeStudentPasswordCommandHandler>();
         services.AddScoped<DeactivateStudentCommandHandler>();
+        services.AddScoped<ProvisionStudentSkillportCommandHandler>();
 
         services.AddScoped<ListCompaniesQueryHandler>();
         services.AddScoped<CreateCompanyCommandHandler>();
@@ -68,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<CreateManagerCommandHandler>();
         services.AddScoped<UpdateManagerCommandHandler>();
         services.AddScoped<ChangeManagerPasswordCommandHandler>();
+        services.AddScoped<ProvisionManagerSkillportCommandHandler>();
 
         services.AddScoped<ListFaqsQueryHandler>();
         services.AddScoped<GetFaqByIdQueryHandler>();

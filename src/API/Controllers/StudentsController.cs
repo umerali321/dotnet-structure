@@ -6,6 +6,7 @@ using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
+using SkillsetsBackend.Application.Students.Commands.ProvisionStudentSkillport;
 using SkillsetsBackend.Application.Students.Commands.UpdateStudent;
 using SkillsetsBackend.Application.Students.Queries.GetStudentById;
 using SkillsetsBackend.Application.Students.Queries.GetStudentCompanies;
@@ -28,6 +29,7 @@ public class StudentsController : ControllerBase
     private readonly UpdateStudentCommandHandler _updateHandler;
     private readonly ChangeStudentPasswordCommandHandler _changePasswordHandler;
     private readonly DeactivateStudentCommandHandler _deactivateHandler;
+    private readonly ProvisionStudentSkillportCommandHandler _provisionSkillportHandler;
 
     public StudentsController(
         ListStudentsQueryHandler listHandler,
@@ -37,7 +39,8 @@ public class StudentsController : ControllerBase
         CreateStudentCommandHandler createHandler,
         UpdateStudentCommandHandler updateHandler,
         ChangeStudentPasswordCommandHandler changePasswordHandler,
-        DeactivateStudentCommandHandler deactivateHandler)
+        DeactivateStudentCommandHandler deactivateHandler,
+        ProvisionStudentSkillportCommandHandler provisionSkillportHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -47,6 +50,7 @@ public class StudentsController : ControllerBase
         _updateHandler = updateHandler;
         _changePasswordHandler = changePasswordHandler;
         _deactivateHandler = deactivateHandler;
+        _provisionSkillportHandler = provisionSkillportHandler;
     }
 
     [HttpGet]
@@ -84,9 +88,18 @@ public class StudentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateStudentCommand command, CancellationToken cancellationToken)
     {
-        var newUserId = await _createHandler.Handle(command, GetCaller(), cancellationToken);
-        var created = await _getByIdHandler.Handle(newUserId, GetCaller(), cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = newUserId, version = "1.0" }, created);
+        var result = await _createHandler.Handle(command, GetCaller(), cancellationToken);
+        var created = await _getByIdHandler.Handle(result.UserId, GetCaller(), cancellationToken);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.UserId, version = "1.0" },
+            new
+            {
+                student = created,
+                skillportRequested = result.SkillportRequested,
+                skillportProvisioned = result.SkillportProvisioned,
+                skillportError = result.SkillportError,
+            });
     }
 
     [HttpPut("{id:int}")]
@@ -110,10 +123,25 @@ public class StudentsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:int}/skillsoft")]
+    public async Task<IActionResult> ProvisionSkillsoft(int id, ProvisionStudentSkillsoftRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ProvisionStudentSkillportCommand(id, request.CompanyId, request.Password);
+        var result = await _provisionSkillportHandler.Handle(command, GetCaller(), cancellationToken);
+        return Ok(new { provisioned = result.Success, error = result.ErrorMessage });
+    }
+
     private CallerContext GetCaller() => new(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!,
         User.FindFirstValue(ClaimTypes.Email)!,
         User.FindFirstValue(ClaimTypes.Role)!);
+}
+
+public class ProvisionStudentSkillsoftRequest
+{
+    public int CompanyId { get; set; }
+
+    public string Password { get; set; } = string.Empty;
 }
 
 public class ListStudentsRequest

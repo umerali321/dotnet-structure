@@ -4,6 +4,8 @@ namespace SkillsetsBackend.Application.Managers.Interfaces;
 
 public interface IManagerRepository
 {
+    Task<AppUser?> GetUserAsync(int userId, CancellationToken cancellationToken = default);
+
     Task<bool> IdentifierInUseAsync(string email, string username, int? excludeUserId, CancellationToken cancellationToken = default);
 
     /// <summary>

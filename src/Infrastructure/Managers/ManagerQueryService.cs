@@ -3,6 +3,7 @@ using SkillsetsBackend.Application.Managers.DTOs;
 using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Infrastructure.Persistence;
+using SkillsetsBackend.Infrastructure.Skillsoft;
 using SkillsetsBackend.Shared.Common;
 namespace SkillsetsBackend.Infrastructure.Managers;
 
@@ -46,12 +47,18 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
 
         var managerMemberships = await memberships
             .Where(x => ids.Contains(x.UserId))
-            .Select(x => new { x.UserId, x.CompanyId, x.Company.CompanyName, x.Role.RoleName, x.StartDate, x.EndDate })
+            .Select(x => new { x.UserId, x.CompanyId, x.Company.CompanyName, x.Company.CompanyCode, x.Role.RoleName, x.StartDate, x.EndDate })
             .ToListAsync(ct);
 
         var map = managerMemberships
             .GroupBy(x => x.UserId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<ManagerCompanyDto>)g.Select(x => new ManagerCompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate)).ToList());
+
+        var codesByUser = managerMemberships
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.CompanyCode).ToList());
+
+        var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(db, codesByUser.Values.SelectMany(codes => codes), ct);
 
         var items = page.Select(u => new ManagerListItemDto(
             u.UserId,
@@ -62,7 +69,8 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
             u.Phone,
             u.IsActive,
             u.CreatedAt,
-            map.GetValueOrDefault(u.UserId, []))).ToList();
+            map.GetValueOrDefault(u.UserId, []),
+            HasActiveSkillportCard(u.UserId, u.Email, codesByUser, activePairs))).ToList();
 
         return new PaginatedList<ManagerListItemDto>(items, total, o.Page, o.PageSize);
     }
@@ -80,11 +88,27 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
         }
 
         var companyRows = await memberships
-            .Select(x => new { x.CompanyId, x.Company.CompanyName, x.Role.RoleName, x.StartDate, x.EndDate })
+            .Select(x => new { x.CompanyId, x.Company.CompanyName, x.Company.CompanyCode, x.Role.RoleName, x.StartDate, x.EndDate })
             .ToListAsync(ct);
 
         var companies = companyRows.Select(x => new ManagerCompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate)).ToList();
+        var codesByUser = new Dictionary<int, List<string>> { [id] = companyRows.Select(x => x.CompanyCode).ToList() };
+        var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(db, codesByUser[id], ct);
 
-        return new ManagerListItemDto(user.UserId, user.FirstName, user.LastName, user.Email, user.Username, user.Phone, user.IsActive, user.CreatedAt, companies);
+        return new ManagerListItemDto(
+            user.UserId, user.FirstName, user.LastName, user.Email, user.Username, user.Phone, user.IsActive, user.CreatedAt,
+            companies, HasActiveSkillportCard(id, user.Email, codesByUser, activePairs));
+    }
+
+    private static bool HasActiveSkillportCard(
+        int userId, string? email, Dictionary<int, List<string>> companyCodesByUser, HashSet<(string CompanyCode, string EmailLower)> activePairs)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !companyCodesByUser.TryGetValue(userId, out var codes))
+        {
+            return false;
+        }
+
+        var emailLower = email.ToLower();
+        return codes.Any(code => activePairs.Contains((code, emailLower)));
     }
 }

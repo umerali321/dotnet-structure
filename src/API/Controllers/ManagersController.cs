@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
+using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerById;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerCompanies;
@@ -26,6 +27,7 @@ public sealed class ManagersController : ControllerBase
     private readonly CreateManagerCommandHandler _createHandler;
     private readonly UpdateManagerCommandHandler _updateHandler;
     private readonly ChangeManagerPasswordCommandHandler _changePasswordHandler;
+    private readonly ProvisionManagerSkillportCommandHandler _provisionSkillportHandler;
 
     public ManagersController(
         ListManagersQueryHandler listHandler,
@@ -34,7 +36,8 @@ public sealed class ManagersController : ControllerBase
         GetManagerRolesQueryHandler getRolesHandler,
         CreateManagerCommandHandler createHandler,
         UpdateManagerCommandHandler updateHandler,
-        ChangeManagerPasswordCommandHandler changePasswordHandler)
+        ChangeManagerPasswordCommandHandler changePasswordHandler,
+        ProvisionManagerSkillportCommandHandler provisionSkillportHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -43,6 +46,7 @@ public sealed class ManagersController : ControllerBase
         _createHandler = createHandler;
         _updateHandler = updateHandler;
         _changePasswordHandler = changePasswordHandler;
+        _provisionSkillportHandler = provisionSkillportHandler;
     }
 
     [HttpGet]
@@ -86,9 +90,18 @@ public sealed class ManagersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateManagerCommand command, CancellationToken cancellationToken)
     {
-        var newUserId = await _createHandler.Handle(command, GetCaller(), cancellationToken);
-        var created = await _getByIdHandler.Handle(newUserId, GetCaller(), cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = newUserId, version = "1.0" }, created);
+        var result = await _createHandler.Handle(command, GetCaller(), cancellationToken);
+        var created = await _getByIdHandler.Handle(result.UserId, GetCaller(), cancellationToken);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.UserId, version = "1.0" },
+            new
+            {
+                manager = created,
+                skillportRequested = result.SkillportRequested,
+                skillportProvisioned = result.SkillportProvisioned,
+                skillportError = result.SkillportError,
+            });
     }
 
     [HttpPut("{id:int}")]
@@ -105,10 +118,25 @@ public sealed class ManagersController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:int}/skillsoft")]
+    public async Task<IActionResult> ProvisionSkillsoft(int id, ProvisionManagerSkillsoftRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ProvisionManagerSkillportCommand(id, request.CompanyId, request.Password);
+        var result = await _provisionSkillportHandler.Handle(command, GetCaller(), cancellationToken);
+        return Ok(new { provisioned = result.Success, error = result.ErrorMessage });
+    }
+
     private CallerContext GetCaller() => new(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!,
         User.FindFirstValue(ClaimTypes.Email)!,
         User.FindFirstValue(ClaimTypes.Role)!);
+}
+
+public sealed class ProvisionManagerSkillsoftRequest
+{
+    public int CompanyId { get; set; }
+
+    public string Password { get; set; } = string.Empty;
 }
 
 public sealed class ManagerRequest

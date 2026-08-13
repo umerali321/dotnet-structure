@@ -8,4 +8,5 @@ public record CreateManagerCommand(
     string Username,
     string Password,
     int CompanyId,
-    DateOnly? StartDate);
+    DateOnly? StartDate,
+    bool CreateInSkillport = false);

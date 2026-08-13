@@ -124,12 +124,16 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SkillsoftSsoSettings.SectionName));
         services.AddOptions<SkillsoftOlsaSettings>()
             .Bind(configuration.GetSection(SkillsoftOlsaSettings.SectionName));
+        services.AddOptions<SkillsoftProvisioningSettings>()
+            .Bind(configuration.GetSection(SkillsoftProvisioningSettings.SectionName));
         services.AddHttpClient<OlsaSoapClient>();
+        services.AddHttpClient<SkillsoftProvisioningClient>();
         services.AddScoped<ActiveLibraryCardResolver>();
         services.AddScoped<SkillsoftAccessGuard>();
         services.AddScoped<ISkillsoftSsoService, SkillsoftSsoService>();
         services.AddScoped<ISkillsoftCatalogService, SkillsoftCatalogService>();
         services.AddScoped<ISkillsoftTranscriptService, SkillsoftTranscriptService>();
+        services.AddScoped<ISkillsoftProvisioningService, SkillsoftProvisioningService>();
 
         return services;
     }

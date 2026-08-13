@@ -14,6 +14,9 @@ public class ManagerRepository : IManagerRepository
         _dbContext = dbContext;
     }
 
+    public Task<AppUser?> GetUserAsync(int userId, CancellationToken cancellationToken = default) =>
+        _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+
     public Task<bool> IdentifierInUseAsync(string email, string username, int? excludeUserId, CancellationToken cancellationToken = default) =>
         _dbContext.Users.AnyAsync(
             u => (u.Email == email || u.Username == username) && (excludeUserId == null || u.UserId != excludeUserId),
