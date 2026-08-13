@@ -37,14 +37,14 @@ public class UpdateManagerCommandHandler
         var user = await _repository.GetUserAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), userId);
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can update managers.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can update managers.");
         }
 
         if (!caller.IsSuperAdmin)
         {
-            await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, cancellationToken);
+            await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }
 
         if (await _repository.IdentifierInUseAsync(command.Email, command.Username, userId, cancellationToken))

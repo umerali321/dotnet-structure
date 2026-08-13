@@ -3,6 +3,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.Companies.Commands.CreateCompany;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
 
 namespace SkillsetsBackend.API.Controllers;
@@ -14,10 +15,12 @@ namespace SkillsetsBackend.API.Controllers;
 public class CompaniesController : ControllerBase
 {
     private readonly ListCompaniesQueryHandler _listHandler;
+    private readonly CreateCompanyCommandHandler _createHandler;
 
-    public CompaniesController(ListCompaniesQueryHandler listHandler)
+    public CompaniesController(ListCompaniesQueryHandler listHandler, CreateCompanyCommandHandler createHandler)
     {
         _listHandler = listHandler;
+        _createHandler = createHandler;
     }
 
     [HttpGet]
@@ -25,6 +28,13 @@ public class CompaniesController : ControllerBase
     {
         var result = await _listHandler.Handle(new ListCompaniesQuery(search), GetCaller(), cancellationToken);
         return Ok(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateCompanyCommand command, CancellationToken cancellationToken)
+    {
+        var companyId = await _createHandler.Handle(command, GetCaller(), cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, new { companyId });
     }
 
     private CallerContext GetCaller() => new(

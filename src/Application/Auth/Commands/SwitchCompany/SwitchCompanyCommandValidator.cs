@@ -9,7 +9,7 @@ public class SwitchCompanyCommandValidator : AbstractValidator<SwitchCompanyComm
     {
         RuleFor(x => x.CompanyId).GreaterThan(0);
         RuleFor(x => x.Role)
-            .Must(role => role is Roles.Manager or Roles.Student)
-            .WithMessage("Role must be Manager or Student.");
+            .Must(role => role is Roles.Manager or Roles.Student or Roles.CompanyAdmin)
+            .WithMessage("Role must be Manager, Student, or CompanyAdmin.");
     }
 }

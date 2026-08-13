@@ -15,9 +15,9 @@ public class GetManagerRolesQueryHandler
 
     public async Task<IReadOnlyList<string>> Handle(int userId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can view manager roles.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can view manager roles.");
         }
 
         var companies = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);

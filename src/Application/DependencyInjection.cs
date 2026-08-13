@@ -14,6 +14,7 @@ using SkillsetsBackend.Application.Students.Queries.GetStudentCompanies;
 using SkillsetsBackend.Application.Students.Queries.GetStudentRoles;
 using SkillsetsBackend.Application.Students.Queries.ListStudents;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
+using SkillsetsBackend.Application.Companies.Commands.CreateCompany;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
@@ -59,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<DeactivateStudentCommandHandler>();
 
         services.AddScoped<ListCompaniesQueryHandler>();
+        services.AddScoped<CreateCompanyCommandHandler>();
         services.AddScoped<ListManagersQueryHandler>();
         services.AddScoped<GetManagerByIdQueryHandler>();
         services.AddScoped<GetManagerCompaniesQueryHandler>();

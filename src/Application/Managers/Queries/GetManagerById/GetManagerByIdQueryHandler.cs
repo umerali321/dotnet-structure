@@ -20,14 +20,14 @@ public class GetManagerByIdQueryHandler
 
     public async Task<ManagerListItemDto?> Handle(int userId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can view managers.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can view managers.");
         }
 
         if (!caller.IsSuperAdmin)
         {
-            await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, cancellationToken);
+            await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }
 
         return await _queryService.GetAsync(userId, cancellationToken);

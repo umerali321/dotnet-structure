@@ -2,7 +2,8 @@ using SkillsetsBackend.Domain.Common;
 
 namespace SkillsetsBackend.Domain.Identity;
 
-/// <summary>Maps to the existing "Companies" table. Read-only for now.</summary>
+/// <summary>Maps to the existing "Companies" table. Narrow write path added for company
+/// creation (see CreateCompanyCommandHandler) - still no update/delete beyond that.</summary>
 public class Company : IAggregateRoot
 {
     public int CompanyId { get; private set; }
@@ -23,5 +24,18 @@ public class Company : IAggregateRoot
 
     private Company()
     {
+    }
+
+    public static Company Create(string companyCode, string companyName, string? companyEmail, string? companyPhone)
+    {
+        return new Company
+        {
+            CompanyCode = companyCode,
+            CompanyName = companyName,
+            CompanyEmail = companyEmail,
+            CompanyPhone = companyPhone,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
     }
 }

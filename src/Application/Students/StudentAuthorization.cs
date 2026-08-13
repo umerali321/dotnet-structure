@@ -63,6 +63,34 @@ public static class StudentAuthorization
         }
     }
 
+    /// <summary>SuperAdmin: any manager. Manager or CompanyAdmin: managers in a managed company.
+    /// Deliberately separate from EnsureCanManageStudentAsync (not reused) - CompanyAdmin must be
+    /// able to manage Managers without also gaining access to manage Students.</summary>
+    public static async Task EnsureCanManageManagerAsync(
+        CallerContext caller,
+        int targetUserId,
+        IUserDirectory userDirectory,
+        CancellationToken cancellationToken)
+    {
+        if (caller.IsSuperAdmin)
+        {
+            return;
+        }
+
+        if (caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to perform this action.");
+        }
+
+        var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);
+        var targetCompanies = await userDirectory.GetActiveCompanyRolesAsync(targetUserId, cancellationToken);
+
+        if (!targetCompanies.Any(tc => managedCompanyIds.Contains(tc.CompanyId)))
+        {
+            throw new UnauthorizedAccessException("You do not have access to this manager.");
+        }
+    }
+
     /// <summary>Throws unless companyId is one the caller (a Manager) is actively authorized to manage.</summary>
     public static async Task EnsureCanManageCompanyAsync(
         CallerContext caller,
@@ -94,7 +122,7 @@ public static class StudentAuthorization
 
         var roles = await userDirectory.GetActiveCompanyRolesAsync(caller.DbUserId.Value, cancellationToken);
         return roles
-            .Where(r => Roles.Normalize(r.RoleName) == Roles.Manager)
+            .Where(r => Roles.Normalize(r.RoleName) == Roles.Manager || r.RoleName == Roles.CompanyAdmin)
             .Select(r => r.CompanyId)
             .ToList();
     }
