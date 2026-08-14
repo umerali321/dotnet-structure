@@ -2,7 +2,6 @@ using FluentValidation;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Common.Exceptions;
-using SkillsetsBackend.Application.Skillsoft;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
@@ -15,18 +14,18 @@ public class ProvisionStudentSkillportCommandHandler
     private readonly IValidator<ProvisionStudentSkillportCommand> _validator;
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
-    private readonly ISkillsoftProvisioningService _skillsoftProvisioningService;
+    private readonly ISkillportSessionService _skillportSessionService;
 
     public ProvisionStudentSkillportCommandHandler(
         IValidator<ProvisionStudentSkillportCommand> validator,
         IStudentRepository repository,
         IUserDirectory userDirectory,
-        ISkillsoftProvisioningService skillsoftProvisioningService)
+        ISkillportSessionService skillportSessionService)
     {
         _validator = validator;
         _repository = repository;
         _userDirectory = userDirectory;
-        _skillsoftProvisioningService = skillsoftProvisioningService;
+        _skillportSessionService = skillportSessionService;
     }
 
     public async Task<SkillsoftProvisionResult> Handle(ProvisionStudentSkillportCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -56,12 +55,6 @@ public class ProvisionStudentSkillportCommandHandler
             return new SkillsoftProvisionResult(false, "This student has no email or username on file.");
         }
 
-        var (managerEmail, managerName) = await CallerIdentityResolver.ResolveAsync(caller, _userDirectory, cancellationToken);
-
-        return await _skillsoftProvisioningService.ProvisionAsync(
-            new SkillsoftProvisionRequest(
-                command.CompanyId, user.Username, command.Password, user.FirstName ?? string.Empty, user.LastName ?? string.Empty,
-                user.Email, managerEmail, managerName),
-            cancellationToken);
+        return await _skillportSessionService.CreateNewSessionAsync(command.UserId, command.CompanyId, command.Password, cancellationToken);
     }
 }

@@ -32,6 +32,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<ActiveLibraryCard> ActiveLibraryCards => Set<ActiveLibraryCard>();
 
+    public DbSet<SkillportSession> SkillportSessions => Set<SkillportSession>();
+
     public DbSet<Faq> Faqs => Set<Faq>();
 
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();

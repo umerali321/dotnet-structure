@@ -17,7 +17,22 @@ public class SkillsoftProvisioningService : ISkillsoftProvisioningService
         _dbContext = dbContext;
     }
 
-    public async Task<SkillsoftProvisionResult> ProvisionAsync(SkillsoftProvisionRequest request, CancellationToken cancellationToken = default)
+    public async Task<SkillsoftProvisionResult> CreateAccountAsync(
+        string username, string password, string firstName, string lastName, CancellationToken cancellationToken = default)
+    {
+        var tooLong = new[] { username, password, firstName, lastName }.Any(v => v.Length > LegacyColumnMaxLength);
+        if (tooLong)
+        {
+            return new SkillsoftProvisionResult(false, $"One of the account fields is too long for Skillport (max {LegacyColumnMaxLength} characters).");
+        }
+
+        var apiResult = await _client.CreateUserAsync(username, password, firstName, lastName, cancellationToken);
+        return apiResult.Success
+            ? new SkillsoftProvisionResult(true, null)
+            : new SkillsoftProvisionResult(false, apiResult.ErrorMessage);
+    }
+
+    public async Task<SkillsoftProvisionResult> RecordEntitlementAsync(SkillsoftEntitlementRequest request, CancellationToken cancellationToken = default)
     {
         var company = await _dbContext.Companies.AsNoTracking()
             .Where(c => c.CompanyId == request.CompanyId)
@@ -50,12 +65,6 @@ public class SkillsoftProvisioningService : ISkillsoftProvisioningService
             return new SkillsoftProvisionResult(false, $"{tooLong.Item1} is too long for Skillport (max {LegacyColumnMaxLength} characters).");
         }
 
-        var apiResult = await _client.CreateUserAsync(request.Username, request.Password, request.FirstName, request.LastName, cancellationToken);
-        if (!apiResult.Success)
-        {
-            return new SkillsoftProvisionResult(false, apiResult.ErrorMessage);
-        }
-
         var startDate = DateTime.UtcNow.Date;
         var endDate = startDate.AddDays(30);
 
@@ -69,5 +78,20 @@ public class SkillsoftProvisioningService : ISkillsoftProvisioningService
             cancellationToken);
 
         return new SkillsoftProvisionResult(true, null);
+    }
+
+    public async Task<SkillsoftProvisionResult> ProvisionAsync(SkillsoftProvisionRequest request, CancellationToken cancellationToken = default)
+    {
+        var accountResult = await CreateAccountAsync(request.Username, request.Password, request.FirstName, request.LastName, cancellationToken);
+        if (!accountResult.Success)
+        {
+            return accountResult;
+        }
+
+        return await RecordEntitlementAsync(
+            new SkillsoftEntitlementRequest(
+                request.CompanyId, request.Username, request.Password, request.FirstName, request.LastName,
+                request.Email, request.ManagerEmail, request.ManagerName),
+            cancellationToken);
     }
 }

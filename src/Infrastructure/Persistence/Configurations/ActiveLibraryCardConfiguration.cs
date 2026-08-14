@@ -9,7 +9,11 @@ public class ActiveLibraryCardConfiguration : IEntityTypeConfiguration<ActiveLib
     public void Configure(EntityTypeBuilder<ActiveLibraryCard> builder)
     {
         builder.ToTable("ActiveLibraryCards");
-        builder.HasNoKey();
+        builder.HasKey(x => x.ActiveLibraryCardId);
+
+        // Additive surrogate key - the legacy data has no natural unique combination of columns
+        // (duplicate rows exist), so this is a brand-new identity column, not derived from existing data.
+        builder.Property(x => x.ActiveLibraryCardId).HasColumnName("ActiveLibraryCardId").ValueGeneratedOnAdd();
 
         builder.Property(x => x.CompanyCode).HasColumnName("Company_Code").HasMaxLength(50);
         builder.Property(x => x.CompanyName).HasColumnName("Company_Name").HasMaxLength(100);

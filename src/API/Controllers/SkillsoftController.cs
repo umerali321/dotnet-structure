@@ -51,6 +51,26 @@ public class SkillsoftController : ControllerBase
         return Redirect(result.RedirectUrl);
     }
 
+    [HttpGet("session-status")]
+    [Authorize]
+    public async Task<IActionResult> GetSessionStatus(CancellationToken cancellationToken)
+    {
+        var companyId = RequireCompanyId();
+        var status = await _ssoService.GetSessionStatusAsync(GetCaller(), companyId, cancellationToken);
+        return Ok(status);
+    }
+
+    [HttpPost("start-session")]
+    [Authorize]
+    public async Task<IActionResult> StartSession(CancellationToken cancellationToken)
+    {
+        var companyId = RequireCompanyId();
+        var ticket = await _ssoService.StartSessionAsync(GetCaller(), companyId, cancellationToken);
+        var launchUrl = Url.Action(nameof(Launch), "Skillsoft", new { version = "1.0", ticket }, Request.Scheme)!;
+
+        return Ok(new { launchUrl });
+    }
+
     [HttpGet("catalog/search")]
     [Authorize]
     public async Task<IActionResult> SearchCatalog(

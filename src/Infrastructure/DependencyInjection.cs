@@ -129,6 +129,9 @@ public static class DependencyInjection
         services.AddHttpClient<OlsaSoapClient>();
         services.AddHttpClient<SkillsoftProvisioningClient>();
         services.AddScoped<ActiveLibraryCardResolver>();
+        services.AddScoped<StudentManagerResolver>();
+        services.AddScoped<SkillportSessionManager>();
+        services.AddScoped<ISkillportSessionService>(provider => provider.GetRequiredService<SkillportSessionManager>());
         services.AddScoped<SkillsoftAccessGuard>();
         services.AddScoped<ISkillsoftSsoService, SkillsoftSsoService>();
         services.AddScoped<ISkillsoftCatalogService, SkillsoftCatalogService>();

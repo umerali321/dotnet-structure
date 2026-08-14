@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814000417_AddSkillportSessionsTable")]
+    partial class AddSkillportSessionsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -307,13 +310,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.ActiveLibraryCard", b =>
                 {
-                    b.Property<int>("ActiveLibraryCardId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ActiveLibraryCardId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ActiveLibraryCardId"));
-
                     b.Property<string>("CompanyCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -373,8 +369,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("User_ID");
-
-                    b.HasKey("ActiveLibraryCardId");
 
                     b.ToTable("ActiveLibraryCards", (string)null);
                 });

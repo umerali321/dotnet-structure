@@ -13,6 +13,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
 
     private readonly SkillsoftAccessGuard _accessGuard;
     private readonly ActiveLibraryCardResolver _cardResolver;
+    private readonly SkillportSessionManager _sessionManager;
     private readonly IMemoryCache _cache;
     private readonly SkillsoftSsoSettings _settings;
     private readonly OlsaSoapClient _olsaClient;
@@ -21,6 +22,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
     public SkillsoftSsoService(
         SkillsoftAccessGuard accessGuard,
         ActiveLibraryCardResolver cardResolver,
+        SkillportSessionManager sessionManager,
         IMemoryCache cache,
         IOptions<SkillsoftSsoSettings> settings,
         OlsaSoapClient olsaClient,
@@ -28,6 +30,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
     {
         _accessGuard = accessGuard;
         _cardResolver = cardResolver;
+        _sessionManager = sessionManager;
         _cache = cache;
         _settings = settings.Value;
         _olsaClient = olsaClient;
@@ -38,10 +41,36 @@ public class SkillsoftSsoService : ISkillsoftSsoService
     {
         await _accessGuard.ResolveForCallerAsync(caller, companyId, cancellationToken);
 
+        return CreateTicket(caller.DbUserId!.Value, companyId);
+    }
+
+    public async Task<SkillsoftSessionStatus> GetSessionStatusAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)
+    {
+        var userId = await _accessGuard.EnsureActiveRoleAsync(caller, companyId, cancellationToken);
+        var status = await _sessionManager.GetStatusAsync(userId, companyId, cancellationToken);
+
+        return new SkillsoftSessionStatus(status.HasActiveSession, status.IsExpired, status.StartDate, status.EndDate);
+    }
+
+    public async Task<string> StartSessionAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)
+    {
+        var userId = await _accessGuard.EnsureActiveRoleAsync(caller, companyId, cancellationToken);
+
+        var result = await _sessionManager.EnsureActiveAsync(userId, companyId, cancellationToken);
+        if (!result.Success)
+        {
+            throw new InvalidOperationException(result.ErrorMessage ?? "Could not start your Skillport session. Please try again.");
+        }
+
+        return CreateTicket(userId, companyId);
+    }
+
+    private string CreateTicket(int userId, int companyId)
+    {
         var ticket = Guid.NewGuid().ToString("N");
         _cache.Set(
             TicketCacheKeyPrefix + ticket,
-            new LaunchTicketPayload(caller.DbUserId!.Value, companyId),
+            new LaunchTicketPayload(userId, companyId),
             TimeSpan.FromSeconds(Math.Max(5, _settings.LaunchTicketExpirySeconds)));
 
         return ticket;
