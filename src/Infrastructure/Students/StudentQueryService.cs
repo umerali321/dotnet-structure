@@ -189,7 +189,7 @@ public class StudentQueryService : IStudentQueryService
             .ToDictionary(
                 g => g.Key,
                 g => (IReadOnlyList<StudentCompanyRoleDto>)g
-                    .Select(x => new StudentCompanyRoleDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate))
+                    .Select(x => new StudentCompanyRoleDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate))
                     .ToList());
 
         var companyCodes = rows

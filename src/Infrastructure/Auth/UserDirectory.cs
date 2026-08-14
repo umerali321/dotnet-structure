@@ -78,6 +78,6 @@ public class UserDirectory : IUserDirectory
                 && (ucr.StartDate == null || ucr.StartDate <= today)
                 && (ucr.EndDate == null || ucr.EndDate >= today))
             .Select(ucr => new DirectoryCompanyRole(
-                ucr.CompanyId, ucr.Company.CompanyName, ucr.RoleId, ucr.Role.RoleName, ucr.StartDate, ucr.EndDate));
+                ucr.CompanyId, ucr.Company.CompanyCode, ucr.Company.CompanyName, ucr.RoleId, ucr.Role.RoleName, ucr.StartDate, ucr.EndDate));
     }
 }

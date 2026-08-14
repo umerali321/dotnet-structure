@@ -49,7 +49,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
         var userId = await _accessGuard.EnsureActiveRoleAsync(caller, companyId, cancellationToken);
         var status = await _sessionManager.GetStatusAsync(userId, companyId, cancellationToken);
 
-        return new SkillsoftSessionStatus(status.HasActiveSession, status.IsExpired, status.StartDate, status.EndDate);
+        return new SkillsoftSessionStatus(status.HasActiveSession, status.IsExpired, status.HasDormantAccount, status.StartDate, status.EndDate);
     }
 
     public async Task<string> StartSessionAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)

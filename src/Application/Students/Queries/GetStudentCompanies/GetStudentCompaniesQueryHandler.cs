@@ -21,7 +21,7 @@ public class GetStudentCompaniesQueryHandler
         var companies = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);
 
         return companies
-            .Select(c => new StudentCompanyRoleDto(c.CompanyId, c.CompanyName, Roles.Normalize(c.RoleName), c.StartDate, c.EndDate))
+            .Select(c => new StudentCompanyRoleDto(c.CompanyId, c.CompanyCode, c.CompanyName, Roles.Normalize(c.RoleName), c.StartDate, c.EndDate))
             .ToList();
     }
 }

@@ -27,6 +27,7 @@ public record DirectoryUser(
 
 public record DirectoryCompanyRole(
     int CompanyId,
+    string CompanyCode,
     string CompanyName,
     byte RoleId,
     string RoleName,

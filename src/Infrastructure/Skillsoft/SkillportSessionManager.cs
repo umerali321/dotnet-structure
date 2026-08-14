@@ -6,19 +6,9 @@ using SkillsetsBackend.Infrastructure.Persistence;
 
 namespace SkillsetsBackend.Infrastructure.Skillsoft;
 
-public record SkillportSessionStatus(bool HasActiveSession, bool IsExpired, DateTime? StartDate, DateTime? EndDate);
+public record SkillportSessionStatus(bool HasActiveSession, bool IsExpired, bool HasDormantAccount, DateTime? StartDate, DateTime? EndDate);
 
-/// <summary>
-/// Owns the 30-day Skillport session lifecycle: registering creates a Skillport account immediately
-/// but the session stays dormant (no dates) until the user actually enters the course library; the
-/// first entry activates it (sets a 30-day window). Once that window expires, entering again requires
-/// an explicit restart - but a restart never registers a new Skillport account. Skillport is only ever
-/// registered once per user, ever; every restart reuses that same username/password and just records a
-/// new 30-day entitlement window as a new SkillportSessions row (the expired one is kept as history,
-/// never overwritten - that history of restarts is exactly what "usage" means here). Registering a new
-/// identity per restart was tried and explicitly reverted: Skillport ties all of a user's content and
-/// progress to their one account, so a new identity would make them lose access to it.
-/// </summary>
+
 public class SkillportSessionManager : ISkillportSessionService
 {
     private readonly ApplicationDbContext _dbContext;
@@ -77,16 +67,19 @@ public class SkillportSessionManager : ISkillportSessionService
 
         if (session is not null && session.IsActive(today))
         {
-            return new SkillportSessionStatus(true, false, session.StartDate, session.EndDate);
+            return new SkillportSessionStatus(true, false, false, session.StartDate, session.EndDate);
         }
 
         if (session is not null && session.IsExpired(today))
         {
-            return new SkillportSessionStatus(false, true, session.StartDate, session.EndDate);
+            return new SkillportSessionStatus(false, true, false, session.StartDate, session.EndDate);
         }
 
-        // No row, or a dormant one - check for a pre-existing legacy entitlement (real production data,
-        // or an account created before this table existed) and adopt it so future lookups/usage counts see it.
+        if (session is not null && session.IsDormant)
+        {
+            return new SkillportSessionStatus(false, false, true, null, null);
+        }
+
         var legacyCard = await _cardResolver.TryResolveAsync(userId, companyId, cancellationToken);
         if (legacyCard is not null)
         {
@@ -94,26 +87,16 @@ public class SkillportSessionManager : ISkillportSessionService
                 userId, companyId, legacyCard.UserId, legacyCard.Password, legacyCard.StartDate, legacyCard.EndDate));
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return new SkillportSessionStatus(true, false, legacyCard.StartDate, legacyCard.EndDate);
+            return new SkillportSessionStatus(true, false, false, legacyCard.StartDate, legacyCard.EndDate);
         }
 
-        return new SkillportSessionStatus(false, false, null, null);
+        return new SkillportSessionStatus(false, false, false, null, null);
     }
 
-    /// <summary>
-    /// Ensures the caller has an active session right now: reuses one if active, activates a dormant
-    /// account, or restarts an expired one - all without ever registering a second Skillport identity.
-    /// Only when there is no account at all does this register one, with a random password. The caller
-    /// is responsible for only invoking the "restart after expiry" path once the user has confirmed it.
-    /// </summary>
+    
     public async Task<SkillsoftProvisionResult> EnsureActiveAsync(int userId, int companyId, CancellationToken cancellationToken = default)
         => await EnsureActiveInternalAsync(userId, companyId, initialPassword: null, cancellationToken);
 
-    /// <summary>
-    /// Admin-triggered "create/retry now": if the user already has a Skillport account (dormant, active,
-    /// or expired), this reuses that same identity exactly like EnsureActiveAsync - it never registers a
-    /// second one. The given password is only used the first time an account is ever registered for them.
-    /// </summary>
     public async Task<SkillsoftProvisionResult> CreateNewSessionAsync(int userId, int companyId, string password, CancellationToken cancellationToken = default)
         => await EnsureActiveInternalAsync(userId, companyId, initialPassword: password, cancellationToken);
 
@@ -138,8 +121,6 @@ public class SkillportSessionManager : ISkillportSessionService
 
         if (session is not null)
         {
-            // Account already exists on Skillport (dormant or expired) - never register a new one, just
-            // reuse the same username/password it was created with and record a fresh entitlement window.
             var entitlement = new SkillsoftEntitlementRequest(
                 companyId, session.SkillportUsername, session.SkillportPassword, user.FirstName, user.LastName, user.Email,
                 managerEmail ?? user.Email, managerName ?? "Unassigned");
@@ -212,10 +193,6 @@ public class SkillportSessionManager : ISkillportSessionService
         return new UserSnapshot(SanitizeUsername(user.Username), user.PasswordHash, user.FirstName ?? string.Empty, user.LastName ?? string.Empty, user.Email);
     }
 
-    /// <summary>
-    /// Skillport usernames must never be email addresses - if Users.Username was ever set to one
-    /// (e.g. a form where a username field was left as the email), use the local part before "@" instead.
-    /// </summary>
     private static string SanitizeUsername(string username)
     {
         var atIndex = username.IndexOf('@');
@@ -224,7 +201,6 @@ public class SkillportSessionManager : ISkillportSessionService
 
     private record UserSnapshot(string Username, string PasswordHash, string FirstName, string LastName, string Email);
 
-    /// <summary>Random 8-digit numeric password for a new Skillport registration, per the legacy convention observed in real ActiveLibraryCards data (short numeric PINs).</summary>
     private static string GenerateRandomPassword()
     {
         Span<byte> bytes = stackalloc byte[4];

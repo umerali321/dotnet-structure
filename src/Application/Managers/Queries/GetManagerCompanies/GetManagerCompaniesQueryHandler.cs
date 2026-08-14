@@ -25,7 +25,7 @@ public class GetManagerCompaniesQueryHandler
 
         return companies
             .Where(c => Roles.Normalize(c.RoleName) == Roles.Manager)
-            .Select(c => new ManagerCompanyDto(c.CompanyId, c.CompanyName, Roles.Normalize(c.RoleName), c.StartDate, c.EndDate))
+            .Select(c => new ManagerCompanyDto(c.CompanyId, c.CompanyCode, c.CompanyName, Roles.Normalize(c.RoleName), c.StartDate, c.EndDate))
             .ToList();
     }
 }

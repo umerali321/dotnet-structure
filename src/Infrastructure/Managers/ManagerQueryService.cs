@@ -52,7 +52,7 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
 
         var map = managerMemberships
             .GroupBy(x => x.UserId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<ManagerCompanyDto>)g.Select(x => new ManagerCompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate)).ToList());
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<ManagerCompanyDto>)g.Select(x => new ManagerCompanyDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate)).ToList());
 
         var codesByUser = managerMemberships
             .GroupBy(x => x.UserId)
@@ -91,7 +91,7 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
             .Select(x => new { x.CompanyId, x.Company.CompanyName, x.Company.CompanyCode, x.Role.RoleName, x.StartDate, x.EndDate })
             .ToListAsync(ct);
 
-        var companies = companyRows.Select(x => new ManagerCompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate)).ToList();
+        var companies = companyRows.Select(x => new ManagerCompanyDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName), x.StartDate, x.EndDate)).ToList();
         var codesByUser = new Dictionary<int, List<string>> { [id] = companyRows.Select(x => x.CompanyCode).ToList() };
         var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(db, codesByUser[id], ct);
 
