@@ -1,5 +1,6 @@
 using System.Reflection;
 using SkillsetsBackend.Application.Common.Interfaces;
+using SkillsetsBackend.Domain.CourseLibrary;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Domain.Skillsoft;
 using SkillsetsBackend.Domain.Support;
@@ -39,6 +40,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
 
     public DbSet<SupportContact> SupportContacts => Set<SupportContact>();
+
+    public DbSet<LibraryCategory> LibraryCategories => Set<LibraryCategory>();
+
+    public DbSet<SubCategory> SubCategories => Set<SubCategory>();
+
+    public DbSet<Course> Courses => Set<Course>();
+
+    public DbSet<CourseSection> CourseSections => Set<CourseSection>();
+
+    public DbSet<LoginActivityLog> LoginActivityLogs => Set<LoginActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

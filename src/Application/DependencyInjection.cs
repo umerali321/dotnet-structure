@@ -4,7 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using SkillsetsBackend.Application.Auth.Commands.Login;
 using SkillsetsBackend.Application.Auth.Commands.Logout;
 using SkillsetsBackend.Application.Auth.Commands.Refresh;
+using SkillsetsBackend.Application.Auth.Commands.ResetPassword;
+using SkillsetsBackend.Application.Auth.Commands.SubmitLoginSupportRequest;
 using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
+using SkillsetsBackend.Application.Auth.Queries.ListLoginActivityLogs;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
@@ -38,6 +41,8 @@ using SkillsetsBackend.Application.Support.Queries.ListSupportRequests;
 using SkillsetsBackend.Application.Support.Queries.GetSupportRequestById;
 using SkillsetsBackend.Application.Support.Commands.CreateSupportRequest;
 using SkillsetsBackend.Application.Support.Commands.UpdateSupportRequestStatus;
+using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibrary;
+using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibraryCourseDetail;
 
 namespace SkillsetsBackend.Application;
 
@@ -51,6 +56,9 @@ public static class DependencyInjection
         services.AddScoped<RefreshTokenCommandHandler>();
         services.AddScoped<LogoutCommandHandler>();
         services.AddScoped<SwitchCompanyCommandHandler>();
+        services.AddScoped<SubmitLoginSupportRequestCommandHandler>();
+        services.AddScoped<ResetPasswordCommandHandler>();
+        services.AddScoped<ListLoginActivityLogsQueryHandler>();
 
         services.AddScoped<ListStudentsQueryHandler>();
         services.AddScoped<GetStudentByIdQueryHandler>();
@@ -88,6 +96,9 @@ public static class DependencyInjection
         services.AddScoped<GetSupportRequestByIdQueryHandler>();
         services.AddScoped<CreateSupportRequestCommandHandler>();
         services.AddScoped<UpdateSupportRequestStatusCommandHandler>();
+
+        services.AddScoped<GetCourseLibraryQueryHandler>();
+        services.AddScoped<GetCourseLibraryCourseDetailQueryHandler>();
 
         return services;
     }

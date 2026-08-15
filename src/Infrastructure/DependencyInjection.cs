@@ -21,6 +21,9 @@ using SkillsetsBackend.Infrastructure.Support;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Infrastructure.Skillsoft;
 using SkillsetsBackend.Infrastructure.Skillsoft.Olsa;
+using SkillsetsBackend.Application.CourseLibrary.Interfaces;
+using SkillsetsBackend.Infrastructure.CourseLibrary;
+using SkillsetsBackend.Infrastructure.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -106,6 +109,8 @@ public static class DependencyInjection
         // Scoped: both depend on the scoped ApplicationDbContext.
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IUserCredentialRepository, UserCredentialRepository>();
+        services.AddScoped<ILoginActivityLogRepository, LoginActivityLogRepository>();
 
         services.AddScoped<ICurrentCompanyContext, CurrentCompanyContext>();
 
@@ -118,6 +123,7 @@ public static class DependencyInjection
         services.AddScoped<IFaqRepository, FaqRepository>();
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
+        services.AddScoped<ICourseLibraryQueryService, CourseLibraryQueryService>();
 
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()
@@ -126,6 +132,9 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SkillsoftOlsaSettings.SectionName));
         services.AddOptions<SkillsoftProvisioningSettings>()
             .Bind(configuration.GetSection(SkillsoftProvisioningSettings.SectionName));
+        services.AddOptions<EmailSettings>()
+            .Bind(configuration.GetSection(EmailSettings.SectionName));
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddHttpClient<OlsaSoapClient>();
         services.AddHttpClient<SkillsoftProvisioningClient>();
         services.AddScoped<ActiveLibraryCardResolver>();

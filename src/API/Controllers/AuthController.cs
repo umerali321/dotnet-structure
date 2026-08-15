@@ -6,6 +6,8 @@ using SkillsetsBackend.Application.Auth;
 using SkillsetsBackend.Application.Auth.Commands.Login;
 using SkillsetsBackend.Application.Auth.Commands.Logout;
 using SkillsetsBackend.Application.Auth.Commands.Refresh;
+using SkillsetsBackend.Application.Auth.Commands.ResetPassword;
+using SkillsetsBackend.Application.Auth.Commands.SubmitLoginSupportRequest;
 using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 using SkillsetsBackend.Application.Auth.DTOs;
 
@@ -20,17 +22,23 @@ public class AuthController : ControllerBase
     private readonly RefreshTokenCommandHandler _refreshHandler;
     private readonly LogoutCommandHandler _logoutHandler;
     private readonly SwitchCompanyCommandHandler _switchCompanyHandler;
+    private readonly SubmitLoginSupportRequestCommandHandler _submitLoginSupportRequestHandler;
+    private readonly ResetPasswordCommandHandler _resetPasswordHandler;
 
     public AuthController(
         LoginCommandHandler loginHandler,
         RefreshTokenCommandHandler refreshHandler,
         LogoutCommandHandler logoutHandler,
-        SwitchCompanyCommandHandler switchCompanyHandler)
+        SwitchCompanyCommandHandler switchCompanyHandler,
+        SubmitLoginSupportRequestCommandHandler submitLoginSupportRequestHandler,
+        ResetPasswordCommandHandler resetPasswordHandler)
     {
         _loginHandler = loginHandler;
         _refreshHandler = refreshHandler;
         _logoutHandler = logoutHandler;
         _switchCompanyHandler = switchCompanyHandler;
+        _submitLoginSupportRequestHandler = submitLoginSupportRequestHandler;
+        _resetPasswordHandler = resetPasswordHandler;
     }
 
     [HttpPost("login")]
@@ -70,6 +78,25 @@ public class AuthController : ControllerBase
             GetClientIp(),
             cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>Unauthenticated - the user has just failed to log in, so a session isn't available.
+    /// Always returns 200 with { found } rather than leaking a 404/etc distinction.</summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ResetPasswordResultDto>> ResetPassword(ResetPasswordCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _resetPasswordHandler.Handle(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>Unauthenticated - the user may not be able to sign in at all, that's the whole point.</summary>
+    [HttpPost("support-request")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SubmitLoginSupportRequest(SubmitLoginSupportRequestCommand command, CancellationToken cancellationToken)
+    {
+        await _submitLoginSupportRequestHandler.Handle(command, cancellationToken);
+        return NoContent();
     }
 
     [HttpGet("me")]

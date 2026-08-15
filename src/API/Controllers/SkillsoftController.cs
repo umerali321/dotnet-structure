@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibrary;
+using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibraryCourseDetail;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 
 namespace SkillsetsBackend.API.Controllers;
@@ -17,17 +19,42 @@ public class SkillsoftController : ControllerBase
     private readonly ISkillsoftCatalogService _catalogService;
     private readonly ISkillsoftTranscriptService _transcriptService;
     private readonly ICurrentCompanyContext _currentCompanyContext;
+    private readonly GetCourseLibraryQueryHandler _courseLibraryHandler;
+    private readonly GetCourseLibraryCourseDetailQueryHandler _courseLibraryCourseDetailHandler;
 
     public SkillsoftController(
         ISkillsoftSsoService ssoService,
         ISkillsoftCatalogService catalogService,
         ISkillsoftTranscriptService transcriptService,
-        ICurrentCompanyContext currentCompanyContext)
+        ICurrentCompanyContext currentCompanyContext,
+        GetCourseLibraryQueryHandler courseLibraryHandler,
+        GetCourseLibraryCourseDetailQueryHandler courseLibraryCourseDetailHandler)
     {
         _ssoService = ssoService;
         _catalogService = catalogService;
         _transcriptService = transcriptService;
         _currentCompanyContext = currentCompanyContext;
+        _courseLibraryHandler = courseLibraryHandler;
+        _courseLibraryCourseDetailHandler = courseLibraryCourseDetailHandler;
+    }
+
+    // Not company-scoped: LibraryCategories/Courses are a shared global catalog, unlike the
+    // Skillsoft OLSA endpoints above which require an active per-company library card.
+    // Name-only listing - full course content is fetched separately, on demand (see below).
+    [HttpGet("course-library")]
+    [Authorize]
+    public async Task<IActionResult> GetCourseLibrary([FromQuery] string type, CancellationToken cancellationToken)
+    {
+        var result = await _courseLibraryHandler.Handle(new GetCourseLibraryQuery(type), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("course-library/courses/{courseId:long}")]
+    [Authorize]
+    public async Task<IActionResult> GetCourseLibraryCourseDetail(long courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseLibraryCourseDetailHandler.Handle(courseId, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
     }
 
     [HttpGet("launch-ticket")]
