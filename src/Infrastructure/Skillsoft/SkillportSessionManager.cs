@@ -6,7 +6,7 @@ using SkillsetsBackend.Infrastructure.Persistence;
 
 namespace SkillsetsBackend.Infrastructure.Skillsoft;
 
-public record SkillportSessionStatus(bool HasActiveSession, bool IsExpired, bool HasDormantAccount, DateTime? StartDate, DateTime? EndDate);
+public record SkillportSessionStatus(bool HasActiveSession, bool IsExpired, bool HasDormantAccount, DateOnly? StartDate, DateOnly? EndDate);
 
 
 public class SkillportSessionManager : ISkillportSessionService
@@ -62,7 +62,7 @@ public class SkillportSessionManager : ISkillportSessionService
     /// <summary>Whether the caller currently has an active session, without changing anything - also adopts a matching legacy ActiveLibraryCards entitlement into our table the first time it's seen.</summary>
     public async Task<SkillportSessionStatus> GetStatusAsync(int userId, int companyId, CancellationToken cancellationToken = default)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var session = await LatestSessionAsync(userId, companyId, cancellationToken);
 
         if (session is not null && session.IsActive(today))
@@ -83,11 +83,14 @@ public class SkillportSessionManager : ISkillportSessionService
         var legacyCard = await _cardResolver.TryResolveAsync(userId, companyId, cancellationToken);
         if (legacyCard is not null)
         {
+            var legacyStart = DateOnly.FromDateTime(legacyCard.StartDate);
+            var legacyEnd = DateOnly.FromDateTime(legacyCard.EndDate);
+
             _dbContext.SkillportSessions.Add(SkillportSession.CreateActive(
-                userId, companyId, legacyCard.UserId, legacyCard.Password, legacyCard.StartDate, legacyCard.EndDate));
+                userId, companyId, legacyCard.UserId, legacyCard.Password, legacyStart, legacyEnd));
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return new SkillportSessionStatus(true, false, false, legacyCard.StartDate, legacyCard.EndDate);
+            return new SkillportSessionStatus(true, false, false, legacyStart, legacyEnd);
         }
 
         return new SkillportSessionStatus(false, false, false, null, null);
@@ -103,7 +106,7 @@ public class SkillportSessionManager : ISkillportSessionService
     private async Task<SkillsoftProvisionResult> EnsureActiveInternalAsync(
         int userId, int companyId, string? initialPassword, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var session = await LatestSessionAsync(userId, companyId, cancellationToken);
 
         if (session is not null && session.IsActive(today))

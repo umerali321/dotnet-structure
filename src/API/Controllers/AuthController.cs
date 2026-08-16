@@ -7,7 +7,7 @@ using SkillsetsBackend.Application.Auth.Commands.Login;
 using SkillsetsBackend.Application.Auth.Commands.Logout;
 using SkillsetsBackend.Application.Auth.Commands.Refresh;
 using SkillsetsBackend.Application.Auth.Commands.ResetPassword;
-using SkillsetsBackend.Application.Auth.Commands.SubmitLoginSupportRequest;
+using SkillsetsBackend.Application.Auth.Commands.CustomerSupportRequest;
 using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 using SkillsetsBackend.Application.Auth.DTOs;
 
@@ -22,7 +22,7 @@ public class AuthController : ControllerBase
     private readonly RefreshTokenCommandHandler _refreshHandler;
     private readonly LogoutCommandHandler _logoutHandler;
     private readonly SwitchCompanyCommandHandler _switchCompanyHandler;
-    private readonly SubmitLoginSupportRequestCommandHandler _submitLoginSupportRequestHandler;
+    private readonly CustomerSupportRequestCommandHandler _customerSupportRequestHandler;
     private readonly ResetPasswordCommandHandler _resetPasswordHandler;
 
     public AuthController(
@@ -30,14 +30,14 @@ public class AuthController : ControllerBase
         RefreshTokenCommandHandler refreshHandler,
         LogoutCommandHandler logoutHandler,
         SwitchCompanyCommandHandler switchCompanyHandler,
-        SubmitLoginSupportRequestCommandHandler submitLoginSupportRequestHandler,
+        CustomerSupportRequestCommandHandler customerSupportRequestHandler,
         ResetPasswordCommandHandler resetPasswordHandler)
     {
         _loginHandler = loginHandler;
         _refreshHandler = refreshHandler;
         _logoutHandler = logoutHandler;
         _switchCompanyHandler = switchCompanyHandler;
-        _submitLoginSupportRequestHandler = submitLoginSupportRequestHandler;
+        _customerSupportRequestHandler = customerSupportRequestHandler;
         _resetPasswordHandler = resetPasswordHandler;
     }
 
@@ -93,9 +93,9 @@ public class AuthController : ControllerBase
     /// <summary>Unauthenticated - the user may not be able to sign in at all, that's the whole point.</summary>
     [HttpPost("support-request")]
     [AllowAnonymous]
-    public async Task<IActionResult> SubmitLoginSupportRequest(SubmitLoginSupportRequestCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> SubmitCustomerSupportRequest(CustomerSupportRequestCommand command, CancellationToken cancellationToken)
     {
-        await _submitLoginSupportRequestHandler.Handle(command, cancellationToken);
+        await _customerSupportRequestHandler.Handle(command, cancellationToken);
         return NoContent();
     }
 

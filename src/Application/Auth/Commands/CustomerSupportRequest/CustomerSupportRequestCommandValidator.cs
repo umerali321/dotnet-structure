@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace SkillsetsBackend.Application.Auth.Commands.SubmitLoginSupportRequest;
+namespace SkillsetsBackend.Application.Auth.Commands.CustomerSupportRequest;
 
-public class SubmitLoginSupportRequestCommandValidator : AbstractValidator<SubmitLoginSupportRequestCommand>
+public class CustomerSupportRequestCommandValidator : AbstractValidator<CustomerSupportRequestCommand>
 {
-    public SubmitLoginSupportRequestCommandValidator()
+    public CustomerSupportRequestCommandValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(255);

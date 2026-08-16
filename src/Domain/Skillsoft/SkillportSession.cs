@@ -22,10 +22,14 @@ public class SkillportSession : IAggregateRoot
 
     public string SkillportPassword { get; private set; } = string.Empty;
 
-    /// <summary>Null until the session is actually activated (first "Access the course library" click).</summary>
-    public DateTime? StartDate { get; private set; }
+    /// <summary>Null until the session is actually activated (first "Access the course library" click).
+    /// DateOnly (not DateTime) deliberately - this is a pure calendar date with no time-of-day meaning,
+    /// and round-tripping it as DateTime through SQL Server/JSON loses its UTC "Z" marker, which makes
+    /// the frontend misparse it as local time and can shift the computed session day by the viewer's
+    /// UTC offset (e.g. showing "Day 2" on the day the session actually started).</summary>
+    public DateOnly? StartDate { get; private set; }
 
-    public DateTime? EndDate { get; private set; }
+    public DateOnly? EndDate { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -49,7 +53,7 @@ public class SkillportSession : IAggregateRoot
     }
 
     /// <summary>A brand-new session that starts already-active (used when there was no dormant account to activate - e.g. a first-ever self-service click, or a restart after expiry).</summary>
-    public static SkillportSession CreateActive(int userId, int companyId, string skillportUsername, string skillportPassword, DateTime startDate, DateTime endDate)
+    public static SkillportSession CreateActive(int userId, int companyId, string skillportUsername, string skillportPassword, DateOnly startDate, DateOnly endDate)
     {
         var session = CreateDormant(userId, companyId, skillportUsername, skillportPassword);
         session.Activate(startDate, endDate);
@@ -58,11 +62,11 @@ public class SkillportSession : IAggregateRoot
 
     public bool IsDormant => StartDate is null || EndDate is null;
 
-    public bool IsExpired(DateTime today) => !IsDormant && EndDate < today;
+    public bool IsExpired(DateOnly today) => !IsDormant && EndDate < today;
 
-    public bool IsActive(DateTime today) => !IsDormant && StartDate <= today && EndDate >= today;
+    public bool IsActive(DateOnly today) => !IsDormant && StartDate <= today && EndDate >= today;
 
-    public void Activate(DateTime startDate, DateTime endDate)
+    public void Activate(DateOnly startDate, DateOnly endDate)
     {
         StartDate = startDate;
         EndDate = endDate;

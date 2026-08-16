@@ -15,22 +15,42 @@ public class SmtpEmailSender : IEmailSender
         _settings = settings.Value;
     }
 
-    public async Task SendAsync(
+    public Task SendAsync(
+        string toAddress,
+        string? toName,
         string subject,
         string bodyHtml,
         string? replyToEmail = null,
         string? replyToName = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        SendCoreAsync(toAddress, toName, subject, bodyHtml, replyToEmail, replyToName, cancellationToken);
+
+    public Task SendToSupportAsync(
+        string subject,
+        string bodyHtml,
+        string? replyToEmail = null,
+        string? replyToName = null,
+        CancellationToken cancellationToken = default) =>
+        SendCoreAsync(_settings.ToAddress, _settings.ToName, subject, bodyHtml, replyToEmail, replyToName, cancellationToken);
+
+    private async Task SendCoreAsync(
+        string toAddress,
+        string? toName,
+        string subject,
+        string bodyHtml,
+        string? replyToEmail,
+        string? replyToName,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(_settings.SmtpHost) || string.IsNullOrWhiteSpace(_settings.Username)
-            || string.IsNullOrWhiteSpace(_settings.Password) || string.IsNullOrWhiteSpace(_settings.ToAddress))
+            || string.IsNullOrWhiteSpace(_settings.Password) || string.IsNullOrWhiteSpace(toAddress))
         {
-            throw new InvalidOperationException("Email settings are not configured. Set Email:SmtpHost, Email:Username, Email:Password, and Email:ToAddress in configuration.");
+            throw new InvalidOperationException("Email settings are not configured. Set Email:SmtpHost, Email:Username, Email:Password (and Email:ToAddress for support notifications) in configuration.");
         }
 
         using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
         {
-            EnableSsl = true,
+            EnableSsl = _settings.EnableSsl,
             Credentials = new NetworkCredential(_settings.Username, _settings.Password),
         };
 
@@ -41,7 +61,7 @@ public class SmtpEmailSender : IEmailSender
             Body = bodyHtml,
             IsBodyHtml = true,
         };
-        message.To.Add(new MailAddress(_settings.ToAddress, _settings.ToName));
+        message.To.Add(new MailAddress(toAddress, toName));
 
         if (!string.IsNullOrWhiteSpace(replyToEmail))
         {

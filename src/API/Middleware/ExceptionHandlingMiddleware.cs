@@ -39,6 +39,7 @@ public class ExceptionHandlingMiddleware
             ValidationException => (HttpStatusCode.BadRequest, "Validation failed"),
             AuthenticationFailedException => (HttpStatusCode.Unauthorized, "Authentication failed"),
             UnauthorizedAccessException => (HttpStatusCode.Forbidden, "Access denied"),
+            ConflictException => (HttpStatusCode.Conflict, "Conflict"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred"),
         };
 

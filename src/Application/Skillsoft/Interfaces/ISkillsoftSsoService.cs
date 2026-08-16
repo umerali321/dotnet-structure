@@ -25,4 +25,4 @@ public interface ISkillsoftSsoService
 
 public record SkillsoftLaunchResult(string RedirectUrl);
 
-public record SkillsoftSessionStatus(bool HasActiveSession, bool IsExpired, bool HasDormantAccount, DateTime? StartDate, DateTime? EndDate);
+public record SkillsoftSessionStatus(bool HasActiveSession, bool IsExpired, bool HasDormantAccount, DateOnly? StartDate, DateOnly? EndDate);

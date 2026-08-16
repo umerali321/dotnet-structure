@@ -124,6 +124,7 @@ public static class DependencyInjection
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
         services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
         services.AddScoped<ICourseLibraryQueryService, CourseLibraryQueryService>();
+        services.AddScoped<ICourseTakenRepository, CourseTakenRepository>();
 
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()

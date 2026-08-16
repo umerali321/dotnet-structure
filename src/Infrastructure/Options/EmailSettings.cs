@@ -8,11 +8,13 @@ public class EmailSettings
 
     public int SmtpPort { get; set; } = 587;
 
-    /// <summary>Gmail account used to authenticate with the SMTP server - never sent to Angular, never logged.</summary>
+    /// <summary>SMTP account used to authenticate with the mail server - never sent to Angular, never logged.</summary>
     public string Username { get; set; } = string.Empty;
 
-    /// <summary>Gmail app password - never sent to Angular, never logged.</summary>
+    /// <summary>SMTP password - never sent to Angular, never logged.</summary>
     public string Password { get; set; } = string.Empty;
+
+    public bool EnableSsl { get; set; } = true;
 
     public string FromAddress { get; set; } = string.Empty;
 

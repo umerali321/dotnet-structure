@@ -40,7 +40,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
             .Where(c => categoryIds.Contains(c.CategoryId) && c.IsActive)
             .OrderBy(c => c.DisplayOrder ?? int.MaxValue)
             .ThenBy(c => c.CourseTitle)
-            .Select(c => new { c.CourseId, c.CategoryId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.LaunchUrl })
+            .Select(c => new { c.CourseId, c.CategoryId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.CourseUrl, c.LaunchUrl })
             .ToListAsync(cancellationToken);
 
         var coursesByCategory = courses
@@ -48,7 +48,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
             .ToDictionary(
                 g => g.Key,
                 g => (IReadOnlyList<CourseLibraryCourseSummaryDto>)g
-                    .Select(c => new CourseLibraryCourseSummaryDto(c.CourseId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.LaunchUrl))
+                    .Select(c => new CourseLibraryCourseSummaryDto(c.CourseId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.CourseUrl, c.LaunchUrl))
                     .ToList());
 
         return categories
@@ -64,7 +64,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
         var course = await _dbContext.Courses
             .AsNoTracking()
             .Where(c => c.CourseId == courseId && c.IsActive)
-            .Select(c => new
+            .Join(_dbContext.LibraryCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new
             {
                 c.CourseId,
                 c.CourseTitle,
@@ -77,6 +77,9 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
                 c.OverviewContent,
                 c.ImageUrl,
                 c.SkillsoftCourseCode,
+                cat.CategoryId,
+                cat.CategoryName,
+                cat.TypeId,
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -105,6 +108,53 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
             course.OverviewContent,
             course.ImageUrl,
             course.SkillsoftCourseCode,
-            sections);
+            sections,
+            course.CategoryId,
+            course.CategoryName,
+            course.TypeId);
     }
+
+    // Two queries at most: title matches first (ranked higher), then description matches to fill
+    // any remaining slots, excluding courses already found by title - never both scanned if the
+    // title match alone already fills the result limit.
+    public async Task<IReadOnlyList<CourseSearchResultDto>> SearchAsync(
+        string searchTerm, int limit, CancellationToken cancellationToken = default)
+    {
+        var term = $"%{EscapeLike(searchTerm)}%";
+
+        var titleMatches = await _dbContext.Courses
+            .AsNoTracking()
+            .Where(c => c.IsActive && EF.Functions.Like(c.CourseTitle, term, "\\"))
+            .Join(_dbContext.LibraryCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new { c, cat })
+            .Where(x => x.cat.IsActive)
+            .OrderBy(x => x.c.CourseTitle)
+            .Take(limit)
+            .Select(x => new CourseSearchResultDto(x.c.CourseId, x.c.CourseTitle, x.cat.CategoryId, x.cat.CategoryName, x.cat.TypeId, "Title"))
+            .ToListAsync(cancellationToken);
+
+        var remaining = limit - titleMatches.Count;
+        if (remaining <= 0)
+        {
+            return titleMatches;
+        }
+
+        var matchedIds = titleMatches.Select(x => x.CourseId).ToList();
+
+        var descriptionMatches = await _dbContext.Courses
+            .AsNoTracking()
+            .Where(c => c.IsActive && !matchedIds.Contains(c.CourseId)
+                && ((c.AboutContent != null && EF.Functions.Like(c.AboutContent, term, "\\"))
+                    || (c.OverviewContent != null && EF.Functions.Like(c.OverviewContent, term, "\\"))))
+            .Join(_dbContext.LibraryCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new { c, cat })
+            .Where(x => x.cat.IsActive)
+            .OrderBy(x => x.c.CourseTitle)
+            .Take(remaining)
+            .Select(x => new CourseSearchResultDto(x.c.CourseId, x.c.CourseTitle, x.cat.CategoryId, x.cat.CategoryName, x.cat.TypeId, "Description"))
+            .ToListAsync(cancellationToken);
+
+        return titleMatches.Concat(descriptionMatches).ToList();
+    }
+
+    private static string EscapeLike(string value) =>
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
 }

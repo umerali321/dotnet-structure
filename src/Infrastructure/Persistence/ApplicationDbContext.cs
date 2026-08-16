@@ -51,6 +51,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<LoginActivityLog> LoginActivityLogs => Set<LoginActivityLog>();
 
+    public DbSet<CourseTaken> CourseTakens => Set<CourseTaken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

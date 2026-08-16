@@ -1,8 +1,8 @@
-namespace SkillsetsBackend.Application.Auth.Commands.SubmitLoginSupportRequest;
+namespace SkillsetsBackend.Application.Auth.Commands.CustomerSupportRequest;
 
 /// <summary>Submitted from the login page (unauthenticated) when a user can't sign in - emailed
 /// directly to support rather than stored, since we may not have any matching account to attach it to.</summary>
-public record SubmitLoginSupportRequestCommand(
+public record CustomerSupportRequestCommand(
     string Name,
     string Email,
     string? Phone,

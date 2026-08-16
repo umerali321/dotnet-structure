@@ -5,7 +5,7 @@ using SkillsetsBackend.Application.Auth.Commands.Login;
 using SkillsetsBackend.Application.Auth.Commands.Logout;
 using SkillsetsBackend.Application.Auth.Commands.Refresh;
 using SkillsetsBackend.Application.Auth.Commands.ResetPassword;
-using SkillsetsBackend.Application.Auth.Commands.SubmitLoginSupportRequest;
+using SkillsetsBackend.Application.Auth.Commands.CustomerSupportRequest;
 using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 using SkillsetsBackend.Application.Auth.Queries.ListLoginActivityLogs;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
@@ -43,6 +43,10 @@ using SkillsetsBackend.Application.Support.Commands.CreateSupportRequest;
 using SkillsetsBackend.Application.Support.Commands.UpdateSupportRequestStatus;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibrary;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibraryCourseDetail;
+using SkillsetsBackend.Application.CourseLibrary.Queries.ListCourseTaken;
+using SkillsetsBackend.Application.CourseLibrary.Queries.SearchCourses;
+using SkillsetsBackend.Application.CourseLibrary.Commands.TakeCourse;
+using SkillsetsBackend.Application.CourseLibrary.Commands.MarkCourseTakenComplete;
 
 namespace SkillsetsBackend.Application;
 
@@ -56,7 +60,7 @@ public static class DependencyInjection
         services.AddScoped<RefreshTokenCommandHandler>();
         services.AddScoped<LogoutCommandHandler>();
         services.AddScoped<SwitchCompanyCommandHandler>();
-        services.AddScoped<SubmitLoginSupportRequestCommandHandler>();
+        services.AddScoped<CustomerSupportRequestCommandHandler>();
         services.AddScoped<ResetPasswordCommandHandler>();
         services.AddScoped<ListLoginActivityLogsQueryHandler>();
 
@@ -99,6 +103,10 @@ public static class DependencyInjection
 
         services.AddScoped<GetCourseLibraryQueryHandler>();
         services.AddScoped<GetCourseLibraryCourseDetailQueryHandler>();
+        services.AddScoped<SearchCoursesQueryHandler>();
+        services.AddScoped<TakeCourseCommandHandler>();
+        services.AddScoped<MarkCourseTakenCompleteCommandHandler>();
+        services.AddScoped<ListCourseTakenQueryHandler>();
 
         return services;
     }

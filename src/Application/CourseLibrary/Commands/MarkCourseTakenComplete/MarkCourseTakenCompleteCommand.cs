@@ -1,0 +1,3 @@
+namespace SkillsetsBackend.Application.CourseLibrary.Commands.MarkCourseTakenComplete;
+
+public record MarkCourseTakenCompleteCommand(int CourseTakenId);

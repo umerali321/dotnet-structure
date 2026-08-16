@@ -6,6 +6,7 @@ using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibrary;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibraryCourseDetail;
+using SkillsetsBackend.Application.CourseLibrary.Queries.SearchCourses;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 
 namespace SkillsetsBackend.API.Controllers;
@@ -21,6 +22,7 @@ public class SkillsoftController : ControllerBase
     private readonly ICurrentCompanyContext _currentCompanyContext;
     private readonly GetCourseLibraryQueryHandler _courseLibraryHandler;
     private readonly GetCourseLibraryCourseDetailQueryHandler _courseLibraryCourseDetailHandler;
+    private readonly SearchCoursesQueryHandler _searchCoursesHandler;
 
     public SkillsoftController(
         ISkillsoftSsoService ssoService,
@@ -28,7 +30,8 @@ public class SkillsoftController : ControllerBase
         ISkillsoftTranscriptService transcriptService,
         ICurrentCompanyContext currentCompanyContext,
         GetCourseLibraryQueryHandler courseLibraryHandler,
-        GetCourseLibraryCourseDetailQueryHandler courseLibraryCourseDetailHandler)
+        GetCourseLibraryCourseDetailQueryHandler courseLibraryCourseDetailHandler,
+        SearchCoursesQueryHandler searchCoursesHandler)
     {
         _ssoService = ssoService;
         _catalogService = catalogService;
@@ -36,6 +39,7 @@ public class SkillsoftController : ControllerBase
         _currentCompanyContext = currentCompanyContext;
         _courseLibraryHandler = courseLibraryHandler;
         _courseLibraryCourseDetailHandler = courseLibraryCourseDetailHandler;
+        _searchCoursesHandler = searchCoursesHandler;
     }
 
     // Not company-scoped: LibraryCategories/Courses are a shared global catalog, unlike the
@@ -55,6 +59,15 @@ public class SkillsoftController : ControllerBase
     {
         var result = await _courseLibraryCourseDetailHandler.Handle(courseId, cancellationToken);
         return result is null ? NotFound() : Ok(result);
+    }
+
+    // Global course search - same shared catalog as course-library above, no company scoping.
+    [HttpGet("course-library/search")]
+    [Authorize]
+    public async Task<IActionResult> SearchCourses([FromQuery] string q, CancellationToken cancellationToken)
+    {
+        var result = await _searchCoursesHandler.Handle(new SearchCoursesQuery(q), cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("launch-ticket")]

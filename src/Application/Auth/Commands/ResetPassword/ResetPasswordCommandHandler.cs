@@ -63,6 +63,8 @@ public class ResetPasswordCommandHandler
         await _credentialRepository.SaveChangesAsync(cancellationToken);
 
         await _emailSender.SendAsync(
+            email,
+            account.FirstName,
             "Your SkillSets password has been reset",
             BuildResetEmailBody(account.FirstName, newPassword),
             cancellationToken: cancellationToken);
