@@ -50,9 +50,12 @@ public class ChangeManagerPasswordCommandHandler
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }
 
-        if (caller.DbUserId == userId && !string.IsNullOrEmpty(command.CurrentPassword))
+        if (caller.DbUserId == userId)
         {
-            if (string.IsNullOrEmpty(user.PasswordHash)
+            // Self-service change - current password is required, not merely verified-if-present,
+            // otherwise omitting it from the request would silently skip verification entirely.
+            if (string.IsNullOrEmpty(command.CurrentPassword)
+                || string.IsNullOrEmpty(user.PasswordHash)
                 || !_credentialVerifier.Verify(command.CurrentPassword, user.PasswordHash))
             {
                 throw new AuthenticationFailedException("Current password is incorrect.");
