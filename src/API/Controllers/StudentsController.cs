@@ -10,6 +10,7 @@ using SkillsetsBackend.Application.Students.Commands.ProvisionStudentSkillport;
 using SkillsetsBackend.Application.Students.Commands.UpdateStudent;
 using SkillsetsBackend.Application.Students.Queries.GetStudentById;
 using SkillsetsBackend.Application.Students.Queries.GetStudentCompanies;
+using SkillsetsBackend.Application.Students.Queries.GetStudentCredentials;
 using SkillsetsBackend.Application.Students.Queries.GetStudentRoles;
 using SkillsetsBackend.Application.Students.Queries.ListStudents;
 
@@ -25,6 +26,7 @@ public class StudentsController : ControllerBase
     private readonly GetStudentByIdQueryHandler _getByIdHandler;
     private readonly GetStudentCompaniesQueryHandler _getCompaniesHandler;
     private readonly GetStudentRolesQueryHandler _getRolesHandler;
+    private readonly GetStudentCredentialsQueryHandler _getCredentialsHandler;
     private readonly CreateStudentCommandHandler _createHandler;
     private readonly UpdateStudentCommandHandler _updateHandler;
     private readonly ChangeStudentPasswordCommandHandler _changePasswordHandler;
@@ -36,6 +38,7 @@ public class StudentsController : ControllerBase
         GetStudentByIdQueryHandler getByIdHandler,
         GetStudentCompaniesQueryHandler getCompaniesHandler,
         GetStudentRolesQueryHandler getRolesHandler,
+        GetStudentCredentialsQueryHandler getCredentialsHandler,
         CreateStudentCommandHandler createHandler,
         UpdateStudentCommandHandler updateHandler,
         ChangeStudentPasswordCommandHandler changePasswordHandler,
@@ -46,6 +49,7 @@ public class StudentsController : ControllerBase
         _getByIdHandler = getByIdHandler;
         _getCompaniesHandler = getCompaniesHandler;
         _getRolesHandler = getRolesHandler;
+        _getCredentialsHandler = getCredentialsHandler;
         _createHandler = createHandler;
         _updateHandler = updateHandler;
         _changePasswordHandler = changePasswordHandler;
@@ -82,6 +86,13 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> GetRoles(int id, CancellationToken cancellationToken)
     {
         var result = await _getRolesHandler.Handle(id, GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}/credentials")]
+    public async Task<IActionResult> GetCredentials(int id, CancellationToken cancellationToken)
+    {
+        var result = await _getCredentialsHandler.Handle(id, GetCaller(), cancellationToken);
         return Ok(result);
     }
 

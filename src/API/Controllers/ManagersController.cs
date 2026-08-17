@@ -9,6 +9,7 @@ using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerById;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerCompanies;
+using SkillsetsBackend.Application.Managers.Queries.GetManagerCredentials;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerRoles;
 using SkillsetsBackend.Application.Managers.Queries.ListManagers;
 
@@ -24,6 +25,7 @@ public sealed class ManagersController : ControllerBase
     private readonly GetManagerByIdQueryHandler _getByIdHandler;
     private readonly GetManagerCompaniesQueryHandler _getCompaniesHandler;
     private readonly GetManagerRolesQueryHandler _getRolesHandler;
+    private readonly GetManagerCredentialsQueryHandler _getCredentialsHandler;
     private readonly CreateManagerCommandHandler _createHandler;
     private readonly UpdateManagerCommandHandler _updateHandler;
     private readonly ChangeManagerPasswordCommandHandler _changePasswordHandler;
@@ -34,6 +36,7 @@ public sealed class ManagersController : ControllerBase
         GetManagerByIdQueryHandler getByIdHandler,
         GetManagerCompaniesQueryHandler getCompaniesHandler,
         GetManagerRolesQueryHandler getRolesHandler,
+        GetManagerCredentialsQueryHandler getCredentialsHandler,
         CreateManagerCommandHandler createHandler,
         UpdateManagerCommandHandler updateHandler,
         ChangeManagerPasswordCommandHandler changePasswordHandler,
@@ -43,6 +46,7 @@ public sealed class ManagersController : ControllerBase
         _getByIdHandler = getByIdHandler;
         _getCompaniesHandler = getCompaniesHandler;
         _getRolesHandler = getRolesHandler;
+        _getCredentialsHandler = getCredentialsHandler;
         _createHandler = createHandler;
         _updateHandler = updateHandler;
         _changePasswordHandler = changePasswordHandler;
@@ -84,6 +88,13 @@ public sealed class ManagersController : ControllerBase
     public async Task<IActionResult> GetRoles(int id, CancellationToken cancellationToken)
     {
         var result = await _getRolesHandler.Handle(id, GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}/credentials")]
+    public async Task<IActionResult> GetCredentials(int id, CancellationToken cancellationToken)
+    {
+        var result = await _getCredentialsHandler.Handle(id, GetCaller(), cancellationToken);
         return Ok(result);
     }
 
