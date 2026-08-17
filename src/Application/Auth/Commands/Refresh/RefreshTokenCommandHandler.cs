@@ -64,9 +64,9 @@ public class RefreshTokenCommandHandler
                 }
 
                 role = Roles.Normalize(stillActive.RoleName);
-                currentCompany = new CompanyDto(stillActive.CompanyId, stillActive.CompanyName, role);
+                currentCompany = new CompanyDto(stillActive.CompanyId, stillActive.CompanyCode, stillActive.CompanyName, role);
                 companies = (await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken))
-                    .Select(x => new CompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName)))
+                    .Select(x => new CompanyDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName)))
                     .ToList();
             }
             else

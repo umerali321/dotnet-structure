@@ -52,7 +52,7 @@ public class SwitchCompanyCommandHandler
         }
 
         var role = Roles.Normalize(target.RoleName);
-        var currentCompany = new CompanyDto(target.CompanyId, target.CompanyName, role);
+        var currentCompany = new CompanyDto(target.CompanyId, target.CompanyCode, target.CompanyName, role);
 
         var claims = AuthClaimsFactory.Create(currentUserId, currentEmail, role, currentCompany.CompanyId, currentCompany.CompanyName);
         var (accessToken, accessTokenExpiresAt) = _tokenService.GenerateAccessToken(claims);
@@ -71,7 +71,7 @@ public class SwitchCompanyCommandHandler
 
         var allCompanies = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);
         var companies = allCompanies
-            .Select(x => new CompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName)))
+            .Select(x => new CompanyDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName)))
             .ToList();
 
         return new AuthResultDto(accessToken, accessTokenExpiresAt, refreshTokenValue, refreshTokenExpiresAt, role, currentCompany, companies);

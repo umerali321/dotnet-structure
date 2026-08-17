@@ -21,7 +21,7 @@ public static class CompanyContextResolver
         IReadOnlyList<DirectoryCompanyRole> activeRoles)
     {
         var companies = activeRoles
-            .Select(x => new CompanyDto(x.CompanyId, x.CompanyName, Roles.Normalize(x.RoleName)))
+            .Select(x => new CompanyDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName)))
             .ToList();
 
         if (companies.Count == 1)
