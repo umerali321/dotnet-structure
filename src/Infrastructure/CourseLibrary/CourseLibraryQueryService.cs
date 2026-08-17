@@ -43,12 +43,22 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
             .Select(c => new { c.CourseId, c.CategoryId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.CourseUrl, c.LaunchUrl })
             .ToListAsync(cancellationToken);
 
+        var courseIds = courses.Select(c => c.CourseId).ToList();
+        var contentCounts = await _dbContext.CourseSections
+            .AsNoTracking()
+            .Where(s => courseIds.Contains(s.CourseId))
+            .GroupBy(s => s.CourseId)
+            .Select(g => new { CourseId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CourseId, x => x.Count, cancellationToken);
+
         var coursesByCategory = courses
             .GroupBy(c => c.CategoryId)
             .ToDictionary(
                 g => g.Key,
                 g => (IReadOnlyList<CourseLibraryCourseSummaryDto>)g
-                    .Select(c => new CourseLibraryCourseSummaryDto(c.CourseId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.CourseUrl, c.LaunchUrl))
+                    .Select(c => new CourseLibraryCourseSummaryDto(
+                        c.CourseId, c.CourseTitle, c.Duration, c.ExpertiseLevel, c.CourseUrl, c.LaunchUrl,
+                        contentCounts.GetValueOrDefault(c.CourseId)))
                     .ToList());
 
         return categories

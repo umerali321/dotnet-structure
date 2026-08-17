@@ -17,7 +17,8 @@ public record CourseLibraryCourseSummaryDto(
     string? Duration,
     string? ExpertiseLevel,
     string? CourseUrl,
-    string? LaunchUrl);
+    string? LaunchUrl,
+    int ContentCount);
 
 public record CourseLibraryCourseDto(
     long CourseId,

@@ -37,10 +37,6 @@ using SkillsetsBackend.Application.SupportContacts.Queries.GetSupportContactById
 using SkillsetsBackend.Application.SupportContacts.Commands.CreateSupportContact;
 using SkillsetsBackend.Application.SupportContacts.Commands.UpdateSupportContact;
 using SkillsetsBackend.Application.SupportContacts.Commands.DeactivateSupportContact;
-using SkillsetsBackend.Application.Support.Queries.ListSupportRequests;
-using SkillsetsBackend.Application.Support.Queries.GetSupportRequestById;
-using SkillsetsBackend.Application.Support.Commands.CreateSupportRequest;
-using SkillsetsBackend.Application.Support.Commands.UpdateSupportRequestStatus;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibrary;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibraryCourseDetail;
 using SkillsetsBackend.Application.CourseLibrary.Queries.ListCourseTaken;
@@ -95,11 +91,6 @@ public static class DependencyInjection
         services.AddScoped<CreateSupportContactCommandHandler>();
         services.AddScoped<UpdateSupportContactCommandHandler>();
         services.AddScoped<DeactivateSupportContactCommandHandler>();
-
-        services.AddScoped<ListSupportRequestsQueryHandler>();
-        services.AddScoped<GetSupportRequestByIdQueryHandler>();
-        services.AddScoped<CreateSupportRequestCommandHandler>();
-        services.AddScoped<UpdateSupportRequestStatusCommandHandler>();
 
         services.AddScoped<GetCourseLibraryQueryHandler>();
         services.AddScoped<GetCourseLibraryCourseDetailQueryHandler>();

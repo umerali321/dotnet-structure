@@ -50,7 +50,7 @@ public class UpdateManagerCommandHandler
         // (by anyone, including admins) so history/assignments/integrations never risk forking
         // onto a second identity. Silently keep the existing values regardless of what the client
         // sends, rather than trusting the request payload.
-        user.UpdateProfile(user.Email!, null, command.FirstName, command.LastName, user.Username!);
+        user.UpdateProfile(user.Email!, command.Phone, command.FirstName, command.LastName, user.Username!);
         await _repository.SaveChangesAsync(cancellationToken);
     }
 }

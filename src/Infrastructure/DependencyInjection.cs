@@ -16,8 +16,6 @@ using SkillsetsBackend.Application.Faqs.Interfaces;
 using SkillsetsBackend.Infrastructure.Faqs;
 using SkillsetsBackend.Application.SupportContacts.Interfaces;
 using SkillsetsBackend.Infrastructure.SupportContacts;
-using SkillsetsBackend.Application.Support.Interfaces;
-using SkillsetsBackend.Infrastructure.Support;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Infrastructure.Skillsoft;
 using SkillsetsBackend.Infrastructure.Skillsoft.Olsa;
@@ -122,7 +120,6 @@ public static class DependencyInjection
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IFaqRepository, FaqRepository>();
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
-        services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
         services.AddScoped<ICourseLibraryQueryService, CourseLibraryQueryService>();
         services.AddScoped<ICourseTakenRepository, CourseTakenRepository>();
 

@@ -37,8 +37,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<Faq> Faqs => Set<Faq>();
 
-    public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
-
     public DbSet<SupportContact> SupportContacts => Set<SupportContact>();
 
     public DbSet<LibraryCategory> LibraryCategories => Set<LibraryCategory>();
