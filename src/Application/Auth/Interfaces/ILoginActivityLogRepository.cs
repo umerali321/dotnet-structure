@@ -13,4 +13,9 @@ public interface ILoginActivityLogRepository
     Task<PaginatedList<LoginActivityLogDto>> ListAsync(int page, int pageSize, string? eventType, CancellationToken cancellationToken = default);
 
     Task<LoginActivitySummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Timestamps of up to <paramref name="maxCount"/> most recent LoginFailed events for
+    /// this email since <paramref name="sinceUtc"/>, newest first - used to drive login lockout.</summary>
+    Task<IReadOnlyList<DateTimeOffset>> GetRecentFailedLoginTimestampsAsync(
+        string email, DateTimeOffset sinceUtc, int maxCount, CancellationToken cancellationToken = default);
 }

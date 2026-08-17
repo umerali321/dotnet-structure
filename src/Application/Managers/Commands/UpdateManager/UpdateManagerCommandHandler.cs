@@ -1,5 +1,4 @@
 using FluentValidation;
-using FluentValidation.Results;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Students;
@@ -47,15 +46,11 @@ public class UpdateManagerCommandHandler
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }
 
-        if (await _repository.IdentifierInUseAsync(command.Email, command.Username, userId, cancellationToken))
-        {
-            throw new AppValidationException(
-            [
-                new ValidationFailure(nameof(command.Username), "Email or username is already in use."),
-            ]);
-        }
-
-        user.UpdateProfile(command.Email, null, command.FirstName, command.LastName, command.Username);
+        // Email/Username are the account identifier - fixed at creation, never editable afterward
+        // (by anyone, including admins) so history/assignments/integrations never risk forking
+        // onto a second identity. Silently keep the existing values regardless of what the client
+        // sends, rather than trusting the request payload.
+        user.UpdateProfile(user.Email!, null, command.FirstName, command.LastName, user.Username!);
         await _repository.SaveChangesAsync(cancellationToken);
     }
 }

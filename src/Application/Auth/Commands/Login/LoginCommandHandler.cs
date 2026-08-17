@@ -4,17 +4,22 @@ using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 using AppValidationException = SkillsetsBackend.Application.Common.Exceptions.ValidationException;
 using AuthenticationFailedException = SkillsetsBackend.Application.Common.Exceptions.AuthenticationFailedException;
+using AccountLockedException = SkillsetsBackend.Application.Common.Exceptions.AccountLockedException;
 
 namespace SkillsetsBackend.Application.Auth.Commands.Login;
 
 public class LoginCommandHandler
 {
+    private const int MaxFailedAttempts = 10;
+    private const int LockoutWindowMinutes = 15;
+
     private readonly IValidator<LoginCommand> _validator;
     private readonly ISuperAdminAuthenticator _superAdminAuthenticator;
     private readonly IUserDirectory _userDirectory;
     private readonly ILegacyCredentialVerifier _credentialVerifier;
     private readonly ITokenService _tokenService;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly ILoginActivityLogRepository _loginActivityLogRepository;
 
     public LoginCommandHandler(
         IValidator<LoginCommand> validator,
@@ -22,7 +27,8 @@ public class LoginCommandHandler
         IUserDirectory userDirectory,
         ILegacyCredentialVerifier credentialVerifier,
         ITokenService tokenService,
-        IRefreshTokenRepository refreshTokenRepository)
+        IRefreshTokenRepository refreshTokenRepository,
+        ILoginActivityLogRepository loginActivityLogRepository)
     {
         _validator = validator;
         _superAdminAuthenticator = superAdminAuthenticator;
@@ -30,6 +36,7 @@ public class LoginCommandHandler
         _credentialVerifier = credentialVerifier;
         _tokenService = tokenService;
         _refreshTokenRepository = refreshTokenRepository;
+        _loginActivityLogRepository = loginActivityLogRepository;
     }
 
     public async Task<AuthResultDto> Handle(LoginCommand command, string? ipAddress, CancellationToken cancellationToken)
@@ -38,6 +45,23 @@ public class LoginCommandHandler
         if (!validationResult.IsValid)
         {
             throw new AppValidationException(validationResult.Errors);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var recentFailures = await _loginActivityLogRepository.GetRecentFailedLoginTimestampsAsync(
+            command.Email, now.AddMinutes(-LockoutWindowMinutes), MaxFailedAttempts, cancellationToken);
+
+        if (recentFailures.Count >= MaxFailedAttempts)
+        {
+            // recentFailures is newest-first, capped at MaxFailedAttempts - the last entry is the
+            // oldest of the current strike, so the lockout window rolls off from there.
+            var lockoutExpiresAt = recentFailures[^1].AddMinutes(LockoutWindowMinutes);
+            if (lockoutExpiresAt > now)
+            {
+                var minutesRemaining = Math.Max(1, (int)Math.Ceiling((lockoutExpiresAt - now).TotalMinutes));
+                throw new AccountLockedException(
+                    $"Too many failed login attempts. Please try again in {minutesRemaining} minute(s).");
+            }
         }
 
         var superAdmin = _superAdminAuthenticator.Validate(command.Email, command.Password);
@@ -59,7 +83,14 @@ public class LoginCommandHandler
             || string.IsNullOrEmpty(user.LegacyPasswordValue)
             || !_credentialVerifier.Verify(command.Password, user.LegacyPasswordValue))
         {
-            throw new AuthenticationFailedException("Invalid email/username or password.");
+            await _loginActivityLogRepository.AddAsync(LoginActivityLog.LoginFailed(command.Email), cancellationToken);
+            await _loginActivityLogRepository.SaveChangesAsync(cancellationToken);
+
+            // recentFailures was captured before this attempt (and before the lockout gate above
+            // let us this far, so it's under MaxFailedAttempts) - +1 accounts for the failure just logged.
+            var failedAttemptCount = recentFailures.Count + 1;
+            var remainingAttempts = Math.Max(0, MaxFailedAttempts - failedAttemptCount);
+            throw new AuthenticationFailedException("Invalid email/username or password.", failedAttemptCount, remainingAttempts);
         }
 
         var activeCompanyRoles = await _userDirectory.GetActiveCompanyRolesAsync(user.UserId, cancellationToken);

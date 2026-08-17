@@ -71,4 +71,20 @@ public class LoginActivityLogRepository : ILoginActivityLogRepository
             CountFor(LoginActivityEventTypes.PasswordResetFailed),
             CountFor(LoginActivityEventTypes.SupportRequestSubmitted));
     }
+
+    public async Task<IReadOnlyList<DateTimeOffset>> GetRecentFailedLoginTimestampsAsync(
+        string email, DateTimeOffset sinceUtc, int maxCount, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = email.Trim().ToLower();
+
+        return await _dbContext.LoginActivityLogs
+            .AsNoTracking()
+            .Where(l => l.EventType == LoginActivityEventTypes.LoginFailed
+                && l.Email.ToLower() == normalizedEmail
+                && l.CreatedAt >= sinceUtc)
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(maxCount)
+            .Select(l => l.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

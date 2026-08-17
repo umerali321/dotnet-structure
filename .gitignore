@@ -484,3 +484,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Production secrets (SMTP credentials, etc.) - lives only on the live server's file system,
+# deployed by hand alongside the rest of the publish output. Never commit real production
+# credentials to source control.
+src/API/appsettings.Production.json

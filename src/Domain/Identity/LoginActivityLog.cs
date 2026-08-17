@@ -9,6 +9,7 @@ public static class LoginActivityEventTypes
     public const string PasswordResetSucceeded = "PasswordResetSucceeded";
     public const string PasswordResetFailed = "PasswordResetFailed";
     public const string SupportRequestSubmitted = "SupportRequestSubmitted";
+    public const string LoginFailed = "LoginFailed";
 }
 
 /// <summary>Brand-new table (not a legacy one) - audit trail for the login page's self-service
@@ -51,6 +52,15 @@ public class LoginActivityLog : IAggregateRoot
     public static LoginActivityLog PasswordResetFailed(string email) => new()
     {
         EventType = LoginActivityEventTypes.PasswordResetFailed,
+        Email = email,
+        CreatedAt = DateTimeOffset.UtcNow,
+    };
+
+    /// <summary>A wrong-password (or unknown-account) login attempt - used to drive the
+    /// 10-strikes/15-minute lockout in LoginCommandHandler.</summary>
+    public static LoginActivityLog LoginFailed(string email) => new()
+    {
+        EventType = LoginActivityEventTypes.LoginFailed,
         Email = email,
         CreatedAt = DateTimeOffset.UtcNow,
     };

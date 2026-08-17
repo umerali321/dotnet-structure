@@ -38,6 +38,7 @@ public class ExceptionHandlingMiddleware
             NotFoundException => (HttpStatusCode.NotFound, "Resource not found"),
             ValidationException => (HttpStatusCode.BadRequest, "Validation failed"),
             AuthenticationFailedException => (HttpStatusCode.Unauthorized, "Authentication failed"),
+            AccountLockedException => (HttpStatusCode.Locked, "Account temporarily locked"),
             UnauthorizedAccessException => (HttpStatusCode.Forbidden, "Access denied"),
             ConflictException => (HttpStatusCode.Conflict, "Conflict"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred"),
@@ -63,6 +64,12 @@ public class ExceptionHandlingMiddleware
         if (exception is ValidationException validationException)
         {
             problemDetails.Extensions["errors"] = validationException.Errors;
+        }
+
+        if (exception is AuthenticationFailedException { FailedAttemptCount: not null } authException)
+        {
+            problemDetails.Extensions["failedAttemptCount"] = authException.FailedAttemptCount;
+            problemDetails.Extensions["remainingAttempts"] = authException.RemainingAttempts;
         }
 
         context.Response.ContentType = "application/problem+json";
