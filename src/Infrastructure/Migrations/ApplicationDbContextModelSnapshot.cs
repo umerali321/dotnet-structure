@@ -426,6 +426,249 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.ToTable("LoginActivityLogs", (string)null);
                 });
 
+            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.Permission", b =>
+                {
+                    b.Property<int>("PermissionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PermissionId"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("PermissionKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("PermissionId");
+
+                    b.HasIndex("PermissionKey")
+                        .IsUnique();
+
+                    b.ToTable("Permissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            PermissionId = 1,
+                            Category = "Employees",
+                            Description = "View Employees",
+                            PermissionKey = "Students.View"
+                        },
+                        new
+                        {
+                            PermissionId = 2,
+                            Category = "Employees",
+                            Description = "Create Employees",
+                            PermissionKey = "Students.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 3,
+                            Category = "Employees",
+                            Description = "Edit Employees",
+                            PermissionKey = "Students.Update"
+                        },
+                        new
+                        {
+                            PermissionId = 4,
+                            Category = "Employees",
+                            Description = "Delete Employees",
+                            PermissionKey = "Students.Delete"
+                        },
+                        new
+                        {
+                            PermissionId = 5,
+                            Category = "Employees",
+                            Description = "Reset Employee Password",
+                            PermissionKey = "Students.ManagePassword"
+                        },
+                        new
+                        {
+                            PermissionId = 6,
+                            Category = "Employees",
+                            Description = "Assign Employee to a Manager",
+                            PermissionKey = "Students.AssignManager"
+                        },
+                        new
+                        {
+                            PermissionId = 7,
+                            Category = "Employees",
+                            Description = "View Employee Login Credentials",
+                            PermissionKey = "Students.ViewCredentials"
+                        },
+                        new
+                        {
+                            PermissionId = 11,
+                            Category = "Managers",
+                            Description = "View Managers",
+                            PermissionKey = "Managers.View"
+                        },
+                        new
+                        {
+                            PermissionId = 12,
+                            Category = "Managers",
+                            Description = "Create Managers",
+                            PermissionKey = "Managers.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 13,
+                            Category = "Managers",
+                            Description = "Edit Managers",
+                            PermissionKey = "Managers.Update"
+                        },
+                        new
+                        {
+                            PermissionId = 14,
+                            Category = "Managers",
+                            Description = "Reset Manager Password",
+                            PermissionKey = "Managers.ManagePassword"
+                        },
+                        new
+                        {
+                            PermissionId = 15,
+                            Category = "Managers",
+                            Description = "View Manager Login Credentials",
+                            PermissionKey = "Managers.ViewCredentials"
+                        },
+                        new
+                        {
+                            PermissionId = 21,
+                            Category = "Companies",
+                            Description = "View Companies",
+                            PermissionKey = "Companies.View"
+                        },
+                        new
+                        {
+                            PermissionId = 22,
+                            Category = "Companies",
+                            Description = "Create Companies",
+                            PermissionKey = "Companies.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 31,
+                            Category = "Roles & Permissions",
+                            Description = "View Roles & Permissions",
+                            PermissionKey = "Roles.View"
+                        },
+                        new
+                        {
+                            PermissionId = 32,
+                            Category = "Roles & Permissions",
+                            Description = "Create & Edit Roles",
+                            PermissionKey = "Roles.Manage"
+                        },
+                        new
+                        {
+                            PermissionId = 41,
+                            Category = "FAQs",
+                            Description = "View FAQs",
+                            PermissionKey = "Faq.View"
+                        },
+                        new
+                        {
+                            PermissionId = 42,
+                            Category = "FAQs",
+                            Description = "Create FAQs",
+                            PermissionKey = "Faq.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 43,
+                            Category = "FAQs",
+                            Description = "Edit FAQs",
+                            PermissionKey = "Faq.Update"
+                        },
+                        new
+                        {
+                            PermissionId = 44,
+                            Category = "FAQs",
+                            Description = "Delete FAQs",
+                            PermissionKey = "Faq.Delete"
+                        },
+                        new
+                        {
+                            PermissionId = 51,
+                            Category = "Contact Info",
+                            Description = "View Contact Info",
+                            PermissionKey = "ContactInfo.View"
+                        },
+                        new
+                        {
+                            PermissionId = 52,
+                            Category = "Contact Info",
+                            Description = "Create Contact Info",
+                            PermissionKey = "ContactInfo.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 53,
+                            Category = "Contact Info",
+                            Description = "Edit Contact Info",
+                            PermissionKey = "ContactInfo.Update"
+                        },
+                        new
+                        {
+                            PermissionId = 54,
+                            Category = "Contact Info",
+                            Description = "Delete Contact Info",
+                            PermissionKey = "ContactInfo.Delete"
+                        },
+                        new
+                        {
+                            PermissionId = 61,
+                            Category = "System Logs",
+                            Description = "View System Logs",
+                            PermissionKey = "SystemLogs.View"
+                        },
+                        new
+                        {
+                            PermissionId = 71,
+                            Category = "Course Library",
+                            Description = "View Course Library",
+                            PermissionKey = "CourseLibrary.View"
+                        },
+                        new
+                        {
+                            PermissionId = 72,
+                            Category = "Course Library",
+                            Description = "Publish Courses",
+                            PermissionKey = "CourseLibrary.Publish"
+                        },
+                        new
+                        {
+                            PermissionId = 81,
+                            Category = "Course Provider",
+                            Description = "Launch Courses",
+                            PermissionKey = "Skillsoft.LaunchCourse"
+                        },
+                        new
+                        {
+                            PermissionId = 82,
+                            Category = "Course Provider",
+                            Description = "View Learning Transcript",
+                            PermissionKey = "Skillsoft.ViewTranscript"
+                        },
+                        new
+                        {
+                            PermissionId = 83,
+                            Category = "Course Provider",
+                            Description = "View Course Catalog",
+                            PermissionKey = "Skillsoft.ViewCatalog"
+                        });
+                });
+
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -504,6 +747,11 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.Property<byte>("RoleId")
                         .HasColumnType("tinyint");
 
+                    b.Property<bool>("IsSystemRole")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("RoleName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -512,6 +760,398 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasKey("RoleId");
 
                     b.ToTable("Roles", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.RolePermission", b =>
+                {
+                    b.Property<byte>("RoleId")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RoleId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("RolePermissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 1
+                        },
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 71
+                        },
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 81
+                        },
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 82
+                        },
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 83
+                        },
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 41
+                        },
+                        new
+                        {
+                            RoleId = (byte)1,
+                            PermissionId = 51
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 1
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 2
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 3
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 4
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 5
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 7
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 11
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 14
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 15
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 41
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 42
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 43
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 44
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 51
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 52
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 53
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 54
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 71
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 81
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 82
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 83
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 1
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 2
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 3
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 4
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 5
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 7
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 11
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 14
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 15
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 41
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 42
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 43
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 44
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 51
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 52
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 53
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 54
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 71
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 81
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 82
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 83
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 1
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 2
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 3
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 4
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 5
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 7
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 6
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 11
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 12
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 13
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 14
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 15
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 31
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 41
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 42
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 43
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 44
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 51
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 52
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 53
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 54
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 71
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 72
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 81
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 82
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 83
+                        });
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.StudentProfile", b =>
@@ -529,6 +1169,9 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
 
+                    b.Property<int?>("ManagerId")
+                        .HasColumnType("int");
+
                     b.Property<string>("StudentType")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -544,6 +1187,8 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("StudentProfileId");
+
+                    b.HasIndex("ManagerId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -830,50 +1475,19 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.ToTable("SupportContacts", (string)null);
                 });
 
-            modelBuilder.Entity("SkillsetsBackend.Domain.Support.SupportRequest", b =>
+            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.RolePermission", b =>
                 {
-                    b.Property<int>("SupportRequestId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.HasOne("SkillsetsBackend.Domain.Identity.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SupportRequestId"));
-
-                    b.Property<int>("CompanyId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SupportRequestId");
-
-                    b.HasIndex("CompanyId");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("SupportRequests", (string)null);
+                    b.HasOne("SkillsetsBackend.Domain.Identity.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserCompanyRole", b =>

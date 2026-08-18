@@ -56,7 +56,7 @@ public class ChangeStudentPasswordCommandHandler
         else
         {
             // Admin/Manager resets do not require the student's current password.
-            await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, cancellationToken);
+            await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, _repository, cancellationToken);
         }
 
         user.SetPassword(command.NewPassword);

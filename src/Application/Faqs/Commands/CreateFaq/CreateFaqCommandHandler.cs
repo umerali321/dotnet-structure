@@ -30,9 +30,9 @@ public class CreateFaqCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can create FAQs.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can create FAQs.");
         }
 
         if (caller.IsSuperAdmin)

@@ -22,5 +22,9 @@ public class StudentProfileConfiguration : IEntityTypeConfiguration<StudentProfi
         builder.Property(x => x.UpdatedBy).HasMaxLength(320);
 
         builder.HasIndex(x => x.UserId).IsUnique();
+
+        // Queried by every Manager-scoped student list/detail lookup (StudentAuthorization.cs) -
+        // this table has 145K+ rows, so this index matters.
+        builder.HasIndex(x => x.ManagerId);
     }
 }

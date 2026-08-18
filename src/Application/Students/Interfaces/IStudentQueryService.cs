@@ -14,6 +14,10 @@ public interface IStudentQueryService
 /// RestrictToCompanyIds is the caller's *authorization* boundary (null for SuperAdmin = unrestricted;
 /// a Manager's managed companies otherwise) - always computed server-side, never trust a company id
 /// supplied by the client beyond validating it falls within this set.
+///
+/// RestrictToManagerId is set only for a Manager-role caller (their own UserId): once a student's
+/// ManagerId is explicitly assigned, only that Manager sees them - RestrictToCompanyIds still governs
+/// every unassigned student (ManagerId == null), so nothing changes for existing data.
 /// </summary>
 public record StudentListQueryOptions(
     int Page,
@@ -23,4 +27,5 @@ public record StudentListQueryOptions(
     bool? IsActive,
     string? SortBy,
     bool SortDescending,
-    IReadOnlyCollection<int>? RestrictToCompanyIds);
+    IReadOnlyCollection<int>? RestrictToCompanyIds,
+    int? RestrictToManagerId = null);

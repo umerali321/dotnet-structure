@@ -57,7 +57,7 @@ public class UpdateStudentCommandHandler
         }
         else
         {
-            await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, cancellationToken);
+            await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, _repository, cancellationToken);
 
             // Email/Username are the account identifier - fixed at creation, never editable
             // afterward (by anyone, including admins) so history/assignments/integrations never

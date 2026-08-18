@@ -1,5 +1,6 @@
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 
 namespace SkillsetsBackend.Application.Students;
@@ -11,11 +12,13 @@ namespace SkillsetsBackend.Application.Students;
 /// </summary>
 public static class StudentAuthorization
 {
-    /// <summary>SuperAdmin: any student. Manager: students in a managed company. Student: only themself.</summary>
+    /// <summary>SuperAdmin: any student. Manager: students in a managed company - or, once an employee is
+    /// explicitly assigned to a specific Manager (StudentProfile.ManagerId), only that Manager. Student: only themself.</summary>
     public static async Task EnsureCanViewStudentAsync(
         CallerContext caller,
         int targetUserId,
         IUserDirectory userDirectory,
+        IStudentRepository studentRepository,
         CancellationToken cancellationToken)
     {
         if (caller.IsSuperAdmin)
@@ -28,6 +31,20 @@ public static class StudentAuthorization
             return;
         }
 
+        if (caller.Role == Roles.Manager)
+        {
+            var assignedManagerId = await studentRepository.GetManagerIdAsync(targetUserId, cancellationToken);
+            if (assignedManagerId is not null)
+            {
+                if (assignedManagerId != caller.DbUserId)
+                {
+                    throw new UnauthorizedAccessException("You do not have access to this student.");
+                }
+
+                return;
+            }
+        }
+
         var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);
         var targetCompanies = await userDirectory.GetActiveCompanyRolesAsync(targetUserId, cancellationToken);
 
@@ -37,11 +54,13 @@ public static class StudentAuthorization
         }
     }
 
-    /// <summary>SuperAdmin: any student. Manager: students in a managed company. Never the student themself.</summary>
+    /// <summary>SuperAdmin: any student. Manager: students in a managed company - or, once an employee is
+    /// explicitly assigned to a specific Manager (StudentProfile.ManagerId), only that Manager. Never the student themself.</summary>
     public static async Task EnsureCanManageStudentAsync(
         CallerContext caller,
         int targetUserId,
         IUserDirectory userDirectory,
+        IStudentRepository studentRepository,
         CancellationToken cancellationToken)
     {
         if (caller.IsSuperAdmin)
@@ -52,6 +71,17 @@ public static class StudentAuthorization
         if (caller.Role != Roles.Manager)
         {
             throw new UnauthorizedAccessException("You are not authorized to perform this action.");
+        }
+
+        var assignedManagerId = await studentRepository.GetManagerIdAsync(targetUserId, cancellationToken);
+        if (assignedManagerId is not null)
+        {
+            if (assignedManagerId != caller.DbUserId)
+            {
+                throw new UnauthorizedAccessException("You do not have access to this student.");
+            }
+
+            return;
         }
 
         var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);

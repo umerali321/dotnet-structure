@@ -14,4 +14,6 @@ public record StudentDetailDto(
     string? CreatedBy,
     string? UpdatedBy,
     IReadOnlyList<StudentCompanyRoleDto> Companies,
-    bool HasSkillportAccount);
+    bool HasSkillportAccount,
+    int? ManagerId,
+    string? ManagerName);

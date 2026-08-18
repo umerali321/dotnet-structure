@@ -8,6 +8,7 @@ using SkillsetsBackend.Application.Auth.Commands.ResetPassword;
 using SkillsetsBackend.Application.Auth.Commands.CustomerSupportRequest;
 using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 using SkillsetsBackend.Application.Auth.Queries.ListLoginActivityLogs;
+using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
@@ -45,6 +46,13 @@ using SkillsetsBackend.Application.CourseLibrary.Queries.ListCourseTaken;
 using SkillsetsBackend.Application.CourseLibrary.Queries.SearchCourses;
 using SkillsetsBackend.Application.CourseLibrary.Commands.TakeCourse;
 using SkillsetsBackend.Application.CourseLibrary.Commands.MarkCourseTakenComplete;
+using SkillsetsBackend.Application.RoleManagement.Queries.ListPermissions;
+using SkillsetsBackend.Application.RoleManagement.Queries.ListRoles;
+using SkillsetsBackend.Application.RoleManagement.Queries.GetRoleById;
+using SkillsetsBackend.Application.RoleManagement.Queries.GetUserEffectivePermissions;
+using SkillsetsBackend.Application.RoleManagement.Queries.GetMyPermissions;
+using SkillsetsBackend.Application.RoleManagement.Commands.CreateRole;
+using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRolePermissions;
 
 namespace SkillsetsBackend.Application;
 
@@ -72,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<ChangeStudentPasswordCommandHandler>();
         services.AddScoped<DeactivateStudentCommandHandler>();
         services.AddScoped<ProvisionStudentSkillportCommandHandler>();
+        services.AddScoped<AssignStudentManagerCommandHandler>();
 
         services.AddScoped<ListCompaniesQueryHandler>();
         services.AddScoped<CreateCompanyCommandHandler>();
@@ -102,6 +111,14 @@ public static class DependencyInjection
         services.AddScoped<TakeCourseCommandHandler>();
         services.AddScoped<MarkCourseTakenCompleteCommandHandler>();
         services.AddScoped<ListCourseTakenQueryHandler>();
+
+        services.AddScoped<ListPermissionsQueryHandler>();
+        services.AddScoped<ListRolesQueryHandler>();
+        services.AddScoped<GetRoleByIdQueryHandler>();
+        services.AddScoped<GetUserEffectivePermissionsQueryHandler>();
+        services.AddScoped<GetMyPermissionsQueryHandler>();
+        services.AddScoped<CreateRoleCommandHandler>();
+        services.AddScoped<UpdateRolePermissionsCommandHandler>();
 
         return services;
     }

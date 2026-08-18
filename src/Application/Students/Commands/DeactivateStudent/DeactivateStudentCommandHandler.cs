@@ -19,7 +19,7 @@ public class DeactivateStudentCommandHandler
 
     public async Task Handle(int userId, CallerContext caller, CancellationToken cancellationToken)
     {
-        await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, cancellationToken);
+        await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, _repository, cancellationToken);
 
         var user = await _repository.GetUserAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), userId);

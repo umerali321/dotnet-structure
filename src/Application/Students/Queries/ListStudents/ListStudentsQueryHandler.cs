@@ -56,6 +56,8 @@ public class ListStudentsQueryHandler
             }
         }
 
+        var restrictToManagerId = caller.Role == Roles.Manager ? caller.DbUserId : null;
+
         var options = new StudentListQueryOptions(
             page,
             pageSize,
@@ -64,7 +66,8 @@ public class ListStudentsQueryHandler
             query.IsActive,
             query.SortBy,
             query.SortDescending,
-            restrictToCompanyIds);
+            restrictToCompanyIds,
+            restrictToManagerId);
 
         return await _queryService.ListAsync(options, cancellationToken);
     }

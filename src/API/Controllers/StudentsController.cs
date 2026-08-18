@@ -3,6 +3,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
@@ -32,6 +33,7 @@ public class StudentsController : ControllerBase
     private readonly ChangeStudentPasswordCommandHandler _changePasswordHandler;
     private readonly DeactivateStudentCommandHandler _deactivateHandler;
     private readonly ProvisionStudentSkillportCommandHandler _provisionSkillportHandler;
+    private readonly AssignStudentManagerCommandHandler _assignManagerHandler;
 
     public StudentsController(
         ListStudentsQueryHandler listHandler,
@@ -43,7 +45,8 @@ public class StudentsController : ControllerBase
         UpdateStudentCommandHandler updateHandler,
         ChangeStudentPasswordCommandHandler changePasswordHandler,
         DeactivateStudentCommandHandler deactivateHandler,
-        ProvisionStudentSkillportCommandHandler provisionSkillportHandler)
+        ProvisionStudentSkillportCommandHandler provisionSkillportHandler,
+        AssignStudentManagerCommandHandler assignManagerHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -55,6 +58,7 @@ public class StudentsController : ControllerBase
         _changePasswordHandler = changePasswordHandler;
         _deactivateHandler = deactivateHandler;
         _provisionSkillportHandler = provisionSkillportHandler;
+        _assignManagerHandler = assignManagerHandler;
     }
 
     [HttpGet]
@@ -131,6 +135,13 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {
         await _deactivateHandler.Handle(id, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:int}/manager")]
+    public async Task<IActionResult> AssignManager(int id, AssignStudentManagerCommand command, CancellationToken cancellationToken)
+    {
+        await _assignManagerHandler.Handle(id, command, GetCaller(), cancellationToken);
         return NoContent();
     }
 

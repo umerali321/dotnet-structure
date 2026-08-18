@@ -20,9 +20,9 @@ public class GetSupportContactByIdQueryHandler
 
     public async Task<SupportContactDto?> Handle(int supportContactId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can manage contacts.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can manage contacts.");
         }
 
         var contact = await _repository.GetDtoAsync(supportContactId, cancellationToken);

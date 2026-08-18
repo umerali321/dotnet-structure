@@ -36,8 +36,24 @@ public class StudentQueryService : IStudentQueryService
         if (options.RestrictToCompanyIds is not null)
         {
             var allowed = options.RestrictToCompanyIds;
-            query = query.Where(x => studentMemberships.Any(membership =>
-                membership.UserId == x.u.UserId && allowed.Contains(membership.CompanyId)));
+
+            if (options.RestrictToManagerId is int managerId)
+            {
+                // Manager caller: students in a managed company that are still unassigned, plus
+                // whichever specific students have been assigned to this Manager (ManagerId is
+                // company-independent once set, matching the assignment's intent).
+                query = query.Where(x =>
+                    (x.sp.ManagerId == null && studentMemberships.Any(membership =>
+                        membership.UserId == x.u.UserId && allowed.Contains(membership.CompanyId)))
+                    || x.sp.ManagerId == managerId);
+            }
+            else
+            {
+                // SuperAdmin / CompanyAdmin: unchanged - every student in an allowed company,
+                // regardless of ManagerId assignment.
+                query = query.Where(x => studentMemberships.Any(membership =>
+                    membership.UserId == x.u.UserId && allowed.Contains(membership.CompanyId)));
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(options.Search))
@@ -100,18 +116,22 @@ public class StudentQueryService : IStudentQueryService
                 x.sp.StudentType,
                 x.u.IsActive,
                 x.sp.CreatedAt,
+                x.sp.ManagerId,
             })
             .ToListAsync(cancellationToken);
 
         var (companiesByUser, companyCodesByUser) = await LoadCompaniesAsync(page.Select(x => x.UserId), today, cancellationToken);
         var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(
             _dbContext, companyCodesByUser.Values.SelectMany(codes => codes), cancellationToken);
+        var managerNamesById = await LoadManagerNamesAsync(page.Select(x => x.ManagerId), cancellationToken);
 
         var items = page
             .Select(x => new StudentListItemDto(
                 x.UserId, x.FirstName, x.LastName, x.Email, x.Username, x.Phone, x.StudentType, x.IsActive, x.CreatedAt,
                 companiesByUser.TryGetValue(x.UserId, out var companies) ? companies : [],
-                HasActiveSkillportCard(x.UserId, x.Email, companyCodesByUser, activePairs)))
+                HasActiveSkillportCard(x.UserId, x.Email, companyCodesByUser, activePairs),
+                x.ManagerId,
+                x.ManagerId is int mid && managerNamesById.TryGetValue(mid, out var mname) ? mname : null))
             .ToList();
 
         return new PaginatedList<StudentListItemDto>(items, totalCount, options.Page, options.PageSize);
@@ -137,6 +157,7 @@ public class StudentQueryService : IStudentQueryService
                 sp.UpdatedAt,
                 sp.CreatedBy,
                 sp.UpdatedBy,
+                sp.ManagerId,
             }).FirstOrDefaultAsync(cancellationToken);
 
         if (record is null)
@@ -148,11 +169,29 @@ public class StudentQueryService : IStudentQueryService
         var companies = companiesByUser.TryGetValue(userId, out var list) ? list : [];
         var activePairs = await ActiveLibraryCardLookup.GetActivePairsAsync(
             _dbContext, companyCodesByUser.Values.SelectMany(codes => codes), cancellationToken);
+        var managerNamesById = await LoadManagerNamesAsync([record.ManagerId], cancellationToken);
 
         return new StudentDetailDto(
             record.UserId, record.FirstName, record.LastName, record.Email, record.Username, record.Phone,
             record.StudentType, record.IsActive, record.CreatedAt, record.UpdatedAt, record.CreatedBy, record.UpdatedBy,
-            companies, HasActiveSkillportCard(userId, record.Email, companyCodesByUser, activePairs));
+            companies, HasActiveSkillportCard(userId, record.Email, companyCodesByUser, activePairs),
+            record.ManagerId,
+            record.ManagerId is int mid && managerNamesById.TryGetValue(mid, out var mname) ? mname : null);
+    }
+
+    private async Task<Dictionary<int, string>> LoadManagerNamesAsync(IEnumerable<int?> managerIds, CancellationToken cancellationToken)
+    {
+        var ids = managerIds.Where(id => id is not null).Select(id => id!.Value).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => ids.Contains(u.UserId))
+            .Select(u => new { u.UserId, Name = (u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Name.Trim(), cancellationToken);
     }
 
     private async Task<(Dictionary<int, IReadOnlyList<StudentCompanyRoleDto>> Companies, Dictionary<int, List<string>> CompanyCodes)> LoadCompaniesAsync(

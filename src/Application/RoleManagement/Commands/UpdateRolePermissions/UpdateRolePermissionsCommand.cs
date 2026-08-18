@@ -1,0 +1,3 @@
+namespace SkillsetsBackend.Application.RoleManagement.Commands.UpdateRolePermissions;
+
+public record UpdateRolePermissionsCommand(IReadOnlyCollection<int> PermissionIds);

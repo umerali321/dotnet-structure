@@ -20,6 +20,9 @@ public class StudentRepository : IStudentRepository
     public Task<StudentProfile?> GetProfileByUserIdAsync(int userId, CancellationToken cancellationToken = default) =>
         _dbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId, cancellationToken);
 
+    public Task<int?> GetManagerIdAsync(int userId, CancellationToken cancellationToken = default) =>
+        _dbContext.StudentProfiles.Where(sp => sp.UserId == userId).Select(sp => sp.ManagerId).FirstOrDefaultAsync(cancellationToken);
+
     public Task<bool> IdentifierInUseAsync(string email, string username, int? excludeUserId, CancellationToken cancellationToken = default) =>
         _dbContext.Users.AnyAsync(
             u => (u.Email == email || u.Username == username) && (excludeUserId == null || u.UserId != excludeUserId),

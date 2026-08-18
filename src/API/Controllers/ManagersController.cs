@@ -64,6 +64,7 @@ public sealed class ManagersController : ControllerBase
             request.IsActive,
             request.SortBy,
             request.SortDescending,
+            request.Role,
             GetCaller(),
             cancellationToken);
 
@@ -159,4 +160,6 @@ public sealed class ManagerRequest
     public bool? IsActive { get; set; }
     public string? SortBy { get; set; }
     public bool SortDescending { get; set; }
+    /// <summary>Null for today's default (Manager/Admin) or "CompanyAdmin" to list company admins instead.</summary>
+    public string? Role { get; set; }
 }

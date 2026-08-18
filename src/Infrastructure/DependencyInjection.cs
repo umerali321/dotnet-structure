@@ -21,6 +21,8 @@ using SkillsetsBackend.Infrastructure.Skillsoft;
 using SkillsetsBackend.Infrastructure.Skillsoft.Olsa;
 using SkillsetsBackend.Application.CourseLibrary.Interfaces;
 using SkillsetsBackend.Infrastructure.CourseLibrary;
+using SkillsetsBackend.Application.RoleManagement.Interfaces;
+using SkillsetsBackend.Infrastructure.RoleManagement;
 using SkillsetsBackend.Infrastructure.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -107,6 +109,7 @@ public static class DependencyInjection
         // Scoped: both depend on the scoped ApplicationDbContext.
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IUserCredentialRepository, UserCredentialRepository>();
         services.AddScoped<ILoginActivityLogRepository, LoginActivityLogRepository>();
 
@@ -122,6 +125,7 @@ public static class DependencyInjection
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
         services.AddScoped<ICourseLibraryQueryService, CourseLibraryQueryService>();
         services.AddScoped<ICourseTakenRepository, CourseTakenRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
 
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()

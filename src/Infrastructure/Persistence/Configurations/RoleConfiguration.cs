@@ -12,5 +12,9 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.HasKey(x => x.RoleId);
 
         builder.Property(x => x.RoleName).HasMaxLength(50).IsRequired();
+
+        // New, additive column - see the AddRolePermissionsAndManagerAssignment migration, which
+        // also sets this true for the 5 pre-existing rows (Student/Manager/FDM/Admin/CompanyAdmin).
+        builder.Property(x => x.IsSystemRole).HasDefaultValue(false);
     }
 }

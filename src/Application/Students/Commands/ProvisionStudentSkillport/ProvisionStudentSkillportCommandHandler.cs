@@ -43,7 +43,7 @@ public class ProvisionStudentSkillportCommandHandler
 
         if (!caller.IsSuperAdmin)
         {
-            await StudentAuthorization.EnsureCanManageStudentAsync(caller, command.UserId, _userDirectory, cancellationToken);
+            await StudentAuthorization.EnsureCanManageStudentAsync(caller, command.UserId, _userDirectory, _repository, cancellationToken);
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);
         }
 

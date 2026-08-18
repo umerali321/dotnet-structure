@@ -20,9 +20,9 @@ public class GetFaqByIdQueryHandler
 
     public async Task<FaqDto?> Handle(int faqId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can manage FAQs.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can manage FAQs.");
         }
 
         var faq = await _repository.GetDtoAsync(faqId, cancellationToken);

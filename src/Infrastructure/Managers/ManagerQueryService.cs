@@ -12,8 +12,9 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
     public async Task<PaginatedList<ManagerListItemDto>> ListAsync(ManagerListQueryOptions o, CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var roleNames = o.RoleFilter == "CompanyAdmin" ? new[] { "CompanyAdmin" } : new[] { "Manager", "Admin" };
         var memberships = db.UserCompanyRoles.AsNoTracking()
-            .Where(x => x.IsActive && x.Company.IsActive && (x.Role.RoleName == "Manager" || x.Role.RoleName == "Admin") && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
+            .Where(x => x.IsActive && x.Company.IsActive && roleNames.Contains(x.Role.RoleName) && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
 
         var query = db.Users.AsNoTracking().Where(u => memberships.Any(x => x.UserId == u.UserId));
 
@@ -78,8 +79,13 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
     public async Task<ManagerListItemDto?> GetAsync(int id, CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Unlike ListAsync, this is looked up by a specific UserId (e.g. a detail page, or a
+        // CompanyAdmin viewing their own profile) - widened to include CompanyAdmin unconditionally
+        // rather than gated by RoleFilter, since the caller already knows which user they want.
         var memberships = db.UserCompanyRoles.AsNoTracking()
-            .Where(x => x.UserId == id && x.IsActive && x.Company.IsActive && (x.Role.RoleName == "Manager" || x.Role.RoleName == "Admin") && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
+            .Where(x => x.UserId == id && x.IsActive && x.Company.IsActive
+                && (x.Role.RoleName == "Manager" || x.Role.RoleName == "Admin" || x.Role.RoleName == "CompanyAdmin")
+                && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
 
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == id, ct);
         if (user is null)

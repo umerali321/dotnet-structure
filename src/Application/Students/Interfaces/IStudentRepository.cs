@@ -8,6 +8,9 @@ public interface IStudentRepository
 
     Task<StudentProfile?> GetProfileByUserIdAsync(int userId, CancellationToken cancellationToken = default);
 
+    /// <summary>Cheap projection for authorization checks - null if unassigned (or no profile row exists).</summary>
+    Task<int?> GetManagerIdAsync(int userId, CancellationToken cancellationToken = default);
+
     Task<bool> IdentifierInUseAsync(string email, string username, int? excludeUserId, CancellationToken cancellationToken = default);
 
     /// <summary>
