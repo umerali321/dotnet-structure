@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using SkillsetsBackend.Application.Auth.DTOs;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Domain.Identity;
@@ -20,6 +21,7 @@ public class LoginCommandHandler
     private readonly ITokenService _tokenService;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ILoginActivityLogRepository _loginActivityLogRepository;
+    private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
         IValidator<LoginCommand> validator,
@@ -28,7 +30,8 @@ public class LoginCommandHandler
         ILegacyCredentialVerifier credentialVerifier,
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
-        ILoginActivityLogRepository loginActivityLogRepository)
+        ILoginActivityLogRepository loginActivityLogRepository,
+        ILogger<LoginCommandHandler> logger)
     {
         _validator = validator;
         _superAdminAuthenticator = superAdminAuthenticator;
@@ -37,13 +40,23 @@ public class LoginCommandHandler
         _tokenService = tokenService;
         _refreshTokenRepository = refreshTokenRepository;
         _loginActivityLogRepository = loginActivityLogRepository;
+        _logger = logger;
     }
 
-    public async Task<AuthResultDto> Handle(LoginCommand command, string? ipAddress, CancellationToken cancellationToken)
+    /// <summary>requestId/userAgent are for diagnostics only (see the [LOGIN] log lines below) -
+    /// never anything from the credentials is logged, only a masked identifier.</summary>
+    public async Task<AuthResultDto> Handle(
+        LoginCommand command, string? ipAddress, string? requestId = null, string? userAgent = null, CancellationToken cancellationToken = default)
     {
+        var maskedEmail = MaskIdentifier(command.Email);
+        _logger.LogInformation(
+            "[LOGIN] requestId={RequestId} email={MaskedEmail} clientIp={ClientIp} userAgent={UserAgent}",
+            requestId, maskedEmail, ipAddress, userAgent);
+
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
+            _logger.LogWarning("[LOGIN] requestId={RequestId} validation-failed returning-status=400", requestId);
             throw new AppValidationException(validationResult.Errors);
         }
 
@@ -59,6 +72,9 @@ public class LoginCommandHandler
             if (lockoutExpiresAt > now)
             {
                 var minutesRemaining = Math.Max(1, (int)Math.Ceiling((lockoutExpiresAt - now).TotalMinutes));
+                _logger.LogWarning(
+                    "[LOGIN] requestId={RequestId} email={MaskedEmail} account-locked returning-status=423",
+                    requestId, maskedEmail);
                 throw new AccountLockedException(
                     $"Too many failed login attempts. Please try again in {minutesRemaining} minute(s).");
             }
@@ -67,7 +83,10 @@ public class LoginCommandHandler
         var superAdmin = _superAdminAuthenticator.Validate(command.Email, command.Password);
         if (superAdmin is not null)
         {
-            return await IssueTokensAsync(
+            _logger.LogInformation(
+                "[LOGIN] requestId={RequestId} email={MaskedEmail} user-found=superadmin password-valid=true",
+                requestId, maskedEmail);
+            var superAdminResult = await IssueTokensAsync(
                 superAdmin.Id.ToString(),
                 superAdmin.Email,
                 superAdmin.Role,
@@ -75,6 +94,10 @@ public class LoginCommandHandler
                 companies: [],
                 ipAddress,
                 cancellationToken);
+            _logger.LogInformation(
+                "[LOGIN] requestId={RequestId} email={MaskedEmail} token-created=true returning-status=200",
+                requestId, maskedEmail);
+            return superAdminResult;
         }
 
         var user = await _userDirectory.FindByIdentifierAsync(command.Email, cancellationToken);
@@ -90,8 +113,17 @@ public class LoginCommandHandler
             // let us this far, so it's under MaxFailedAttempts) - +1 accounts for the failure just logged.
             var failedAttemptCount = recentFailures.Count + 1;
             var remainingAttempts = Math.Max(0, MaxFailedAttempts - failedAttemptCount);
+
+            _logger.LogInformation(
+                "[LOGIN] requestId={RequestId} email={MaskedEmail} user-found={UserFound} password-valid=false " +
+                "login-activity-created=true returning-status=401",
+                requestId, maskedEmail, user is not null);
             throw new AuthenticationFailedException("Invalid email/username or password.", failedAttemptCount, remainingAttempts);
         }
+
+        _logger.LogInformation(
+            "[LOGIN] requestId={RequestId} email={MaskedEmail} userId={UserId} user-found=true password-valid=true",
+            requestId, maskedEmail, user.UserId);
 
         var activeCompanyRoles = await _userDirectory.GetActiveCompanyRolesAsync(user.UserId, cancellationToken);
         var (role, currentCompany, companies) = CompanyContextResolver.Resolve(activeCompanyRoles);
@@ -107,11 +139,15 @@ public class LoginCommandHandler
             await _loginActivityLogRepository.AddAsync(LoginActivityLog.LoginFailed(command.Email), cancellationToken);
             await _loginActivityLogRepository.SaveChangesAsync(cancellationToken);
 
+            _logger.LogInformation(
+                "[LOGIN] requestId={RequestId} email={MaskedEmail} userId={UserId} company-inactive-or-expired=true " +
+                "login-activity-created=true returning-status=401",
+                requestId, maskedEmail, user.UserId);
             throw new AuthenticationFailedException(
                 "Your company account has been deactivated or its trial/license has expired. Contact your administrator.");
         }
 
-        return await IssueTokensAsync(
+        var result = await IssueTokensAsync(
             user.UserId.ToString(),
             user.Email ?? user.Username ?? command.Email,
             role,
@@ -119,6 +155,12 @@ public class LoginCommandHandler
             companies,
             ipAddress,
             cancellationToken);
+
+        _logger.LogInformation(
+            "[LOGIN] requestId={RequestId} userId={UserId} role={Role} companyCount={CompanyCount} token-created=true returning-status=200",
+            requestId, user.UserId, role, companies.Count);
+
+        return result;
     }
 
     private async Task<AuthResultDto> IssueTokensAsync(
@@ -146,5 +188,26 @@ public class LoginCommandHandler
         await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
 
         return new AuthResultDto(accessToken, accessTokenExpiresAt, refreshTokenValue, refreshTokenExpiresAt, role, currentCompany, companies);
+    }
+
+    /// <summary>Keeps enough of the identifier to be useful for support ("which user complained")
+    /// without writing a full email/username to the log - e.g. "pk***@cgsinc.com".</summary>
+    private static string MaskIdentifier(string identifier)
+    {
+        if (string.IsNullOrEmpty(identifier))
+        {
+            return "(empty)";
+        }
+
+        var atIndex = identifier.IndexOf('@');
+        if (atIndex <= 0)
+        {
+            return identifier.Length <= 2 ? "**" : $"{identifier[..2]}***";
+        }
+
+        var localPart = identifier[..atIndex];
+        var domainPart = identifier[atIndex..];
+        var visible = localPart.Length <= 2 ? localPart : localPart[..2];
+        return $"{visible}***{domainPart}";
     }
 }

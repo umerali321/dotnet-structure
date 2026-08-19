@@ -24,6 +24,7 @@ public class AuthController : ControllerBase
     private readonly SwitchCompanyCommandHandler _switchCompanyHandler;
     private readonly CustomerSupportRequestCommandHandler _customerSupportRequestHandler;
     private readonly ResetPasswordCommandHandler _resetPasswordHandler;
+    private readonly ILogger<AuthController> _authLogger;
 
     public AuthController(
         LoginCommandHandler loginHandler,
@@ -31,7 +32,8 @@ public class AuthController : ControllerBase
         LogoutCommandHandler logoutHandler,
         SwitchCompanyCommandHandler switchCompanyHandler,
         CustomerSupportRequestCommandHandler customerSupportRequestHandler,
-        ResetPasswordCommandHandler resetPasswordHandler)
+        ResetPasswordCommandHandler resetPasswordHandler,
+        ILogger<AuthController> authLogger)
     {
         _loginHandler = loginHandler;
         _refreshHandler = refreshHandler;
@@ -39,13 +41,15 @@ public class AuthController : ControllerBase
         _switchCompanyHandler = switchCompanyHandler;
         _customerSupportRequestHandler = customerSupportRequestHandler;
         _resetPasswordHandler = resetPasswordHandler;
+        _authLogger = authLogger;
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResultDto>> Login(LoginCommand command, CancellationToken cancellationToken)
     {
-        var result = await _loginHandler.Handle(command, GetClientIp(), cancellationToken);
+        var result = await _loginHandler.Handle(
+            command, GetClientIp(), requestId: HttpContext.TraceIdentifier, userAgent: GetUserAgent(), cancellationToken: cancellationToken);
         return Ok(result);
     }
 
@@ -99,15 +103,27 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>[Authorize] means this action body only ever runs once JWT bearer validation has
+    /// already succeeded - a missing/invalid/expired token never reaches here, it short-circuits to
+    /// a 401 from the auth middleware itself (visible in IIS logs by status code; nothing to log
+    /// from inside the action for that case). What's logged here just confirms the full round trip
+    /// (token present, validated, claims readable) completed for this specific request.</summary>
     [HttpGet("me")]
     [Authorize]
     public IActionResult Me()
     {
         var companyIdClaim = User.FindFirstValue(AuthClaimTypes.CompanyId);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var bearerTokenPresent = Request.Headers.Authorization.Count > 0;
+
+        _authLogger.LogInformation(
+            "[AUTH-ME] requestId={RequestId} clientIp={ClientIp} bearer-token-present={BearerPresent} " +
+            "authentication-result=success userId={UserId} status=200",
+            HttpContext.TraceIdentifier, GetClientIp(), bearerTokenPresent, userId);
 
         return Ok(new
         {
-            id = User.FindFirstValue(ClaimTypes.NameIdentifier),
+            id = userId,
             email = User.FindFirstValue(ClaimTypes.Email),
             role = User.FindFirstValue(ClaimTypes.Role),
             companyId = companyIdClaim is null ? (int?)null : int.Parse(companyIdClaim),
@@ -116,4 +132,6 @@ public class AuthController : ControllerBase
     }
 
     private string? GetClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
+
+    private string? GetUserAgent() => Request.Headers.UserAgent.ToString() is { Length: > 0 } ua ? ua : null;
 }
