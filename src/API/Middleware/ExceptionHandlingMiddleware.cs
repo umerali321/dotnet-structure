@@ -46,11 +46,13 @@ public class ExceptionHandlingMiddleware
 
         if (statusCode == HttpStatusCode.InternalServerError)
         {
-            _logger.LogError(exception, "Unhandled exception occurred");
+            _logger.LogError(exception, "Unhandled exception occurred requestId={RequestId} path={Path}", context.TraceIdentifier, context.Request.Path);
         }
         else
         {
-            _logger.LogWarning(exception, "Request failed with {StatusCode}", statusCode);
+            _logger.LogWarning(
+                exception, "Request failed with {StatusCode} requestId={RequestId} path={Path}",
+                statusCode, context.TraceIdentifier, context.Request.Path);
         }
 
         var problemDetails = new ProblemDetails
@@ -60,6 +62,9 @@ public class ExceptionHandlingMiddleware
             Detail = exception.Message,
             Instance = context.Request.Path,
         };
+        // Lets the frontend surface this in an error toast/console log so a user's bug report can be
+        // correlated back to the exact server-side log lines above, without exposing anything sensitive.
+        problemDetails.Extensions["requestId"] = context.TraceIdentifier;
 
         if (exception is ValidationException validationException)
         {
