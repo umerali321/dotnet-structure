@@ -25,6 +25,8 @@ public class GetCompanyByIdQueryHandler
             ? null
             : new CompanyListItemDto(
                 company.CompanyId, company.CompanyCode, company.CompanyName, company.IsActive, company.LogoUrl,
-                company.PlanType, company.PlanStartDate, company.PlanEndDate, company.IsExpired);
+                company.PlanType, company.PlanStartDate, company.PlanEndDate, company.IsExpired,
+                company.CompanyEmail, company.CompanyPhone, company.Street1, company.Street2,
+                company.City, company.State, company.Zip, company.PaymentForm, company.TotalPayment);
     }
 }

@@ -49,7 +49,9 @@ public class CreateCompanyCommandHandler
 
         var company = Company.Create(
             command.CompanyCode, command.CompanyName, command.CompanyEmail, command.CompanyPhone,
-            command.PlanType, command.LicenseStartDate, command.LicenseEndDate);
+            command.PlanType, command.LicenseStartDate, command.LicenseEndDate,
+            command.Street1, command.Street2, command.City, command.State, command.Zip,
+            command.PaymentForm, command.TotalPayment);
         var admin = AppUser.CreateStudent(
             command.AdminEmail, phone: null, command.AdminFirstName, command.AdminLastName, command.AdminUsername, command.AdminPassword);
 

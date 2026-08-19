@@ -16,6 +16,13 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(x => x.CompanyName).HasMaxLength(255).IsRequired();
         builder.Property(x => x.CompanyEmail).HasMaxLength(255);
         builder.Property(x => x.CompanyPhone).HasMaxLength(100);
+        builder.Property(x => x.Street1).HasMaxLength(255);
+        builder.Property(x => x.Street2).HasMaxLength(255);
+        builder.Property(x => x.City).HasMaxLength(100);
+        builder.Property(x => x.State).HasMaxLength(100);
+        builder.Property(x => x.Zip).HasMaxLength(20);
+        builder.Property(x => x.PaymentForm).HasMaxLength(100);
+        builder.Property(x => x.TotalPayment).HasColumnType("decimal(18,2)");
         builder.Property(x => x.LogoUrl).HasMaxLength(500);
 
         // Defaults below only matter for backfilling companies that existed before this column was

@@ -15,4 +15,11 @@ public record CreateCompanyCommand(
     string AdminPassword,
     string PlanType,
     DateOnly? LicenseStartDate,
-    DateOnly? LicenseEndDate);
+    DateOnly? LicenseEndDate,
+    string? Street1 = null,
+    string? Street2 = null,
+    string? City = null,
+    string? State = null,
+    string? Zip = null,
+    string? PaymentForm = null,
+    decimal? TotalPayment = null);

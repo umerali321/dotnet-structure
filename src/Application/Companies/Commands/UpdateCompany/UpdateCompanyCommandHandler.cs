@@ -42,7 +42,10 @@ public class UpdateCompanyCommandHandler
             ]);
         }
 
-        company.UpdateDetails(command.CompanyCode, command.CompanyName);
+        company.UpdateDetails(
+            command.CompanyCode, command.CompanyName, command.CompanyEmail, command.CompanyPhone,
+            command.Street1, command.Street2, command.City, command.State, command.Zip,
+            command.PaymentForm, command.TotalPayment);
         await _repository.SaveChangesAsync(cancellationToken);
     }
 }

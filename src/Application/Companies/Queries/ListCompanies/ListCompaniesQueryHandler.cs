@@ -9,9 +9,10 @@ using SkillsetsBackend.Shared.Common;
 namespace SkillsetsBackend.Application.Companies.Queries.ListCompanies;
 
 /// <summary>
-/// SuperAdmin sees every active company (used to populate the Angular company filter). A Manager
-/// only sees companies they actively manage - same set already in their JWT/session, exposed here
-/// for a consistent lookup shape. Students have no legitimate use for this list.
+/// SuperAdmin sees every active company (used to populate the Angular company filter). A Manager or
+/// CompanyAdmin only sees companies they actively manage - same set already in their JWT/session,
+/// exposed here for a consistent lookup shape (e.g. the Company Admins grid's logo lookup on the
+/// customer app). Students have no legitimate use for this list.
 /// </summary>
 public class ListCompaniesQueryHandler(ICompanyQueryService companyQueryService, IUserDirectory userDirectory)
 {
@@ -20,9 +21,9 @@ public class ListCompaniesQueryHandler(ICompanyQueryService companyQueryService,
         CallerContext caller,
         CancellationToken cancellationToken = default)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can list companies.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can list companies.");
         }
 
         var restrictToCompanyIds = caller.IsSuperAdmin

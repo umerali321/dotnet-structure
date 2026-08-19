@@ -25,6 +25,20 @@ public class Company : IAggregateRoot
 
     public string? CompanyPhone { get; private set; }
 
+    public string? Street1 { get; private set; }
+
+    public string? Street2 { get; private set; }
+
+    public string? City { get; private set; }
+
+    public string? State { get; private set; }
+
+    public string? Zip { get; private set; }
+
+    public string? PaymentForm { get; private set; }
+
+    public decimal? TotalPayment { get; private set; }
+
     public string? LogoUrl { get; private set; }
 
     public bool IsActive { get; private set; }
@@ -58,7 +72,14 @@ public class Company : IAggregateRoot
         string? companyPhone,
         string planType,
         DateOnly? licenseStartDate,
-        DateOnly? licenseEndDate)
+        DateOnly? licenseEndDate,
+        string? street1 = null,
+        string? street2 = null,
+        string? city = null,
+        string? state = null,
+        string? zip = null,
+        string? paymentForm = null,
+        decimal? totalPayment = null)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var isTrial = planType != LicensePlan;
@@ -69,6 +90,13 @@ public class Company : IAggregateRoot
             CompanyName = companyName,
             CompanyEmail = companyEmail,
             CompanyPhone = companyPhone,
+            Street1 = street1,
+            Street2 = street2,
+            City = city,
+            State = state,
+            Zip = zip,
+            PaymentForm = paymentForm,
+            TotalPayment = totalPayment,
             IsActive = true,
             PlanType = isTrial ? TrialPlan : LicensePlan,
             PlanStartDate = isTrial ? today : licenseStartDate!.Value,
@@ -77,10 +105,30 @@ public class Company : IAggregateRoot
         };
     }
 
-    public void UpdateDetails(string companyCode, string companyName)
+    public void UpdateDetails(
+        string companyCode,
+        string companyName,
+        string? companyEmail = null,
+        string? companyPhone = null,
+        string? street1 = null,
+        string? street2 = null,
+        string? city = null,
+        string? state = null,
+        string? zip = null,
+        string? paymentForm = null,
+        decimal? totalPayment = null)
     {
         CompanyCode = companyCode;
         CompanyName = companyName;
+        CompanyEmail = companyEmail;
+        CompanyPhone = companyPhone;
+        Street1 = street1;
+        Street2 = street2;
+        City = city;
+        State = state;
+        Zip = zip;
+        PaymentForm = paymentForm;
+        TotalPayment = totalPayment;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
