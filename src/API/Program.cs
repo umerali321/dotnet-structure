@@ -87,6 +87,10 @@ try
 
     app.UseHttpsRedirection();
 
+    // Serves company logos uploaded via CompaniesController.UploadLogo (wwwroot/company-logos/*.*).
+    Directory.CreateDirectory(Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "company-logos"));
+    app.UseStaticFiles();
+
     app.UseCors(AllowAllCorsPolicy);
 
     app.UseAuthentication();

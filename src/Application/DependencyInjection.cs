@@ -20,7 +20,13 @@ using SkillsetsBackend.Application.Students.Queries.GetStudentCredentials;
 using SkillsetsBackend.Application.Students.Queries.GetStudentRoles;
 using SkillsetsBackend.Application.Students.Queries.ListStudents;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
+using SkillsetsBackend.Application.Companies.Queries.GetCompanyById;
 using SkillsetsBackend.Application.Companies.Commands.CreateCompany;
+using SkillsetsBackend.Application.Companies.Commands.UpdateCompany;
+using SkillsetsBackend.Application.Companies.Commands.DeactivateCompany;
+using SkillsetsBackend.Application.Companies.Commands.ActivateCompany;
+using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
+using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
@@ -53,6 +59,9 @@ using SkillsetsBackend.Application.RoleManagement.Queries.GetUserEffectivePermis
 using SkillsetsBackend.Application.RoleManagement.Queries.GetMyPermissions;
 using SkillsetsBackend.Application.RoleManagement.Commands.CreateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRolePermissions;
+using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRole;
+using SkillsetsBackend.Application.RoleManagement.Commands.DeactivateRole;
+using SkillsetsBackend.Application.RoleManagement.Commands.ActivateRole;
 
 namespace SkillsetsBackend.Application;
 
@@ -83,7 +92,13 @@ public static class DependencyInjection
         services.AddScoped<AssignStudentManagerCommandHandler>();
 
         services.AddScoped<ListCompaniesQueryHandler>();
+        services.AddScoped<GetCompanyByIdQueryHandler>();
         services.AddScoped<CreateCompanyCommandHandler>();
+        services.AddScoped<UpdateCompanyCommandHandler>();
+        services.AddScoped<DeactivateCompanyCommandHandler>();
+        services.AddScoped<ActivateCompanyCommandHandler>();
+        services.AddScoped<SetCompanyLicenseCommandHandler>();
+        services.AddScoped<UpdateCompanyLogoCommandHandler>();
         services.AddScoped<ListManagersQueryHandler>();
         services.AddScoped<GetManagerByIdQueryHandler>();
         services.AddScoped<GetManagerCompaniesQueryHandler>();
@@ -119,6 +134,9 @@ public static class DependencyInjection
         services.AddScoped<GetMyPermissionsQueryHandler>();
         services.AddScoped<CreateRoleCommandHandler>();
         services.AddScoped<UpdateRolePermissionsCommandHandler>();
+        services.AddScoped<UpdateRoleCommandHandler>();
+        services.AddScoped<DeactivateRoleCommandHandler>();
+        services.AddScoped<ActivateRoleCommandHandler>();
 
         return services;
     }

@@ -13,5 +13,6 @@ public class CreateManagerCommandValidator : AbstractValidator<CreateManagerComm
         RuleFor(x => x.Username).NotEmpty().MaximumLength(320);
         RuleFor(x => x.Password).NotEmpty().MaximumLength(500);
         RuleFor(x => x.CompanyId).GreaterThan(0);
+        RuleFor(x => x.Role).Must(role => role is "Manager" or "CompanyAdmin").WithMessage("Role must be 'Manager' or 'CompanyAdmin'.");
     }
 }

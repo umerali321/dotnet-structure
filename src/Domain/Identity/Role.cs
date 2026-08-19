@@ -17,6 +17,11 @@ public class Role
     /// only custom roles' permissions are editable through the new Roles UI.</summary>
     public bool IsSystemRole { get; private set; }
 
+    /// <summary>Soft-delete flag for custom roles (system roles are never deactivated). False
+    /// means "deleted" in the UI but the row and its RolePermissions stay intact, so it can be
+    /// reactivated later without losing its permission set.</summary>
+    public bool IsActive { get; private set; }
+
     private Role()
     {
     }
@@ -25,5 +30,21 @@ public class Role
     {
         RoleName = roleName,
         IsSystemRole = false,
+        IsActive = true,
     };
+
+    public void Rename(string roleName)
+    {
+        RoleName = roleName;
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+    }
 }

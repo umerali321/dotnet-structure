@@ -14,11 +14,14 @@ public class CompanyRepository : ICompanyRepository
         _dbContext = dbContext;
     }
 
-    public Task<bool> CompanyCodeExistsAsync(string companyCode, CancellationToken cancellationToken = default) =>
-        _dbContext.Companies.AnyAsync(c => c.CompanyCode == companyCode, cancellationToken);
+    public Task<bool> CompanyCodeExistsAsync(string companyCode, int? excludeCompanyId = null, CancellationToken cancellationToken = default) =>
+        _dbContext.Companies.AnyAsync(c => c.CompanyCode == companyCode && (excludeCompanyId == null || c.CompanyId != excludeCompanyId), cancellationToken);
 
     public Task<bool> IdentifierInUseAsync(string email, string username, CancellationToken cancellationToken = default) =>
         _dbContext.Users.AnyAsync(u => u.Email == email || u.Username == username, cancellationToken);
+
+    public Task<Company?> GetByIdAsync(int companyId, CancellationToken cancellationToken = default) =>
+        _dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId, cancellationToken);
 
     public async Task<int> CreateCompanyWithAdminAsync(
         Company company,
@@ -53,4 +56,7 @@ public class CompanyRepository : ICompanyRepository
             return company.CompanyId;
         });
     }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _dbContext.SaveChangesAsync(cancellationToken);
 }

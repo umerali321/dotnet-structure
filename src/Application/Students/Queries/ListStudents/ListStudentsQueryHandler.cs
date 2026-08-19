@@ -23,9 +23,9 @@ public class ListStudentsQueryHandler
 
     public async Task<PaginatedList<StudentListItemDto>> Handle(ListStudentsQuery query, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can list students.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can list students.");
         }
 
         var page = query.Page < 1 ? 1 : query.Page;

@@ -31,7 +31,7 @@ public class CreateCompanyCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (await _repository.CompanyCodeExistsAsync(command.CompanyCode, cancellationToken))
+        if (await _repository.CompanyCodeExistsAsync(command.CompanyCode, excludeCompanyId: null, cancellationToken))
         {
             throw new AppValidationException(
             [
@@ -47,7 +47,9 @@ public class CreateCompanyCommandHandler
             ]);
         }
 
-        var company = Company.Create(command.CompanyCode, command.CompanyName, command.CompanyEmail, command.CompanyPhone);
+        var company = Company.Create(
+            command.CompanyCode, command.CompanyName, command.CompanyEmail, command.CompanyPhone,
+            command.PlanType, command.LicenseStartDate, command.LicenseEndDate);
         var admin = AppUser.CreateStudent(
             command.AdminEmail, phone: null, command.AdminFirstName, command.AdminLastName, command.AdminUsername, command.AdminPassword);
 

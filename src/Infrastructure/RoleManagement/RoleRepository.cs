@@ -26,7 +26,7 @@ public class RoleRepository : IRoleRepository
         await _dbContext.Roles
             .AsNoTracking()
             .OrderBy(r => r.RoleId)
-            .Select(r => new RoleSummaryDto(r.RoleId, r.RoleName, r.IsSystemRole))
+            .Select(r => new RoleSummaryDto(r.RoleId, r.RoleName, r.IsSystemRole, r.IsActive))
             .ToListAsync(cancellationToken);
 
     public async Task<RoleDto?> GetRoleByIdAsync(byte roleId, CancellationToken cancellationToken = default)
@@ -34,7 +34,7 @@ public class RoleRepository : IRoleRepository
         var role = await _dbContext.Roles
             .AsNoTracking()
             .Where(r => r.RoleId == roleId)
-            .Select(r => new { r.RoleId, r.RoleName, r.IsSystemRole })
+            .Select(r => new { r.RoleId, r.RoleName, r.IsSystemRole, r.IsActive })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (role is null)
@@ -50,14 +50,23 @@ public class RoleRepository : IRoleRepository
                 (rp, p) => new PermissionDto(p.PermissionId, p.PermissionKey, p.Category, p.Description))
             .ToListAsync(cancellationToken);
 
-        return new RoleDto(role.RoleId, role.RoleName, role.IsSystemRole, permissions);
+        return new RoleDto(role.RoleId, role.RoleName, role.IsSystemRole, role.IsActive, permissions);
     }
 
     public Task<bool> RoleNameExistsAsync(string roleName, CancellationToken cancellationToken = default) =>
         _dbContext.Roles.AsNoTracking().AnyAsync(r => r.RoleName == roleName, cancellationToken);
 
+    public Task<bool> RoleNameExistsAsync(string roleName, byte excludeRoleId, CancellationToken cancellationToken = default) =>
+        _dbContext.Roles.AsNoTracking().AnyAsync(r => r.RoleName == roleName && r.RoleId != excludeRoleId, cancellationToken);
+
     public async Task<bool> IsSystemRoleAsync(byte roleId, CancellationToken cancellationToken = default) =>
         await _dbContext.Roles.AsNoTracking().Where(r => r.RoleId == roleId).Select(r => r.IsSystemRole).FirstOrDefaultAsync(cancellationToken);
+
+    public Task<Role?> GetTrackedRoleByIdAsync(byte roleId, CancellationToken cancellationToken = default) =>
+        _dbContext.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _dbContext.SaveChangesAsync(cancellationToken);
 
     public async Task<byte> AddRoleAsync(Role role, CancellationToken cancellationToken = default)
     {

@@ -14,6 +14,12 @@ public interface IUserDirectory
         int companyId,
         string role,
         CancellationToken cancellationToken = default);
+
+    /// <summary>True if the user has ever had a company-role membership row, regardless of whether
+    /// it (or its company) is currently active. Used to distinguish "this user's access was revoked
+    /// (company/membership deactivated)" from "this user genuinely has 2+ companies to pick from" -
+    /// both otherwise resolve to zero active roles / the Unassigned role.</summary>
+    Task<bool> HasAnyCompanyRoleAsync(int userId, CancellationToken cancellationToken = default);
 }
 
 public record DirectoryUser(

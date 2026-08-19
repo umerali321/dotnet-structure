@@ -1,4 +1,5 @@
 using FluentValidation;
+using SkillsetsBackend.Domain.Identity;
 
 namespace SkillsetsBackend.Application.Companies.Commands.CreateCompany;
 
@@ -16,5 +17,17 @@ public class CreateCompanyCommandValidator : AbstractValidator<CreateCompanyComm
         RuleFor(x => x.AdminEmail).NotEmpty().EmailAddress().MaximumLength(320);
         RuleFor(x => x.AdminUsername).NotEmpty().MaximumLength(320);
         RuleFor(x => x.AdminPassword).NotEmpty().MaximumLength(500);
+
+        RuleFor(x => x.PlanType).NotEmpty().Must(p => p == Company.TrialPlan || p == Company.LicensePlan)
+            .WithMessage($"PlanType must be '{Company.TrialPlan}' or '{Company.LicensePlan}'.");
+
+        RuleFor(x => x.LicenseStartDate).NotNull().WithMessage("License start date is required.")
+            .When(x => x.PlanType == Company.LicensePlan);
+        RuleFor(x => x.LicenseEndDate).NotNull().WithMessage("License end date is required.")
+            .When(x => x.PlanType == Company.LicensePlan);
+        RuleFor(x => x.LicenseEndDate)
+            .GreaterThan(x => x.LicenseStartDate!.Value)
+            .WithMessage("License end date must be after the start date.")
+            .When(x => x.PlanType == Company.LicensePlan && x.LicenseStartDate != null && x.LicenseEndDate != null);
     }
 }

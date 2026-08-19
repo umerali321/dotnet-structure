@@ -65,6 +65,9 @@ public class UserDirectory : IUserDirectory
         return rows.FirstOrDefault(x => Roles.Normalize(x.RoleName) == role);
     }
 
+    public Task<bool> HasAnyCompanyRoleAsync(int userId, CancellationToken cancellationToken = default) =>
+        _dbContext.UserCompanyRoles.AsNoTracking().AnyAsync(ucr => ucr.UserId == userId, cancellationToken);
+
     private IQueryable<DirectoryCompanyRole> QueryActiveCompanyRoles(int userId, int? companyId)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -75,6 +78,7 @@ public class UserDirectory : IUserDirectory
                 && (companyId == null || ucr.CompanyId == companyId)
                 && ucr.IsActive
                 && ucr.Company.IsActive
+                && ucr.Company.PlanEndDate >= today
                 && (ucr.StartDate == null || ucr.StartDate <= today)
                 && (ucr.EndDate == null || ucr.EndDate >= today))
             .Select(ucr => new DirectoryCompanyRole(

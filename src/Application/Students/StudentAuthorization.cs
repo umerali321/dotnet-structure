@@ -68,20 +68,26 @@ public static class StudentAuthorization
             return;
         }
 
-        if (caller.Role != Roles.Manager)
+        if (caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("You are not authorized to perform this action.");
         }
 
-        var assignedManagerId = await studentRepository.GetManagerIdAsync(targetUserId, cancellationToken);
-        if (assignedManagerId is not null)
+        // Only a plain Manager is narrowed to a specific employee's assigned ManagerId - a
+        // CompanyAdmin manages every employee in their company regardless of assignment, matching
+        // StudentQueryService's list-filter design.
+        if (caller.Role == Roles.Manager)
         {
-            if (assignedManagerId != caller.DbUserId)
+            var assignedManagerId = await studentRepository.GetManagerIdAsync(targetUserId, cancellationToken);
+            if (assignedManagerId is not null)
             {
-                throw new UnauthorizedAccessException("You do not have access to this student.");
-            }
+                if (assignedManagerId != caller.DbUserId)
+                {
+                    throw new UnauthorizedAccessException("You do not have access to this student.");
+                }
 
-            return;
+                return;
+            }
         }
 
         var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);

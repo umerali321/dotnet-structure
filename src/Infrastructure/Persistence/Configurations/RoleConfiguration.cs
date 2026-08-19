@@ -16,5 +16,9 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         // New, additive column - see the AddRolePermissionsAndManagerAssignment migration, which
         // also sets this true for the 5 pre-existing rows (Student/Manager/FDM/Admin/CompanyAdmin).
         builder.Property(x => x.IsSystemRole).HasDefaultValue(false);
+
+        // Every role (system and custom) starts active - unlike IsSystemRole, no backfill UPDATE is
+        // needed since the default applies uniformly.
+        builder.Property(x => x.IsActive).HasDefaultValue(true);
     }
 }

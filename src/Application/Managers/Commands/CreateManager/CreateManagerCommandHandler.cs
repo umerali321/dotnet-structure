@@ -45,6 +45,14 @@ public class CreateManagerCommandHandler
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can create managers.");
         }
 
+        // A plain Manager can create another Manager, but only SuperAdmin or an existing CompanyAdmin
+        // can create a CompanyAdmin - prevents a lower-privileged role from creating a peer of a
+        // higher one.
+        if (command.Role == Roles.CompanyAdmin && !caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        {
+            throw new UnauthorizedAccessException("Only SuperAdmin and company admins can create company admins.");
+        }
+
         if (!caller.IsSuperAdmin)
         {
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);
@@ -64,6 +72,7 @@ public class CreateManagerCommandHandler
             user,
             command.CompanyId,
             command.StartDate,
+            command.Role,
             cancellationToken);
 
         if (!command.CreateInSkillport)

@@ -26,10 +26,11 @@ public class ManagerRepository : IManagerRepository
         AppUser user,
         int companyId,
         DateOnly? startDate,
+        string roleName,
         CancellationToken cancellationToken = default)
     {
         var managerRoleId = await _dbContext.Roles
-            .Where(r => r.RoleName == "Manager")
+            .Where(r => r.RoleName == roleName)
             .Select(r => r.RoleId)
             .FirstAsync(cancellationToken);
 

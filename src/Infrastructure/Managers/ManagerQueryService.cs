@@ -36,6 +36,7 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
 
         var total = await query.CountAsync(ct);
 
+
         var ordered = o.SortBy?.ToLowerInvariant() switch
         {
             "firstname" => o.SortDescending ? query.OrderByDescending(x => x.FirstName).ThenBy(x => x.UserId) : query.OrderBy(x => x.FirstName).ThenBy(x => x.UserId),

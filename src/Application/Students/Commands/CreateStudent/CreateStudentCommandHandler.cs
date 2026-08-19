@@ -39,9 +39,9 @@ public class CreateStudentCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager)
+        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and company managers can create students.");
+            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can create students.");
         }
 
         if (!caller.IsSuperAdmin)

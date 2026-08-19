@@ -96,6 +96,21 @@ public class LoginCommandHandler
         var activeCompanyRoles = await _userDirectory.GetActiveCompanyRolesAsync(user.UserId, cancellationToken);
         var (role, currentCompany, companies) = CompanyContextResolver.Resolve(activeCompanyRoles);
 
+        // Zero active company roles is ambiguous by itself - it's also what a never-assigned account
+        // looks like. Only reject when the user HAS at least one membership row that's now entirely
+        // inactive (their own membership, or their company, was deactivated) - a genuine 2+-company
+        // user always has active rows here and never reaches this branch.
+        if (role == CompanyContextResolver.UnassignedRole
+            && companies.Count == 0
+            && await _userDirectory.HasAnyCompanyRoleAsync(user.UserId, cancellationToken))
+        {
+            await _loginActivityLogRepository.AddAsync(LoginActivityLog.LoginFailed(command.Email), cancellationToken);
+            await _loginActivityLogRepository.SaveChangesAsync(cancellationToken);
+
+            throw new AuthenticationFailedException(
+                "Your company account has been deactivated or its trial/license has expired. Contact your administrator.");
+        }
+
         return await IssueTokensAsync(
             user.UserId.ToString(),
             user.Email ?? user.Username ?? command.Email,

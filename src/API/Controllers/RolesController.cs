@@ -3,7 +3,10 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.RoleManagement.Commands.ActivateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.CreateRole;
+using SkillsetsBackend.Application.RoleManagement.Commands.DeactivateRole;
+using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRolePermissions;
 using SkillsetsBackend.Application.RoleManagement.Queries.GetMyPermissions;
 using SkillsetsBackend.Application.RoleManagement.Queries.GetRoleById;
@@ -26,6 +29,9 @@ public class RolesController : ControllerBase
     private readonly GetUserEffectivePermissionsQueryHandler _getUserPermissionsHandler;
     private readonly CreateRoleCommandHandler _createRoleHandler;
     private readonly UpdateRolePermissionsCommandHandler _updateRolePermissionsHandler;
+    private readonly UpdateRoleCommandHandler _updateRoleHandler;
+    private readonly DeactivateRoleCommandHandler _deactivateRoleHandler;
+    private readonly ActivateRoleCommandHandler _activateRoleHandler;
 
     public RolesController(
         ListPermissionsQueryHandler listPermissionsHandler,
@@ -34,7 +40,10 @@ public class RolesController : ControllerBase
         GetMyPermissionsQueryHandler getMyPermissionsHandler,
         GetUserEffectivePermissionsQueryHandler getUserPermissionsHandler,
         CreateRoleCommandHandler createRoleHandler,
-        UpdateRolePermissionsCommandHandler updateRolePermissionsHandler)
+        UpdateRolePermissionsCommandHandler updateRolePermissionsHandler,
+        UpdateRoleCommandHandler updateRoleHandler,
+        DeactivateRoleCommandHandler deactivateRoleHandler,
+        ActivateRoleCommandHandler activateRoleHandler)
     {
         _listPermissionsHandler = listPermissionsHandler;
         _listRolesHandler = listRolesHandler;
@@ -43,6 +52,9 @@ public class RolesController : ControllerBase
         _getUserPermissionsHandler = getUserPermissionsHandler;
         _createRoleHandler = createRoleHandler;
         _updateRolePermissionsHandler = updateRolePermissionsHandler;
+        _updateRoleHandler = updateRoleHandler;
+        _deactivateRoleHandler = deactivateRoleHandler;
+        _activateRoleHandler = activateRoleHandler;
     }
 
     /// <summary>Read-only catalog - Permissions are never created through the API, only seeded via migration.</summary>
@@ -88,6 +100,30 @@ public class RolesController : ControllerBase
     public async Task<IActionResult> UpdatePermissions(byte id, UpdateRolePermissionsCommand command, CancellationToken cancellationToken)
     {
         await _updateRolePermissionsHandler.Handle(id, command, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>SuperAdmin only - rejects system roles.</summary>
+    [HttpPut("roles/{id}")]
+    public async Task<IActionResult> UpdateRole(byte id, UpdateRoleCommand command, CancellationToken cancellationToken)
+    {
+        await _updateRoleHandler.Handle(id, command, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>SuperAdmin only - soft delete, rejects system roles.</summary>
+    [HttpPost("roles/{id}/deactivate")]
+    public async Task<IActionResult> DeactivateRole(byte id, CancellationToken cancellationToken)
+    {
+        await _deactivateRoleHandler.Handle(id, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>SuperAdmin only.</summary>
+    [HttpPost("roles/{id}/activate")]
+    public async Task<IActionResult> ActivateRole(byte id, CancellationToken cancellationToken)
+    {
+        await _activateRoleHandler.Handle(id, GetCaller(), cancellationToken);
         return NoContent();
     }
 

@@ -73,6 +73,17 @@ public class RefreshTokenCommandHandler
             {
                 var activeCompanyRoles = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);
                 (role, currentCompany, companies) = CompanyContextResolver.Resolve(activeCompanyRoles);
+
+                // Same distinction as LoginCommandHandler: zero active roles is only a rejection when
+                // the user has at least one membership row that's now entirely inactive - otherwise a
+                // legitimate multi-company "please pick one" refresh would be wrongly blocked.
+                if (role == CompanyContextResolver.UnassignedRole
+                    && companies.Count == 0
+                    && await _userDirectory.HasAnyCompanyRoleAsync(userId, cancellationToken))
+                {
+                    throw new AuthenticationFailedException(
+                        "Your company account has been deactivated or its trial/license has expired. Contact your administrator.");
+                }
             }
         }
 
