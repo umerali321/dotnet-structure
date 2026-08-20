@@ -69,6 +69,18 @@ public class ManagerRepository : IManagerRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task AddCompanyAdminRoleAsync(int userId, int companyId, DateOnly? startDate, CancellationToken cancellationToken = default)
+    {
+        var companyAdminRoleId = await _dbContext.Roles
+            .Where(r => r.RoleName == Domain.Identity.Roles.CompanyAdmin)
+            .Select(r => r.RoleId)
+            .FirstAsync(cancellationToken);
+
+        var membership = new UserCompanyRole(userId, companyId, companyAdminRoleId, startDate);
+        _dbContext.UserCompanyRoles.Add(membership);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task RemoveManagerRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);

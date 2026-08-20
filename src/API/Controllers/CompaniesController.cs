@@ -10,6 +10,8 @@ using SkillsetsBackend.Application.Companies.Commands.DeactivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompany;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
+using SkillsetsBackend.Application.Companies.Commands.ImportCompanies;
+using SkillsetsBackend.Application.Companies.Interfaces;
 using SkillsetsBackend.Application.Companies.Queries.GetCompanyById;
 using SkillsetsBackend.Application.Companies.Queries.GetCompanyLogo;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
@@ -28,6 +30,9 @@ public class CompaniesController : ControllerBase
     };
     private const long MaxLogoSizeBytes = 2 * 1024 * 1024;
 
+    private static readonly HashSet<string> AllowedImportExtensions = new(StringComparer.OrdinalIgnoreCase) { ".xlsx", ".csv" };
+    private const long MaxImportFileSizeBytes = 10 * 1024 * 1024;
+
     private readonly ListCompaniesQueryHandler _listHandler;
     private readonly GetCompanyByIdQueryHandler _getByIdHandler;
     private readonly GetCompanyLogoQueryHandler _getLogoHandler;
@@ -37,6 +42,8 @@ public class CompaniesController : ControllerBase
     private readonly ActivateCompanyCommandHandler _activateHandler;
     private readonly SetCompanyLicenseCommandHandler _setLicenseHandler;
     private readonly UpdateCompanyLogoCommandHandler _updateLogoHandler;
+    private readonly ImportCompaniesCommandHandler _importHandler;
+    private readonly IImportFileParser _importFileParser;
     private readonly IWebHostEnvironment _webHostEnvironment;
 
     public CompaniesController(
@@ -49,6 +56,8 @@ public class CompaniesController : ControllerBase
         ActivateCompanyCommandHandler activateHandler,
         SetCompanyLicenseCommandHandler setLicenseHandler,
         UpdateCompanyLogoCommandHandler updateLogoHandler,
+        ImportCompaniesCommandHandler importHandler,
+        IImportFileParser importFileParser,
         IWebHostEnvironment webHostEnvironment)
     {
         _listHandler = listHandler;
@@ -60,6 +69,8 @@ public class CompaniesController : ControllerBase
         _activateHandler = activateHandler;
         _setLicenseHandler = setLicenseHandler;
         _updateLogoHandler = updateLogoHandler;
+        _importHandler = importHandler;
+        _importFileParser = importFileParser;
         _webHostEnvironment = webHostEnvironment;
     }
 
@@ -161,6 +172,37 @@ public class CompaniesController : ControllerBase
         var logoUrl = $"/company-logos/{fileName}";
         await _updateLogoHandler.Handle(id, logoUrl, GetCaller(), cancellationToken);
         return Ok(new { logoUrl });
+    }
+
+    /// <summary>SuperAdmin only. Reads an .xlsx/.csv Company Import file and, for every row,
+    /// creates or completes the matching Company + Company Admin - see ImportCompaniesCommandHandler
+    /// for the full reconciliation logic. Returns a summary plus a per-row result so the admin can
+    /// see exactly what happened to every row.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(MaxImportFileSizeBytes)]
+    public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { message = "No file was uploaded." });
+        }
+
+        if (file.Length > MaxImportFileSizeBytes)
+        {
+            return BadRequest(new { message = "Import file must be 10MB or smaller." });
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!AllowedImportExtensions.Contains(extension))
+        {
+            return BadRequest(new { message = "Only .xlsx and .csv files are supported." });
+        }
+
+        await using var stream = file.OpenReadStream();
+        var rows = _importFileParser.Parse(stream, file.FileName);
+
+        var result = await _importHandler.Handle(new ImportCompaniesCommand(rows), GetCaller(), cancellationToken);
+        return Ok(result);
     }
 
     private CallerContext GetCaller() => new(

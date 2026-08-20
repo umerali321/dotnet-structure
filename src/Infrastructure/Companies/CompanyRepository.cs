@@ -23,6 +23,41 @@ public class CompanyRepository : ICompanyRepository
     public Task<Company?> GetByIdAsync(int companyId, CancellationToken cancellationToken = default) =>
         _dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId, cancellationToken);
 
+    public async Task<Company?> FindExistingAsync(string companyCode, string companyName, CancellationToken cancellationToken = default)
+    {
+        var byCode = await _dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyCode == companyCode, cancellationToken);
+        if (byCode is not null)
+        {
+            return byCode;
+        }
+
+        return await _dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyName.ToLower() == companyName.ToLower(), cancellationToken);
+    }
+
+    public Task<AppUser?> FindUserByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+        _dbContext.Users.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == email.ToLower(), cancellationToken);
+
+    public async Task<bool> HasActiveCompanyAdminAsync(int companyId, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return await _dbContext.UserCompanyRoles.AnyAsync(
+            ucr => ucr.CompanyId == companyId && ucr.IsActive && ucr.Role.RoleName == Roles.CompanyAdmin
+                && (ucr.StartDate == null || ucr.StartDate <= today) && (ucr.EndDate == null || ucr.EndDate >= today),
+            cancellationToken);
+    }
+
+    public async Task<AppUser?> GetCompanyAdminAsync(int companyId, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var userId = await _dbContext.UserCompanyRoles
+            .Where(ucr => ucr.CompanyId == companyId && ucr.IsActive && ucr.Role.RoleName == Roles.CompanyAdmin
+                && (ucr.StartDate == null || ucr.StartDate <= today) && (ucr.EndDate == null || ucr.EndDate >= today))
+            .Select(ucr => ucr.UserId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return userId == 0 ? null : await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+    }
+
     public async Task<int> CreateCompanyWithAdminAsync(
         Company company,
         AppUser admin,

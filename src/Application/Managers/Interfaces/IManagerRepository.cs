@@ -24,6 +24,11 @@ public interface IManagerRepository
     /// CreateManagerAsync.</summary>
     Task AddManagerRoleAsync(int userId, int companyId, DateOnly? startDate, CancellationToken cancellationToken = default);
 
+    /// <summary>Adds a CompanyAdmin UserCompanyRole to an already-existing user - used by the Company
+    /// Import tool when a Point of Contact's email already belongs to someone in the system (reuse
+    /// the person, never duplicate a Users row). No new Users row, unlike CreateManagerAsync.</summary>
+    Task AddCompanyAdminRoleAsync(int userId, int companyId, DateOnly? startDate, CancellationToken cancellationToken = default);
+
     /// <summary>Deactivates this user's active Manager UserCompanyRole at the given company (never
     /// CompanyAdmin - symmetric with AddManagerRoleAsync, which never grants CompanyAdmin either) -
     /// a no-op if they don't have one. The Users row and any other role they hold (e.g. Employee)

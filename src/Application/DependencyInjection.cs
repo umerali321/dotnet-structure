@@ -30,6 +30,7 @@ using SkillsetsBackend.Application.Companies.Commands.DeactivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.ActivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
+using SkillsetsBackend.Application.Companies.Commands.ImportCompanies;
 using SkillsetsBackend.Application.Dashboard.Queries.GetDashboardStats;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHistory;
@@ -114,6 +115,7 @@ public static class DependencyInjection
         services.AddScoped<ActivateCompanyCommandHandler>();
         services.AddScoped<SetCompanyLicenseCommandHandler>();
         services.AddScoped<UpdateCompanyLogoCommandHandler>();
+        services.AddScoped<ImportCompaniesCommandHandler>();
         services.AddScoped<ListManagersQueryHandler>();
         services.AddScoped<GetManagerByIdQueryHandler>();
         services.AddScoped<GetManagerCompaniesQueryHandler>();

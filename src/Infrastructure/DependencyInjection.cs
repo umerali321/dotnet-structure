@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<ICompanyQueryService, CompanyQueryService>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<IImportFileParser, ExcelCsvImportFileParser>();
         services.AddScoped<IManagerQueryService, ManagerQueryService>();
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IFaqRepository, FaqRepository>();
