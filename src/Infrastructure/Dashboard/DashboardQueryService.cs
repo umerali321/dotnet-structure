@@ -47,6 +47,10 @@ public class DashboardQueryService : IDashboardQueryService
             c => c.IsActive && c.PlanEndDate >= today && c.PlanType == Company.LicensePlan, cancellationToken);
         var inactiveCompanies = await companiesQuery.CountAsync(
             c => !c.IsActive || c.PlanEndDate < today, cancellationToken);
+        var thirtyDaysOut = today.AddDays(30);
+        var expiringLicensesIn30Days = await companiesQuery.CountAsync(
+            c => c.IsActive && c.PlanType == Company.LicensePlan && c.PlanEndDate >= today && c.PlanEndDate <= thirtyDaysOut,
+            cancellationToken);
 
         // ---- Headcounts - active UserCompanyRoles by role, not gated on Company.IsActive (a
         // headcount should still count a company's people even if its license just lapsed). ----
@@ -117,7 +121,7 @@ public class DashboardQueryService : IDashboardQueryService
 
         return new DashboardStatsDto(
             totalCompanies, totalCompanyAdmins, totalManagers, totalEmployees,
-            trialCompanies, licensedCompanies, inactiveCompanies,
+            trialCompanies, licensedCompanies, inactiveCompanies, expiringLicensesIn30Days,
             itEmployees, nonItEmployees, courseLibraryUsers,
             companiesAddedInPeriod, usersAddedInPeriod, sessionsStartedInPeriod);
     }
@@ -201,7 +205,7 @@ public class DashboardQueryService : IDashboardQueryService
         var emailLowers = pageItems.Select(g => g.EmailLower).Distinct().ToList();
         var matchedUsers = await _dbContext.Users.AsNoTracking()
             .Where(u => u.Email != null && emailLowers.Contains(u.Email.ToLower()))
-            .Select(u => new { u.UserId, Email = u.Email!.ToLower(), u.FirstName, u.LastName })
+            .Select(u => new { u.UserId, Email = u.Email!.ToLower(), u.FirstName, u.LastName, u.Phone })
             .ToListAsync(cancellationToken);
         var usersByEmail = matchedUsers.GroupBy(u => u.Email).ToDictionary(g => g.Key, g => g.First());
 
@@ -230,7 +234,7 @@ public class DashboardQueryService : IDashboardQueryService
 
             return new CourseLibraryUserDto(
                 g.Email, fullName, user?.UserId, company?.CompanyName ?? g.CardCompanyName, company?.CompanyId,
-                studentType, g.LatestStart, g.LatestEnd, status, g.SessionCount);
+                studentType, g.LatestStart, g.LatestEnd, status, g.SessionCount, user?.Phone);
         }).ToList();
 
         return new PaginatedList<CourseLibraryUserDto>(items, totalCount, page, pageSize);

@@ -41,7 +41,7 @@ public class GetUserEffectivePermissionsQueryHandler
         }
 
         var (role, _, _) = CompanyContextResolver.Resolve(targetCompanies);
-        var permissionKeys = await _permissionService.GetEffectivePermissionKeysForRoleAsync(role, cancellationToken);
+        var permissionKeys = await _permissionService.GetEffectivePermissionKeysForUserAsync(targetUserId, role, cancellationToken);
 
         return new UserEffectivePermissionsDto(targetUserId, role, permissionKeys);
     }

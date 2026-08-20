@@ -17,4 +17,7 @@ public record CourseLibraryUserDto(
     DateTime LatestSessionStart,
     DateTime LatestSessionEnd,
     string SessionStatus,
-    int SessionCount);
+    int SessionCount,
+    /// <summary>From the matched registered Users record only - null when no registered user was
+    /// matched by email (the card is legacy/unregistered), same fallback boundary as FullName.</summary>
+    string? Phone);

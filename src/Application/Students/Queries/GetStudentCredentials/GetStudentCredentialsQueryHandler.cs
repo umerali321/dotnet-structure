@@ -11,15 +11,22 @@ public class GetStudentCredentialsQueryHandler
 {
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
 
-    public GetStudentCredentialsQueryHandler(IStudentRepository repository, IUserDirectory userDirectory)
+    public GetStudentCredentialsQueryHandler(IStudentRepository repository, IUserDirectory userDirectory, IPermissionService permissionService)
     {
         _repository = repository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
     }
 
     public async Task<StudentCredentialDto> Handle(int userId, CallerContext caller, CancellationToken cancellationToken)
     {
+        if (!await _permissionService.HasPermissionAsync(caller, Permissions.Students.ViewCredentials, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("You do not have permission to view employee login credentials.");
+        }
+
         await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, _repository, cancellationToken);
 
         var user = await _repository.GetUserAsync(userId, cancellationToken)

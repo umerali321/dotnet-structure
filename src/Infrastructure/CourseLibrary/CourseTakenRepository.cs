@@ -88,6 +88,22 @@ public class CourseTakenRepository : ICourseTakenRepository
         }
         // else: SuperAdmin - unrestricted.
 
+        if (!string.IsNullOrWhiteSpace(options.StudentNameSearch))
+        {
+            var term = $"%{EscapeLike(options.StudentNameSearch.Trim())}%";
+            filtered = filtered.Where(x => _dbContext.Users.Any(u => u.UserId == x.UserId && (
+                EF.Functions.Like(u.FirstName!, term, "\\")
+                || EF.Functions.Like(u.LastName!, term, "\\")
+                || EF.Functions.Like((u.FirstName ?? "") + " " + (u.LastName ?? ""), term, "\\")
+                || EF.Functions.Like((u.LastName ?? "") + " " + (u.FirstName ?? ""), term, "\\"))));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.CourseTitleSearch))
+        {
+            var term = $"%{EscapeLike(options.CourseTitleSearch.Trim())}%";
+            filtered = filtered.Where(x => _dbContext.Courses.Any(c => c.CourseId == x.CourseId && EF.Functions.Like(c.CourseTitle, term, "\\")));
+        }
+
         var totalCount = await filtered.CountAsync(cancellationToken);
 
         var items = await (
@@ -116,4 +132,7 @@ public class CourseTakenRepository : ICourseTakenRepository
         ct.AccessedAt,
         ct.CompletedAt,
         c.CourseUrl);
+
+    private static string EscapeLike(string value) =>
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
 }

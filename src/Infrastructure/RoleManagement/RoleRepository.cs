@@ -97,4 +97,36 @@ public class RoleRepository : IRoleRepository
             await transaction.CommitAsync(cancellationToken);
         });
     }
+
+    public async Task ReplaceUserPermissionOverridesAsync(int userId, IReadOnlyDictionary<int, bool> overridesByPermissionId, string? updatedBy, CancellationToken cancellationToken = default)
+    {
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var existing = await _dbContext.UserPermissionOverrides.Where(o => o.UserId == userId).ToListAsync(cancellationToken);
+            _dbContext.UserPermissionOverrides.RemoveRange(existing);
+
+            foreach (var (permissionId, isGranted) in overridesByPermissionId)
+            {
+                _dbContext.UserPermissionOverrides.Add(new UserPermissionOverride(userId, permissionId, isGranted, updatedBy));
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        });
+    }
+
+    public async Task<IReadOnlyDictionary<int, bool>> GetUserPermissionOverridesAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var rows = await _dbContext.UserPermissionOverrides
+            .AsNoTracking()
+            .Where(o => o.UserId == userId)
+            .Select(o => new { o.PermissionId, o.IsGranted })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(r => r.PermissionId, r => r.IsGranted);
+    }
 }

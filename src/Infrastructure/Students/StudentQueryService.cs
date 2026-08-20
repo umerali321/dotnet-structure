@@ -64,6 +64,11 @@ public class StudentQueryService : IStudentQueryService
                 EF.Functions.Like(x.u.LastName, term, "\\") ||
                 EF.Functions.Like(x.u.Email, term, "\\") ||
                 EF.Functions.Like(x.u.Username, term, "\\") ||
+                // "First Last" / "Last First" - the individual-field checks above only ever match a
+                // single search token, so a two-word search like "John Smith" never matched either
+                // field on its own even though the person clearly exists.
+                EF.Functions.Like((x.u.FirstName ?? "") + " " + (x.u.LastName ?? ""), term, "\\") ||
+                EF.Functions.Like((x.u.LastName ?? "") + " " + (x.u.FirstName ?? ""), term, "\\") ||
                 studentMemberships.Any(membership => membership.UserId == x.u.UserId &&
                     (EF.Functions.Like(membership.Company.CompanyCode, term, "\\") || EF.Functions.Like(membership.Company.CompanyName, term, "\\"))));
         }

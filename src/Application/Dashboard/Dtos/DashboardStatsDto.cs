@@ -13,6 +13,10 @@ public record DashboardStatsDto(
     int TrialCompanies,
     int LicensedCompanies,
     int InactiveCompanies,
+    /// <summary>Currently-licensed, active companies whose PlanEndDate falls within the next 30
+    /// days - a subset of LicensedCompanies, surfaced separately so admins can see renewals coming
+    /// due without it changing what "Valid Licensed" itself counts.</summary>
+    int ExpiringLicensesIn30Days,
     int ItEmployees,
     int NonItEmployees,
     int CourseLibraryUsers,

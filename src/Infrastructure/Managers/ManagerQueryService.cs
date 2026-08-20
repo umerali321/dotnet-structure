@@ -30,8 +30,17 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
 
         if (!string.IsNullOrWhiteSpace(o.Search))
         {
-            var term = $"%{o.Search.Trim()}%";
-            query = query.Where(u => EF.Functions.Like(u.FirstName!, term) || EF.Functions.Like(u.LastName!, term) || EF.Functions.Like(u.Email!, term) || EF.Functions.Like(u.Username!, term));
+            var term = $"%{EscapeLike(o.Search.Trim())}%";
+            query = query.Where(u =>
+                EF.Functions.Like(u.FirstName!, term, "\\") ||
+                EF.Functions.Like(u.LastName!, term, "\\") ||
+                EF.Functions.Like(u.Email!, term, "\\") ||
+                EF.Functions.Like(u.Username!, term, "\\") ||
+                // "First Last" / "Last First" - the individual-field checks above only ever match a
+                // single search token, so a two-word search like "John Smith" never matched either
+                // field on its own even though the person clearly exists.
+                EF.Functions.Like((u.FirstName ?? "") + " " + (u.LastName ?? ""), term, "\\") ||
+                EF.Functions.Like((u.LastName ?? "") + " " + (u.FirstName ?? ""), term, "\\"));
         }
 
         var total = await query.CountAsync(ct);
@@ -118,4 +127,7 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
         var emailLower = email.ToLower();
         return codes.Any(code => activePairs.Contains((code, emailLower)));
     }
+
+    private static string EscapeLike(string value) =>
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
 }

@@ -13,15 +13,18 @@ public class UpdateStudentCommandHandler
     private readonly IValidator<UpdateStudentCommand> _validator;
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
 
     public UpdateStudentCommandHandler(
         IValidator<UpdateStudentCommand> validator,
         IStudentRepository repository,
-        IUserDirectory userDirectory)
+        IUserDirectory userDirectory,
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
     }
 
     public async Task Handle(int userId, UpdateStudentCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -57,6 +60,11 @@ public class UpdateStudentCommandHandler
         }
         else
         {
+            if (!await _permissionService.HasPermissionAsync(caller, Permissions.Students.Update, cancellationToken))
+            {
+                throw new UnauthorizedAccessException("You do not have permission to update employees.");
+            }
+
             await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, _repository, cancellationToken);
 
             // Email/Username are the account identifier - fixed at creation, never editable

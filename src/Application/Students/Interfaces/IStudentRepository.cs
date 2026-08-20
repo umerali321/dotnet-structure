@@ -32,5 +32,10 @@ public interface IStudentRepository
     /// otherwise creates a fresh one.</summary>
     Task AddEmployeeRoleAsync(int userId, int companyId, string createdBy, DateOnly? startDate, CancellationToken cancellationToken = default);
 
+    /// <summary>Deactivates this user's active Student UserCompanyRole at the given company - a
+    /// no-op if they don't have one. The Users row, StudentProfile, and any other role they hold
+    /// (e.g. Manager) are untouched.</summary>
+    Task RemoveEmployeeRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

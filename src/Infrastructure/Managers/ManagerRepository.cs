@@ -69,6 +69,21 @@ public class ManagerRepository : IManagerRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task RemoveManagerRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var activeRoles = await _dbContext.UserCompanyRoles
+            .Where(ucr => ucr.UserId == userId && ucr.CompanyId == companyId && ucr.IsActive && ucr.Role.RoleName == Domain.Identity.Roles.Manager)
+            .ToListAsync(cancellationToken);
+
+        foreach (var role in activeRoles)
+        {
+            role.Deactivate(today);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _dbContext.SaveChangesAsync(cancellationToken);
 }

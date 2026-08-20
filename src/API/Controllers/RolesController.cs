@@ -8,6 +8,8 @@ using SkillsetsBackend.Application.RoleManagement.Commands.CreateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.DeactivateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRolePermissions;
+using SkillsetsBackend.Application.RoleManagement.Commands.SetUserPermissionOverrides;
+using SkillsetsBackend.Application.RoleManagement.Queries.GetUserPermissionOverrides;
 using SkillsetsBackend.Application.RoleManagement.Queries.GetMyPermissions;
 using SkillsetsBackend.Application.RoleManagement.Queries.GetRoleById;
 using SkillsetsBackend.Application.RoleManagement.Queries.GetUserEffectivePermissions;
@@ -32,6 +34,8 @@ public class RolesController : ControllerBase
     private readonly UpdateRoleCommandHandler _updateRoleHandler;
     private readonly DeactivateRoleCommandHandler _deactivateRoleHandler;
     private readonly ActivateRoleCommandHandler _activateRoleHandler;
+    private readonly SetUserPermissionOverridesCommandHandler _setUserPermissionOverridesHandler;
+    private readonly GetUserPermissionOverridesQueryHandler _getUserPermissionOverridesHandler;
 
     public RolesController(
         ListPermissionsQueryHandler listPermissionsHandler,
@@ -43,7 +47,9 @@ public class RolesController : ControllerBase
         UpdateRolePermissionsCommandHandler updateRolePermissionsHandler,
         UpdateRoleCommandHandler updateRoleHandler,
         DeactivateRoleCommandHandler deactivateRoleHandler,
-        ActivateRoleCommandHandler activateRoleHandler)
+        ActivateRoleCommandHandler activateRoleHandler,
+        SetUserPermissionOverridesCommandHandler setUserPermissionOverridesHandler,
+        GetUserPermissionOverridesQueryHandler getUserPermissionOverridesHandler)
     {
         _listPermissionsHandler = listPermissionsHandler;
         _listRolesHandler = listRolesHandler;
@@ -55,6 +61,8 @@ public class RolesController : ControllerBase
         _updateRoleHandler = updateRoleHandler;
         _deactivateRoleHandler = deactivateRoleHandler;
         _activateRoleHandler = activateRoleHandler;
+        _setUserPermissionOverridesHandler = setUserPermissionOverridesHandler;
+        _getUserPermissionOverridesHandler = getUserPermissionOverridesHandler;
     }
 
     /// <summary>Read-only catalog - Permissions are never created through the API, only seeded via migration.</summary>
@@ -132,6 +140,24 @@ public class RolesController : ControllerBase
     public async Task<IActionResult> GetUserPermissions(int userId, CancellationToken cancellationToken)
     {
         var result = await _getUserPermissionsHandler.Handle(userId, GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>SuperAdmin only - sets this specific user's individual permission overrides (a
+    /// divergence from their role's defaults).</summary>
+    [HttpPut("users/{userId:int}/permissions")]
+    public async Task<IActionResult> SetUserPermissions(int userId, SetUserPermissionOverridesCommand command, CancellationToken cancellationToken)
+    {
+        await _setUserPermissionOverridesHandler.Handle(userId, command, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>SuperAdmin only - the raw override rows for this user, with no role baseline merged
+    /// in (see GetUserPermissions for the merged/resolved view).</summary>
+    [HttpGet("users/{userId:int}/permission-overrides")]
+    public async Task<IActionResult> GetUserPermissionOverrides(int userId, CancellationToken cancellationToken)
+    {
+        var result = await _getUserPermissionOverridesHandler.Handle(userId, GetCaller(), cancellationToken);
         return Ok(result);
     }
 

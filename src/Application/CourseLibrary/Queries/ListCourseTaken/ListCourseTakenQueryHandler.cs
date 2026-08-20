@@ -53,7 +53,7 @@ public class ListCourseTakenQueryHandler
         }
 
         return await _repository.ListAsync(
-            new CourseTakenListOptions(page, pageSize, onlyUserId, restrictToCompanyIds),
+            new CourseTakenListOptions(page, pageSize, onlyUserId, restrictToCompanyIds, query.StudentName, query.CourseTitle),
             cancellationToken);
     }
 }

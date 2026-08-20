@@ -12,4 +12,8 @@ public record CreateManagerCommand(
     int CompanyId,
     DateOnly? StartDate,
     bool CreateInSkillport = false,
-    string Role = "Manager");
+    string Role = "Manager",
+    /// <summary>Also grants this brand-new person an Employee role at the same company, in the
+    /// same request - equivalent to creating the Manager then separately calling
+    /// AddEmployeeRoleCommand for the same userId.</summary>
+    bool AlsoCreateEmployee = false);

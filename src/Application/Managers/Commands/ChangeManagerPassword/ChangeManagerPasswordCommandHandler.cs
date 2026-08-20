@@ -16,17 +16,20 @@ public class ChangeManagerPasswordCommandHandler
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
     private readonly ILegacyCredentialVerifier _credentialVerifier;
+    private readonly IPermissionService _permissionService;
 
     public ChangeManagerPasswordCommandHandler(
         IValidator<ChangeManagerPasswordCommand> validator,
         IStudentRepository repository,
         IUserDirectory userDirectory,
-        ILegacyCredentialVerifier credentialVerifier)
+        ILegacyCredentialVerifier credentialVerifier,
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
         _userDirectory = userDirectory;
         _credentialVerifier = credentialVerifier;
+        _permissionService = permissionService;
     }
 
     public async Task Handle(int userId, ChangeManagerPasswordCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -40,9 +43,13 @@ public class ChangeManagerPasswordCommandHandler
         var user = await _repository.GetUserAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), userId);
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        var changingOwnPassword = caller.DbUserId == userId;
+
+        // Changing someone else's password requires the ManagePassword permission - changing your
+        // own never does, so a Manager can't lock themselves out by having it revoked.
+        if (!changingOwnPassword && !await _permissionService.HasPermissionAsync(caller, Permissions.Managers.ManagePassword, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can change manager passwords.");
+            throw new UnauthorizedAccessException("You do not have permission to change manager passwords.");
         }
 
         if (!caller.IsSuperAdmin)
@@ -50,7 +57,7 @@ public class ChangeManagerPasswordCommandHandler
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }
 
-        if (caller.DbUserId == userId)
+        if (changingOwnPassword)
         {
             // Self-service change - current password is required, not merely verified-if-present,
             // otherwise omitting it from the request would silently skip verification entirely.

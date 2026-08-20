@@ -8,7 +8,9 @@ public record CourseTakenListOptions(
     int Page,
     int PageSize,
     int? OnlyUserId,
-    IReadOnlyCollection<int>? RestrictToCompanyIds);
+    IReadOnlyCollection<int>? RestrictToCompanyIds,
+    string? StudentNameSearch = null,
+    string? CourseTitleSearch = null);
 
 public interface ICourseTakenRepository
 {

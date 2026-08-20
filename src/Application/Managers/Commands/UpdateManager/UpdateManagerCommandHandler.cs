@@ -14,15 +14,18 @@ public class UpdateManagerCommandHandler
     private readonly IValidator<UpdateManagerCommand> _validator;
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
 
     public UpdateManagerCommandHandler(
         IValidator<UpdateManagerCommand> validator,
         IStudentRepository repository,
-        IUserDirectory userDirectory)
+        IUserDirectory userDirectory,
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
     }
 
     public async Task Handle(int userId, UpdateManagerCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -36,9 +39,9 @@ public class UpdateManagerCommandHandler
         var user = await _repository.GetUserAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), userId);
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!await _permissionService.HasPermissionAsync(caller, Permissions.Managers.Update, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can update managers.");
+            throw new UnauthorizedAccessException("You do not have permission to update managers.");
         }
 
         if (!caller.IsSuperAdmin)

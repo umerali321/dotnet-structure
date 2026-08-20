@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
@@ -16,18 +17,24 @@ public class CreateStudentCommandHandler
 {
     private readonly IValidator<CreateStudentCommand> _validator;
     private readonly IStudentRepository _repository;
+    private readonly IManagerRepository _managerRepository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
     private readonly ISkillportSessionService _skillportSessionService;
 
     public CreateStudentCommandHandler(
         IValidator<CreateStudentCommand> validator,
         IStudentRepository repository,
+        IManagerRepository managerRepository,
         IUserDirectory userDirectory,
+        IPermissionService permissionService,
         ISkillportSessionService skillportSessionService)
     {
         _validator = validator;
         _repository = repository;
+        _managerRepository = managerRepository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
         _skillportSessionService = skillportSessionService;
     }
 
@@ -39,9 +46,16 @@ public class CreateStudentCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        // Permission-driven (RolePermissions), not a hardcoded role check - see
+        // CreateManagerCommandHandler for the identical pattern.
+        if (!caller.IsSuperAdmin && !await _permissionService.HasPermissionAsync(caller, Permissions.Students.Create, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can create students.");
+            throw new UnauthorizedAccessException("You do not have permission to create employees.");
+        }
+
+        if (command.AlsoCreateManager && !caller.IsSuperAdmin && !await _permissionService.HasPermissionAsync(caller, Permissions.Managers.Create, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("You do not have permission to create managers.");
         }
 
         if (!caller.IsSuperAdmin)
@@ -61,6 +75,11 @@ public class CreateStudentCommandHandler
 
         var userId = await _repository.CreateStudentAsync(
             user, command.StudentType, caller.Email, command.CompanyId, command.StartDate, cancellationToken);
+
+        if (command.AlsoCreateManager)
+        {
+            await _managerRepository.AddManagerRoleAsync(userId, command.CompanyId, startDate: null, cancellationToken);
+        }
 
         if (!command.CreateInSkillport)
         {

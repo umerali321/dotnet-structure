@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Students.Commands.AddEmployeeRole;
+using SkillsetsBackend.Application.Students.Commands.RemoveEmployeeRole;
 using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
@@ -36,6 +37,7 @@ public class StudentsController : ControllerBase
     private readonly ProvisionStudentSkillportCommandHandler _provisionSkillportHandler;
     private readonly AssignStudentManagerCommandHandler _assignManagerHandler;
     private readonly AddEmployeeRoleCommandHandler _addEmployeeRoleHandler;
+    private readonly RemoveEmployeeRoleCommandHandler _removeEmployeeRoleHandler;
 
     public StudentsController(
         ListStudentsQueryHandler listHandler,
@@ -49,7 +51,8 @@ public class StudentsController : ControllerBase
         DeactivateStudentCommandHandler deactivateHandler,
         ProvisionStudentSkillportCommandHandler provisionSkillportHandler,
         AssignStudentManagerCommandHandler assignManagerHandler,
-        AddEmployeeRoleCommandHandler addEmployeeRoleHandler)
+        AddEmployeeRoleCommandHandler addEmployeeRoleHandler,
+        RemoveEmployeeRoleCommandHandler removeEmployeeRoleHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -63,6 +66,7 @@ public class StudentsController : ControllerBase
         _provisionSkillportHandler = provisionSkillportHandler;
         _assignManagerHandler = assignManagerHandler;
         _addEmployeeRoleHandler = addEmployeeRoleHandler;
+        _removeEmployeeRoleHandler = removeEmployeeRoleHandler;
     }
 
     [HttpGet]
@@ -155,6 +159,15 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> AddEmployeeRole(int id, AddEmployeeRoleRequest request, CancellationToken cancellationToken)
     {
         await _addEmployeeRoleHandler.Handle(new AddEmployeeRoleCommand(id, request.CompanyId), GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Revokes the Employee role from a user at the given company - SuperAdmin/CompanyAdmin
+    /// only. Refused if it's the person's only active role anywhere.</summary>
+    [HttpDelete("{id:int}/employee-role")]
+    public async Task<IActionResult> RemoveEmployeeRole(int id, [FromQuery] int companyId, CancellationToken cancellationToken)
+    {
+        await _removeEmployeeRoleHandler.Handle(new RemoveEmployeeRoleCommand(id, companyId), GetCaller(), cancellationToken);
         return NoContent();
     }
 

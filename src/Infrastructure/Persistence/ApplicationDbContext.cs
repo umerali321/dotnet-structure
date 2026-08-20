@@ -29,6 +29,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
+    public DbSet<UserPermissionOverride> UserPermissionOverrides => Set<UserPermissionOverride>();
+
     public DbSet<UserCompanyRole> UserCompanyRoles => Set<UserCompanyRole>();
 
     public DbSet<UserCredential> UserCredentials => Set<UserCredential>();

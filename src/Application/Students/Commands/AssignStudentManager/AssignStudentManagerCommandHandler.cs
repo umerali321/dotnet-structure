@@ -14,18 +14,20 @@ public class AssignStudentManagerCommandHandler
 {
     private readonly IStudentRepository _studentRepository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
 
-    public AssignStudentManagerCommandHandler(IStudentRepository studentRepository, IUserDirectory userDirectory)
+    public AssignStudentManagerCommandHandler(IStudentRepository studentRepository, IUserDirectory userDirectory, IPermissionService permissionService)
     {
         _studentRepository = studentRepository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
     }
 
     public async Task Handle(int studentUserId, AssignStudentManagerCommand command, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (!await _permissionService.HasPermissionAsync(caller, Permissions.Students.AssignManager, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and Company Admins can assign an employee to a Manager.");
+            throw new UnauthorizedAccessException("You do not have permission to assign an employee to a Manager.");
         }
 
         var profile = await _studentRepository.GetProfileByUserIdAsync(studentUserId, cancellationToken)

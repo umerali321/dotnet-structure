@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260820120000_AddAddressFieldsToListCompaniesSp")]
+    partial class AddAddressFieldsToListCompaniesSp
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1207,31 +1210,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserPermissionOverride", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PermissionId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsGranted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("UserId", "PermissionId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.ToTable("UserPermissionOverrides", (string)null);
-                });
-
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.StudentProfile", b =>
                 {
                     b.Property<int>("StudentProfileId")
@@ -1564,21 +1542,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasOne("SkillsetsBackend.Domain.Identity.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserPermissionOverride", b =>
-                {
-                    b.HasOne("SkillsetsBackend.Domain.Identity.Permission", null)
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SkillsetsBackend.Domain.Identity.AppUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -14,18 +14,22 @@ public class ListStudentsQueryHandler
 
     private readonly IStudentQueryService _queryService;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
 
-    public ListStudentsQueryHandler(IStudentQueryService queryService, IUserDirectory userDirectory)
+    public ListStudentsQueryHandler(IStudentQueryService queryService, IUserDirectory userDirectory, IPermissionService permissionService)
     {
         _queryService = queryService;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
     }
 
     public async Task<PaginatedList<StudentListItemDto>> Handle(ListStudentsQuery query, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        // Permission-driven (RolePermissions), not a hardcoded role check - see
+        // ListManagersQueryHandler for the identical pattern.
+        if (!caller.IsSuperAdmin && !await _permissionService.HasPermissionAsync(caller, Permissions.Students.View, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can list students.");
+            throw new UnauthorizedAccessException("You do not have permission to view employees.");
         }
 
         var page = query.Page < 1 ? 1 : query.Page;

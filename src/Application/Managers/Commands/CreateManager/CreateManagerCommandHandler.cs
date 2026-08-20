@@ -5,6 +5,7 @@ using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Application.Students;
+using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 using AppValidationException = SkillsetsBackend.Application.Common.Exceptions.ValidationException;
 
@@ -17,18 +18,24 @@ public class CreateManagerCommandHandler
 {
     private readonly IValidator<CreateManagerCommand> _validator;
     private readonly IManagerRepository _repository;
+    private readonly IStudentRepository _studentRepository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
     private readonly ISkillportSessionService _skillportSessionService;
 
     public CreateManagerCommandHandler(
         IValidator<CreateManagerCommand> validator,
         IManagerRepository repository,
+        IStudentRepository studentRepository,
         IUserDirectory userDirectory,
+        IPermissionService permissionService,
         ISkillportSessionService skillportSessionService)
     {
         _validator = validator;
         _repository = repository;
+        _studentRepository = studentRepository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
         _skillportSessionService = skillportSessionService;
     }
 
@@ -40,14 +47,17 @@ public class CreateManagerCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        // Permission-driven (RolePermissions), not a hardcoded role check - a SuperAdmin can grant or
+        // revoke "Create Managers" for the Manager role from the Roles & Permissions screen and this
+        // takes effect immediately, no code change needed. SuperAdmin itself always bypasses (see
+        // PermissionService).
+        if (!caller.IsSuperAdmin && !await _permissionService.HasPermissionAsync(caller, Permissions.Managers.Create, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can create managers.");
+            throw new UnauthorizedAccessException("You do not have permission to create managers.");
         }
 
-        // A plain Manager can create another Manager, but only SuperAdmin or an existing CompanyAdmin
-        // can create a CompanyAdmin - prevents a lower-privileged role from creating a peer of a
-        // higher one.
+        // A CompanyAdmin can create another CompanyAdmin; a Manager (even with "Create Managers")
+        // cannot - prevents a lower-privileged role from creating a peer of a higher one.
         if (command.Role == Roles.CompanyAdmin && !caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and company admins can create company admins.");
@@ -74,6 +84,11 @@ public class CreateManagerCommandHandler
             command.StartDate,
             command.Role,
             cancellationToken);
+
+        if (command.AlsoCreateEmployee)
+        {
+            await _studentRepository.AddEmployeeRoleAsync(userId, command.CompanyId, caller.Email, startDate: null, cancellationToken);
+        }
 
         if (!command.CreateInSkillport)
         {

@@ -24,5 +24,11 @@ public interface IManagerRepository
     /// CreateManagerAsync.</summary>
     Task AddManagerRoleAsync(int userId, int companyId, DateOnly? startDate, CancellationToken cancellationToken = default);
 
+    /// <summary>Deactivates this user's active Manager UserCompanyRole at the given company (never
+    /// CompanyAdmin - symmetric with AddManagerRoleAsync, which never grants CompanyAdmin either) -
+    /// a no-op if they don't have one. The Users row and any other role they hold (e.g. Employee)
+    /// are untouched.</summary>
+    Task RemoveManagerRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

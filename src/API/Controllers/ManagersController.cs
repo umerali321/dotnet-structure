@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
 using SkillsetsBackend.Application.Managers.Commands.AddManagerRole;
+using SkillsetsBackend.Application.Managers.Commands.RemoveManagerRole;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
@@ -36,6 +37,7 @@ public sealed class ManagersController : ControllerBase
     private readonly DeactivateManagerCommandHandler _deactivateHandler;
     private readonly ActivateManagerCommandHandler _activateHandler;
     private readonly AddManagerRoleCommandHandler _addManagerRoleHandler;
+    private readonly RemoveManagerRoleCommandHandler _removeManagerRoleHandler;
 
     public ManagersController(
         ListManagersQueryHandler listHandler,
@@ -49,7 +51,8 @@ public sealed class ManagersController : ControllerBase
         ProvisionManagerSkillportCommandHandler provisionSkillportHandler,
         DeactivateManagerCommandHandler deactivateHandler,
         ActivateManagerCommandHandler activateHandler,
-        AddManagerRoleCommandHandler addManagerRoleHandler)
+        AddManagerRoleCommandHandler addManagerRoleHandler,
+        RemoveManagerRoleCommandHandler removeManagerRoleHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -63,6 +66,7 @@ public sealed class ManagersController : ControllerBase
         _deactivateHandler = deactivateHandler;
         _activateHandler = activateHandler;
         _addManagerRoleHandler = addManagerRoleHandler;
+        _removeManagerRoleHandler = removeManagerRoleHandler;
     }
 
     [HttpGet]
@@ -162,6 +166,15 @@ public sealed class ManagersController : ControllerBase
     public async Task<IActionResult> AddManagerRole(int id, AddManagerRoleRequest request, CancellationToken cancellationToken)
     {
         await _addManagerRoleHandler.Handle(new AddManagerRoleCommand(id, request.CompanyId), GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Revokes the Manager role from a user at the given company - SuperAdmin/CompanyAdmin
+    /// only. Refused if it's the person's only active role anywhere.</summary>
+    [HttpDelete("{id:int}/manager-role")]
+    public async Task<IActionResult> RemoveManagerRole(int id, [FromQuery] int companyId, CancellationToken cancellationToken)
+    {
+        await _removeManagerRoleHandler.Handle(new RemoveManagerRoleCommand(id, companyId), GetCaller(), cancellationToken);
         return NoContent();
     }
 

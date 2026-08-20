@@ -15,17 +15,20 @@ public class ChangeStudentPasswordCommandHandler
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
     private readonly ILegacyCredentialVerifier _credentialVerifier;
+    private readonly IPermissionService _permissionService;
 
     public ChangeStudentPasswordCommandHandler(
         IValidator<ChangeStudentPasswordCommand> validator,
         IStudentRepository repository,
         IUserDirectory userDirectory,
-        ILegacyCredentialVerifier credentialVerifier)
+        ILegacyCredentialVerifier credentialVerifier,
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
         _userDirectory = userDirectory;
         _credentialVerifier = credentialVerifier;
+        _permissionService = permissionService;
     }
 
     public async Task Handle(int userId, ChangeStudentPasswordCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -55,6 +58,14 @@ public class ChangeStudentPasswordCommandHandler
         }
         else
         {
+            // A dual-role caller (e.g. Manager also holding Student at the same company) changing
+            // their own password never needs the permission - only changing someone else's does.
+            if (caller.DbUserId != userId
+                && !await _permissionService.HasPermissionAsync(caller, Permissions.Students.ManagePassword, cancellationToken))
+            {
+                throw new UnauthorizedAccessException("You do not have permission to change employee passwords.");
+            }
+
             // Admin/Manager resets do not require the student's current password.
             await StudentAuthorization.EnsureCanManageStudentAsync(caller, userId, _userDirectory, _repository, cancellationToken);
         }

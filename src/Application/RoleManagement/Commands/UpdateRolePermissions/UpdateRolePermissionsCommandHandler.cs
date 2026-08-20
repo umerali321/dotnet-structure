@@ -1,15 +1,16 @@
 using SkillsetsBackend.Application.Common;
-using SkillsetsBackend.Application.Common.Exceptions;
 using SkillsetsBackend.Application.RoleManagement.Interfaces;
 using NotFoundException = SkillsetsBackend.Application.Common.Exceptions.NotFoundException;
 
 namespace SkillsetsBackend.Application.RoleManagement.Commands.UpdateRolePermissions;
 
-/// <summary>SuperAdmin only. The 5 seeded system roles (Student/Manager/FDM/Admin/CompanyAdmin) are
-/// rejected - their RolePermissions were seeded to mirror the existing hardcoded authorization
-/// checks exactly (see RolePermissionConfiguration.cs); editing them here would silently desync
-/// HasPermissionAsync from what those checks actually do, which is exactly the drift the phase-1
-/// plan avoids. Only custom roles created via CreateRole are editable in this phase.</summary>
+/// <summary>SuperAdmin only. System roles (Student/Manager/FDM/Admin/CompanyAdmin) are now editable
+/// too, same as custom roles - HasPermissionAsync is the live source of truth wherever a handler has
+/// been converted to call it (see CreateManagerCommandHandler, ListManagersQueryHandler,
+/// CreateStudentCommandHandler, ListStudentsQueryHandler for the first batch), so toggling a
+/// checkbox here takes effect immediately for those actions. Actions not yet converted still run on
+/// their existing hardcoded role checks regardless of what's toggled here - not every permission in
+/// the dialog is wired up yet, that's an ongoing migration, not a one-time cutover.</summary>
 public class UpdateRolePermissionsCommandHandler
 {
     private readonly IRoleRepository _repository;
@@ -28,11 +29,6 @@ public class UpdateRolePermissionsCommandHandler
 
         var role = await _repository.GetRoleByIdAsync(roleId, cancellationToken)
             ?? throw new NotFoundException("Role", roleId);
-
-        if (role.IsSystemRole)
-        {
-            throw new ConflictException("System roles cannot be edited in this phase.");
-        }
 
         await _repository.ReplaceRolePermissionsAsync(roleId, command.PermissionIds, cancellationToken);
     }

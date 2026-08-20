@@ -30,9 +30,14 @@ public class CourseTakenController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? studentName = null,
+        [FromQuery] string? courseTitle = null,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _listHandler.Handle(new ListCourseTakenQuery(page, pageSize), GetCaller(), cancellationToken);
+        var result = await _listHandler.Handle(new ListCourseTakenQuery(page, pageSize, studentName, courseTitle), GetCaller(), cancellationToken);
         return Ok(result);
     }
 
