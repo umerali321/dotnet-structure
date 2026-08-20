@@ -10,12 +10,12 @@ public interface ILoginActivityLogRepository
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>search matches against Email OR Name.</summary>
     Task<PaginatedList<LoginActivityLogDto>> ListAsync(
         int page,
         int pageSize,
         string? eventType,
-        string? email,
-        string? name,
+        string? search,
         string? companyName,
         DateOnly? startDate,
         DateOnly? endDate,

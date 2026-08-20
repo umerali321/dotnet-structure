@@ -17,6 +17,10 @@ public interface IDashboardQueryService
         DateOnly? endDate,
         CancellationToken cancellationToken);
 
+    /// <summary>restrictToManagerId: when set (a Manager caller), narrows the company-scoped result
+    /// further to just that manager's own record plus employees assigned to them (or unassigned -
+    /// same "falls through to visible" rule as StudentAuthorization) - mirrors
+    /// ListStudentsQueryHandler's identical restrictToManagerId parameter.</summary>
     Task<PaginatedList<CourseLibraryUserDto>> GetCourseLibraryUsersAsync(
         IReadOnlyCollection<int>? companyIds,
         DateOnly? startDate,
@@ -24,10 +28,12 @@ public interface IDashboardQueryService
         string? search,
         int page,
         int pageSize,
+        int? restrictToManagerId,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<CourseLibrarySessionDto>> GetSessionHistoryAsync(
         string email,
         IReadOnlyCollection<int>? companyIds,
+        int? restrictToManagerId,
         CancellationToken cancellationToken);
 }

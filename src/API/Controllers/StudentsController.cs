@@ -3,6 +3,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.Students.Commands.AddEmployeeRole;
 using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
@@ -34,6 +35,7 @@ public class StudentsController : ControllerBase
     private readonly DeactivateStudentCommandHandler _deactivateHandler;
     private readonly ProvisionStudentSkillportCommandHandler _provisionSkillportHandler;
     private readonly AssignStudentManagerCommandHandler _assignManagerHandler;
+    private readonly AddEmployeeRoleCommandHandler _addEmployeeRoleHandler;
 
     public StudentsController(
         ListStudentsQueryHandler listHandler,
@@ -46,7 +48,8 @@ public class StudentsController : ControllerBase
         ChangeStudentPasswordCommandHandler changePasswordHandler,
         DeactivateStudentCommandHandler deactivateHandler,
         ProvisionStudentSkillportCommandHandler provisionSkillportHandler,
-        AssignStudentManagerCommandHandler assignManagerHandler)
+        AssignStudentManagerCommandHandler assignManagerHandler,
+        AddEmployeeRoleCommandHandler addEmployeeRoleHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -59,6 +62,7 @@ public class StudentsController : ControllerBase
         _deactivateHandler = deactivateHandler;
         _provisionSkillportHandler = provisionSkillportHandler;
         _assignManagerHandler = assignManagerHandler;
+        _addEmployeeRoleHandler = addEmployeeRoleHandler;
     }
 
     [HttpGet]
@@ -145,6 +149,15 @@ public class StudentsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Grants an Employee role to an already-existing user (e.g. a current Manager) at the
+    /// given company - SuperAdmin/CompanyAdmin only.</summary>
+    [HttpPost("{id:int}/employee-role")]
+    public async Task<IActionResult> AddEmployeeRole(int id, AddEmployeeRoleRequest request, CancellationToken cancellationToken)
+    {
+        await _addEmployeeRoleHandler.Handle(new AddEmployeeRoleCommand(id, request.CompanyId), GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/skillsoft")]
     public async Task<IActionResult> ProvisionSkillsoft(int id, ProvisionStudentSkillsoftRequest request, CancellationToken cancellationToken)
     {
@@ -164,6 +177,11 @@ public class ProvisionStudentSkillsoftRequest
     public int CompanyId { get; set; }
 
     public string Password { get; set; } = string.Empty;
+}
+
+public class AddEmployeeRoleRequest
+{
+    public int CompanyId { get; set; }
 }
 
 public class ListStudentsRequest

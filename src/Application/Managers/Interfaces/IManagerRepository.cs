@@ -19,5 +19,10 @@ public interface IManagerRepository
         string roleName,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Adds a Manager UserCompanyRole to an already-existing user (e.g. a current Employee
+    /// being additionally made a Manager at the same company) - no new Users row, unlike
+    /// CreateManagerAsync.</summary>
+    Task AddManagerRoleAsync(int userId, int companyId, DateOnly? startDate, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

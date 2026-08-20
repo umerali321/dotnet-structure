@@ -57,6 +57,18 @@ public class ManagerRepository : IManagerRepository
         });
     }
 
+    public async Task AddManagerRoleAsync(int userId, int companyId, DateOnly? startDate, CancellationToken cancellationToken = default)
+    {
+        var managerRoleId = await _dbContext.Roles
+            .Where(r => r.RoleName == Domain.Identity.Roles.Manager)
+            .Select(r => r.RoleId)
+            .FirstAsync(cancellationToken);
+
+        var membership = new UserCompanyRole(userId, companyId, managerRoleId, startDate);
+        _dbContext.UserCompanyRoles.Add(membership);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _dbContext.SaveChangesAsync(cancellationToken);
 }

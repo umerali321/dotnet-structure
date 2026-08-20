@@ -11,6 +11,7 @@ using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompany;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
 using SkillsetsBackend.Application.Companies.Queries.GetCompanyById;
+using SkillsetsBackend.Application.Companies.Queries.GetCompanyLogo;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
 
 namespace SkillsetsBackend.API.Controllers;
@@ -29,6 +30,7 @@ public class CompaniesController : ControllerBase
 
     private readonly ListCompaniesQueryHandler _listHandler;
     private readonly GetCompanyByIdQueryHandler _getByIdHandler;
+    private readonly GetCompanyLogoQueryHandler _getLogoHandler;
     private readonly CreateCompanyCommandHandler _createHandler;
     private readonly UpdateCompanyCommandHandler _updateHandler;
     private readonly DeactivateCompanyCommandHandler _deactivateHandler;
@@ -40,6 +42,7 @@ public class CompaniesController : ControllerBase
     public CompaniesController(
         ListCompaniesQueryHandler listHandler,
         GetCompanyByIdQueryHandler getByIdHandler,
+        GetCompanyLogoQueryHandler getLogoHandler,
         CreateCompanyCommandHandler createHandler,
         UpdateCompanyCommandHandler updateHandler,
         DeactivateCompanyCommandHandler deactivateHandler,
@@ -50,6 +53,7 @@ public class CompaniesController : ControllerBase
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
+        _getLogoHandler = getLogoHandler;
         _createHandler = createHandler;
         _updateHandler = updateHandler;
         _deactivateHandler = deactivateHandler;
@@ -73,6 +77,16 @@ public class CompaniesController : ControllerBase
     {
         var result = await _getByIdHandler.Handle(id, GetCaller(), cancellationToken);
         return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>Any authenticated user (not SuperAdmin-only like GetById) - just the logo URL, no
+    /// billing/address data, so a Manager/CompanyAdmin/Employee can show their own company's logo
+    /// in the header without needing full company-record access.</summary>
+    [HttpGet("{id:int}/logo")]
+    public async Task<IActionResult> GetLogo(int id, CancellationToken cancellationToken)
+    {
+        var logoUrl = await _getLogoHandler.Handle(id, cancellationToken);
+        return Ok(new { logoUrl });
     }
 
     [HttpPost]

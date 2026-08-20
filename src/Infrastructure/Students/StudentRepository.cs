@@ -67,6 +67,33 @@ public class StudentRepository : IStudentRepository
         });
     }
 
+    public async Task AddEmployeeRoleAsync(int userId, int companyId, string createdBy, DateOnly? startDate, CancellationToken cancellationToken = default)
+    {
+        var studentRoleId = await _dbContext.Roles
+            .Where(r => r.RoleName == "Student")
+            .Select(r => r.RoleId)
+            .FirstAsync(cancellationToken);
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var existingProfile = await _dbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId, cancellationToken);
+            if (existingProfile is null)
+            {
+                _dbContext.StudentProfiles.Add(new StudentProfile(userId, null, createdBy));
+            }
+
+            var membership = new UserCompanyRole(userId, companyId, studentRoleId, startDate);
+            _dbContext.UserCompanyRoles.Add(membership);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        });
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _dbContext.SaveChangesAsync(cancellationToken);
 }

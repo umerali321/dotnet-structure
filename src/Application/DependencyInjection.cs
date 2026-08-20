@@ -8,6 +8,7 @@ using SkillsetsBackend.Application.Auth.Commands.ResetPassword;
 using SkillsetsBackend.Application.Auth.Commands.CustomerSupportRequest;
 using SkillsetsBackend.Application.Auth.Commands.SwitchCompany;
 using SkillsetsBackend.Application.Auth.Queries.ListLoginActivityLogs;
+using SkillsetsBackend.Application.Students.Commands.AddEmployeeRole;
 using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
@@ -21,6 +22,7 @@ using SkillsetsBackend.Application.Students.Queries.GetStudentRoles;
 using SkillsetsBackend.Application.Students.Queries.ListStudents;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
 using SkillsetsBackend.Application.Companies.Queries.GetCompanyById;
+using SkillsetsBackend.Application.Companies.Queries.GetCompanyLogo;
 using SkillsetsBackend.Application.Companies.Commands.CreateCompany;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompany;
 using SkillsetsBackend.Application.Companies.Commands.DeactivateCompany;
@@ -31,6 +33,7 @@ using SkillsetsBackend.Application.Dashboard.Queries.GetDashboardStats;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHistory;
 using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
+using SkillsetsBackend.Application.Managers.Commands.AddManagerRole;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
@@ -95,9 +98,11 @@ public static class DependencyInjection
         services.AddScoped<DeactivateStudentCommandHandler>();
         services.AddScoped<ProvisionStudentSkillportCommandHandler>();
         services.AddScoped<AssignStudentManagerCommandHandler>();
+        services.AddScoped<AddEmployeeRoleCommandHandler>();
 
         services.AddScoped<ListCompaniesQueryHandler>();
         services.AddScoped<GetCompanyByIdQueryHandler>();
+        services.AddScoped<GetCompanyLogoQueryHandler>();
         services.AddScoped<CreateCompanyCommandHandler>();
         services.AddScoped<UpdateCompanyCommandHandler>();
         services.AddScoped<DeactivateCompanyCommandHandler>();
@@ -115,6 +120,7 @@ public static class DependencyInjection
         services.AddScoped<ProvisionManagerSkillportCommandHandler>();
         services.AddScoped<DeactivateManagerCommandHandler>();
         services.AddScoped<ActivateManagerCommandHandler>();
+        services.AddScoped<AddManagerRoleCommandHandler>();
 
         services.AddScoped<GetDashboardStatsQueryHandler>();
         services.AddScoped<GetCourseLibraryUsersQueryHandler>();

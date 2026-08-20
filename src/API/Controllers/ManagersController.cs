@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
+using SkillsetsBackend.Application.Managers.Commands.AddManagerRole;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
@@ -34,6 +35,7 @@ public sealed class ManagersController : ControllerBase
     private readonly ProvisionManagerSkillportCommandHandler _provisionSkillportHandler;
     private readonly DeactivateManagerCommandHandler _deactivateHandler;
     private readonly ActivateManagerCommandHandler _activateHandler;
+    private readonly AddManagerRoleCommandHandler _addManagerRoleHandler;
 
     public ManagersController(
         ListManagersQueryHandler listHandler,
@@ -46,7 +48,8 @@ public sealed class ManagersController : ControllerBase
         ChangeManagerPasswordCommandHandler changePasswordHandler,
         ProvisionManagerSkillportCommandHandler provisionSkillportHandler,
         DeactivateManagerCommandHandler deactivateHandler,
-        ActivateManagerCommandHandler activateHandler)
+        ActivateManagerCommandHandler activateHandler,
+        AddManagerRoleCommandHandler addManagerRoleHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -59,6 +62,7 @@ public sealed class ManagersController : ControllerBase
         _provisionSkillportHandler = provisionSkillportHandler;
         _deactivateHandler = deactivateHandler;
         _activateHandler = activateHandler;
+        _addManagerRoleHandler = addManagerRoleHandler;
     }
 
     [HttpGet]
@@ -152,6 +156,15 @@ public sealed class ManagersController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Grants a Manager role to an already-existing user (e.g. a current Employee) at the
+    /// given company - SuperAdmin/CompanyAdmin only.</summary>
+    [HttpPost("{id:int}/manager-role")]
+    public async Task<IActionResult> AddManagerRole(int id, AddManagerRoleRequest request, CancellationToken cancellationToken)
+    {
+        await _addManagerRoleHandler.Handle(new AddManagerRoleCommand(id, request.CompanyId), GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/skillsoft")]
     public async Task<IActionResult> ProvisionSkillsoft(int id, ProvisionManagerSkillsoftRequest request, CancellationToken cancellationToken)
     {
@@ -171,6 +184,11 @@ public sealed class ProvisionManagerSkillsoftRequest
     public int CompanyId { get; set; }
 
     public string Password { get; set; } = string.Empty;
+}
+
+public sealed class AddManagerRoleRequest
+{
+    public int CompanyId { get; set; }
 }
 
 public sealed class ManagerRequest

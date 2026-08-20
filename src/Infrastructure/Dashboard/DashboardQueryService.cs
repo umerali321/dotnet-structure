@@ -129,6 +129,7 @@ public class DashboardQueryService : IDashboardQueryService
         string? search,
         int page,
         int pageSize,
+        int? restrictToManagerId,
         CancellationToken cancellationToken)
     {
         var companyCodes = await ResolveCompanyCodesAsync(companyIds, cancellationToken);
@@ -137,6 +138,11 @@ public class DashboardQueryService : IDashboardQueryService
         if (companyCodes is not null)
         {
             cardsQuery = cardsQuery.Where(c => companyCodes.Contains(c.CompanyCode));
+        }
+        if (restrictToManagerId.HasValue)
+        {
+            var allowedEmails = VisibleEmailsForManagerQuery(restrictToManagerId.Value, companyIds);
+            cardsQuery = cardsQuery.Where(c => allowedEmails.Contains(c.Email!.ToLower()));
         }
         if (startDate.HasValue)
         {
@@ -233,6 +239,7 @@ public class DashboardQueryService : IDashboardQueryService
     public async Task<IReadOnlyList<CourseLibrarySessionDto>> GetSessionHistoryAsync(
         string email,
         IReadOnlyCollection<int>? companyIds,
+        int? restrictToManagerId,
         CancellationToken cancellationToken)
     {
         var companyCodes = await ResolveCompanyCodesAsync(companyIds, cancellationToken);
@@ -243,6 +250,13 @@ public class DashboardQueryService : IDashboardQueryService
         if (companyCodes is not null)
         {
             query = query.Where(c => companyCodes.Contains(c.CompanyCode));
+        }
+        if (restrictToManagerId.HasValue)
+        {
+            // Same visibility rule as the list - a Manager can only pull history for their own
+            // record or an employee visible to them, even if they craft the request directly.
+            var allowedEmails = VisibleEmailsForManagerQuery(restrictToManagerId.Value, companyIds);
+            query = query.Where(c => allowedEmails.Contains(c.Email!.ToLower()));
         }
 
         var rows = await query
@@ -261,6 +275,22 @@ public class DashboardQueryService : IDashboardQueryService
     /// Manager headcount here must match both names too, not just an exact "Manager".</summary>
     private const string LegacyAdminRoleName = "Admin";
     private static readonly string[] ManagerRoleNames = [Roles.Manager, LegacyAdminRoleName];
+
+    /// <summary>A Manager's Course Library visibility: themselves, plus any Student in their
+    /// company/companies who is either explicitly assigned to them (StudentProfile.ManagerId) or
+    /// not assigned to anyone yet - the exact same "assigned, or falls through to any manager"
+    /// rule StudentAuthorization.EnsureCanViewStudentAsync uses. EXISTS-subquery shaped (like
+    /// ActiveRoleUserIdsQuery above) rather than materializing ids first, for the same reason.</summary>
+    private IQueryable<string> VisibleEmailsForManagerQuery(int managerId, IReadOnlyCollection<int>? companyIds) =>
+        _dbContext.Users.AsNoTracking()
+            .Where(u => u.Email != null && (
+                u.UserId == managerId
+                || (
+                    _dbContext.UserCompanyRoles.Any(ucr => ucr.IsActive && ucr.UserId == u.UserId && ucr.Role.RoleName == Roles.Student
+                        && (companyIds == null || companyIds.Contains(ucr.CompanyId)))
+                    && _dbContext.StudentProfiles.Any(sp => sp.UserId == u.UserId && (sp.ManagerId == managerId || sp.ManagerId == null))
+                )))
+            .Select(u => u.Email!.ToLower());
 
     private IQueryable<int> ActiveRoleUserIdsQuery(IReadOnlyCollection<int>? companyIds, IReadOnlyCollection<string> roleNames, DateOnly today) =>
         _dbContext.UserCompanyRoles.AsNoTracking()

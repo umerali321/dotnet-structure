@@ -2,6 +2,7 @@ using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Dashboard.Dtos;
 using SkillsetsBackend.Application.Dashboard.Interfaces;
+using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Shared.Common;
 
 namespace SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
@@ -19,8 +20,11 @@ public class GetCourseLibraryUsersQueryHandler
 
     public async Task<PaginatedList<CourseLibraryUserDto>> Handle(GetCourseLibraryUsersQuery query, CallerContext caller, CancellationToken cancellationToken)
     {
-        var companyIds = await DashboardAuthorization.ResolveCompanyScopeAsync(caller, query.CompanyId, _userDirectory, cancellationToken);
+        var companyIds = await DashboardAuthorization.ResolveCompanyScopeAsync(
+            caller, query.CompanyId, _userDirectory, cancellationToken, allowManager: true);
+        var restrictToManagerId = caller.Role == Roles.Manager ? caller.DbUserId : null;
+
         return await _queryService.GetCourseLibraryUsersAsync(
-            companyIds, query.StartDate, query.EndDate, query.Search, query.Page, query.PageSize, cancellationToken);
+            companyIds, query.StartDate, query.EndDate, query.Search, query.Page, query.PageSize, restrictToManagerId, cancellationToken);
     }
 }

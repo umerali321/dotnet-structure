@@ -28,8 +28,7 @@ public class LoginActivityLogRepository : ILoginActivityLogRepository
         int page,
         int pageSize,
         string? eventType,
-        string? email,
-        string? name,
+        string? search,
         string? companyName,
         DateOnly? startDate,
         DateOnly? endDate,
@@ -42,14 +41,9 @@ public class LoginActivityLogRepository : ILoginActivityLogRepository
             query = query.Where(l => l.EventType == eventType);
         }
 
-        if (!string.IsNullOrWhiteSpace(email))
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(l => l.Email.Contains(email));
-        }
-
-        if (!string.IsNullOrWhiteSpace(name))
-        {
-            query = query.Where(l => l.Name != null && l.Name.Contains(name));
+            query = query.Where(l => l.Email.Contains(search) || (l.Name != null && l.Name.Contains(search)));
         }
 
         if (!string.IsNullOrWhiteSpace(companyName))

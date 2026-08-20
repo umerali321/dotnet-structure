@@ -25,14 +25,13 @@ public class SystemLogsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         [FromQuery] string? eventType = null,
-        [FromQuery] string? email = null,
-        [FromQuery] string? name = null,
+        [FromQuery] string? search = null,
         [FromQuery] string? companyName = null,
         [FromQuery] DateOnly? startDate = null,
         [FromQuery] DateOnly? endDate = null,
         CancellationToken cancellationToken = default)
     {
-        var query = new ListLoginActivityLogsQuery(page, pageSize, eventType, email, name, companyName, startDate, endDate);
+        var query = new ListLoginActivityLogsQuery(page, pageSize, eventType, search, companyName, startDate, endDate);
         var result = await _listHandler.Handle(query, GetCaller(), cancellationToken);
         return Ok(result);
     }
