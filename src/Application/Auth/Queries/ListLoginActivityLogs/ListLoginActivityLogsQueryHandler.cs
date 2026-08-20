@@ -26,7 +26,8 @@ public class ListLoginActivityLogsQueryHandler
         var page = Math.Max(1, query.Page);
         var pageSize = query.PageSize <= 0 ? DefaultPageSize : Math.Min(MaxPageSize, query.PageSize);
 
-        var logs = await _repository.ListAsync(page, pageSize, query.EventType, cancellationToken);
+        var logs = await _repository.ListAsync(
+            page, pageSize, query.EventType, query.Email, query.Name, query.CompanyName, query.StartDate, query.EndDate, cancellationToken);
         var summary = await _repository.GetSummaryAsync(cancellationToken);
 
         return new ListLoginActivityLogsResult(logs, summary);

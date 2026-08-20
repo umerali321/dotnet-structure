@@ -25,13 +25,48 @@ public class LoginActivityLogRepository : ILoginActivityLogRepository
         _dbContext.SaveChangesAsync(cancellationToken);
 
     public async Task<PaginatedList<LoginActivityLogDto>> ListAsync(
-        int page, int pageSize, string? eventType, CancellationToken cancellationToken = default)
+        int page,
+        int pageSize,
+        string? eventType,
+        string? email,
+        string? name,
+        string? companyName,
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default)
     {
         var query = _dbContext.LoginActivityLogs.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(eventType))
         {
             query = query.Where(l => l.EventType == eventType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            query = query.Where(l => l.Email.Contains(email));
+        }
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            query = query.Where(l => l.Name != null && l.Name.Contains(name));
+        }
+
+        if (!string.IsNullOrWhiteSpace(companyName))
+        {
+            query = query.Where(l => l.CompanyName != null && l.CompanyName.Contains(companyName));
+        }
+
+        if (startDate.HasValue)
+        {
+            var start = new DateTimeOffset(startDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            query = query.Where(l => l.CreatedAt >= start);
+        }
+
+        if (endDate.HasValue)
+        {
+            var end = new DateTimeOffset(endDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+            query = query.Where(l => l.CreatedAt <= end);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);

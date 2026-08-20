@@ -10,7 +10,16 @@ public interface ILoginActivityLogRepository
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
-    Task<PaginatedList<LoginActivityLogDto>> ListAsync(int page, int pageSize, string? eventType, CancellationToken cancellationToken = default);
+    Task<PaginatedList<LoginActivityLogDto>> ListAsync(
+        int page,
+        int pageSize,
+        string? eventType,
+        string? email,
+        string? name,
+        string? companyName,
+        DateOnly? startDate,
+        DateOnly? endDate,
+        CancellationToken cancellationToken = default);
 
     Task<LoginActivitySummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
 
