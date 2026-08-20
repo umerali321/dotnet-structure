@@ -12,9 +12,6 @@ public class Company : IAggregateRoot
     public const string TrialPlan = "Trial";
     public const string LicensePlan = "License";
 
-    /// <summary>Length of a Trial plan's coverage window, starting the day the company is created.</summary>
-    public const int TrialDurationDays = 14;
-
     public int CompanyId { get; private set; }
 
     public string CompanyCode { get; private set; } = string.Empty;
@@ -62,9 +59,11 @@ public class Company : IAggregateRoot
     {
     }
 
-    /// <summary>planType must be Company.TrialPlan or Company.LicensePlan. For a Trial, the window is
-    /// always "today" through +TrialDurationDays. For a License, licenseStartDate/licenseEndDate are
-    /// required and used as-is (validated by CreateCompanyCommandValidator).</summary>
+    /// <summary>planType must be Company.TrialPlan or Company.LicensePlan - licenseStartDate/
+    /// licenseEndDate are required and used as-is for either (validated by
+    /// CreateCompanyCommandValidator). A Trial's window is caller-chosen, not a fixed 14 days -
+    /// once it passes, this company can never receive another Trial: the only way to extend
+    /// coverage after that is SetLicense, which always converts to License, never back to Trial.</summary>
     public static Company Create(
         string companyCode,
         string companyName,
@@ -81,7 +80,6 @@ public class Company : IAggregateRoot
         string? paymentForm = null,
         decimal? totalPayment = null)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var isTrial = planType != LicensePlan;
 
         return new Company
@@ -99,8 +97,8 @@ public class Company : IAggregateRoot
             TotalPayment = totalPayment,
             IsActive = true,
             PlanType = isTrial ? TrialPlan : LicensePlan,
-            PlanStartDate = isTrial ? today : licenseStartDate!.Value,
-            PlanEndDate = isTrial ? today.AddDays(TrialDurationDays) : licenseEndDate!.Value,
+            PlanStartDate = licenseStartDate!.Value,
+            PlanEndDate = licenseEndDate!.Value,
             CreatedAt = DateTimeOffset.UtcNow,
         };
     }

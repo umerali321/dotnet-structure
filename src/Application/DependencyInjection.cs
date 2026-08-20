@@ -27,8 +27,10 @@ using SkillsetsBackend.Application.Companies.Commands.DeactivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.ActivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
+using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
+using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
 using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerById;
@@ -108,6 +110,8 @@ public static class DependencyInjection
         services.AddScoped<UpdateManagerCommandHandler>();
         services.AddScoped<ChangeManagerPasswordCommandHandler>();
         services.AddScoped<ProvisionManagerSkillportCommandHandler>();
+        services.AddScoped<DeactivateManagerCommandHandler>();
+        services.AddScoped<ActivateManagerCommandHandler>();
 
         services.AddScoped<ListFaqsQueryHandler>();
         services.AddScoped<GetFaqByIdQueryHandler>();

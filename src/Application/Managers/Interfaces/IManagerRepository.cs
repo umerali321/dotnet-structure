@@ -18,4 +18,6 @@ public interface IManagerRepository
         DateOnly? startDate,
         string roleName,
         CancellationToken cancellationToken = default);
+
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

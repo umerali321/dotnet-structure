@@ -56,4 +56,7 @@ public class ManagerRepository : IManagerRepository
             return user.UserId;
         });
     }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _dbContext.SaveChangesAsync(cancellationToken);
 }

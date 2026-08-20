@@ -9,13 +9,13 @@ public class CreateCompanyCommandValidator : AbstractValidator<CreateCompanyComm
     {
         RuleFor(x => x.CompanyCode).NotEmpty().MaximumLength(100);
         RuleFor(x => x.CompanyName).NotEmpty().MaximumLength(255);
-        RuleFor(x => x.CompanyEmail).MaximumLength(255).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.CompanyEmail));
-        RuleFor(x => x.CompanyPhone).MaximumLength(100);
-        RuleFor(x => x.Street1).MaximumLength(255);
+        RuleFor(x => x.CompanyEmail).NotEmpty().MaximumLength(255).EmailAddress();
+        RuleFor(x => x.CompanyPhone).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Street1).NotEmpty().MaximumLength(255);
         RuleFor(x => x.Street2).MaximumLength(255);
         RuleFor(x => x.City).MaximumLength(100);
-        RuleFor(x => x.State).MaximumLength(100);
-        RuleFor(x => x.Zip).MaximumLength(20);
+        RuleFor(x => x.State).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Zip).NotEmpty().MaximumLength(20);
         RuleFor(x => x.PaymentForm).MaximumLength(100);
         RuleFor(x => x.TotalPayment).GreaterThanOrEqualTo(0).When(x => x.TotalPayment.HasValue);
 
@@ -28,13 +28,13 @@ public class CreateCompanyCommandValidator : AbstractValidator<CreateCompanyComm
         RuleFor(x => x.PlanType).NotEmpty().Must(p => p == Company.TrialPlan || p == Company.LicensePlan)
             .WithMessage($"PlanType must be '{Company.TrialPlan}' or '{Company.LicensePlan}'.");
 
-        RuleFor(x => x.LicenseStartDate).NotNull().WithMessage("License start date is required.")
-            .When(x => x.PlanType == Company.LicensePlan);
-        RuleFor(x => x.LicenseEndDate).NotNull().WithMessage("License end date is required.")
-            .When(x => x.PlanType == Company.LicensePlan);
+        // Required for BOTH plan types now - Trial's window is caller-chosen (no more fixed
+        // 14-day auto-calculation), so it needs the same explicit start/end as License.
+        RuleFor(x => x.LicenseStartDate).NotNull().WithMessage("Start date is required.");
+        RuleFor(x => x.LicenseEndDate).NotNull().WithMessage("End date is required.");
         RuleFor(x => x.LicenseEndDate)
             .GreaterThan(x => x.LicenseStartDate!.Value)
-            .WithMessage("License end date must be after the start date.")
-            .When(x => x.PlanType == Company.LicensePlan && x.LicenseStartDate != null && x.LicenseEndDate != null);
+            .WithMessage("End date must be after the start date.")
+            .When(x => x.LicenseStartDate != null && x.LicenseEndDate != null);
     }
 }

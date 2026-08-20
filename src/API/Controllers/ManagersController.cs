@@ -3,8 +3,10 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
+using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
 using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerById;
@@ -30,6 +32,8 @@ public sealed class ManagersController : ControllerBase
     private readonly UpdateManagerCommandHandler _updateHandler;
     private readonly ChangeManagerPasswordCommandHandler _changePasswordHandler;
     private readonly ProvisionManagerSkillportCommandHandler _provisionSkillportHandler;
+    private readonly DeactivateManagerCommandHandler _deactivateHandler;
+    private readonly ActivateManagerCommandHandler _activateHandler;
 
     public ManagersController(
         ListManagersQueryHandler listHandler,
@@ -40,7 +44,9 @@ public sealed class ManagersController : ControllerBase
         CreateManagerCommandHandler createHandler,
         UpdateManagerCommandHandler updateHandler,
         ChangeManagerPasswordCommandHandler changePasswordHandler,
-        ProvisionManagerSkillportCommandHandler provisionSkillportHandler)
+        ProvisionManagerSkillportCommandHandler provisionSkillportHandler,
+        DeactivateManagerCommandHandler deactivateHandler,
+        ActivateManagerCommandHandler activateHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -51,6 +57,8 @@ public sealed class ManagersController : ControllerBase
         _updateHandler = updateHandler;
         _changePasswordHandler = changePasswordHandler;
         _provisionSkillportHandler = provisionSkillportHandler;
+        _deactivateHandler = deactivateHandler;
+        _activateHandler = activateHandler;
     }
 
     [HttpGet]
@@ -127,6 +135,20 @@ public sealed class ManagersController : ControllerBase
     public async Task<IActionResult> ChangePassword(int id, ChangeManagerPasswordCommand command, CancellationToken cancellationToken)
     {
         await _changePasswordHandler.Handle(id, command, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/deactivate")]
+    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
+    {
+        await _deactivateHandler.Handle(id, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/activate")]
+    public async Task<IActionResult> Activate(int id, CancellationToken cancellationToken)
+    {
+        await _activateHandler.Handle(id, GetCaller(), cancellationToken);
         return NoContent();
     }
 
