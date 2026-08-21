@@ -58,7 +58,7 @@ public class CourseTakenRepository : ICourseTakenRepository
                 where ct.CourseTakenId == courseTakenId
                 join u in _dbContext.Users.AsNoTracking() on ct.UserId equals u.UserId
                 join c in _dbContext.Courses.AsNoTracking() on ct.CourseId equals c.CourseId
-                join cat in _dbContext.LibraryCategories.AsNoTracking() on c.CategoryId equals cat.CategoryId
+                join cat in _dbContext.MainCourseCategories.AsNoTracking() on c.CategoryId equals cat.CategoryId
                 select ToDto(ct, u, c, cat))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -111,7 +111,7 @@ public class CourseTakenRepository : ICourseTakenRepository
                 orderby ct.AccessedAt descending
                 join u in _dbContext.Users.AsNoTracking() on ct.UserId equals u.UserId
                 join c in _dbContext.Courses.AsNoTracking() on ct.CourseId equals c.CourseId
-                join cat in _dbContext.LibraryCategories.AsNoTracking() on c.CategoryId equals cat.CategoryId
+                join cat in _dbContext.MainCourseCategories.AsNoTracking() on c.CategoryId equals cat.CategoryId
                 select ToDto(ct, u, c, cat))
             .Skip((options.Page - 1) * options.PageSize)
             .Take(options.PageSize)
@@ -120,7 +120,7 @@ public class CourseTakenRepository : ICourseTakenRepository
         return new PaginatedList<CourseTakenDto>(items, totalCount, options.Page, options.PageSize);
     }
 
-    private static CourseTakenDto ToDto(CourseTaken ct, AppUser u, Course c, LibraryCategory cat) => new(
+    private static CourseTakenDto ToDto(CourseTaken ct, AppUser u, Course c, MainCourseCategory cat) => new(
         ct.CourseTakenId,
         ct.UserId,
         (((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim()),

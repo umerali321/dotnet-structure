@@ -5,11 +5,11 @@ using SkillsetsBackend.Infrastructure.Persistence.Conversions;
 
 namespace SkillsetsBackend.Infrastructure.Persistence.Configurations;
 
-public class SubCategoryConfiguration : IEntityTypeConfiguration<SubCategory>
+public class SubCourseCategoryConfiguration : IEntityTypeConfiguration<SubCourseCategory>
 {
-    public void Configure(EntityTypeBuilder<SubCategory> builder)
+    public void Configure(EntityTypeBuilder<SubCourseCategory> builder)
     {
-        builder.ToTable("SubCategories");
+        builder.ToTable("SubCourseCategories");
         builder.HasKey(x => x.SubCategoryId);
 
         builder.Property(x => x.SubCategoryId).HasColumnName("SubCategoryID").ValueGeneratedOnAdd();

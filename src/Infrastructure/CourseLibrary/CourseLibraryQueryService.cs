@@ -20,7 +20,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
     public async Task<IReadOnlyList<CourseLibraryCategoryDto>> GetCategoriesAsync(
         CourseLibraryQueryOptions options, CancellationToken cancellationToken = default)
     {
-        var categories = await _dbContext.LibraryCategories
+        var categories = await _dbContext.MainCourseCategories
             .AsNoTracking()
             .Where(c => c.TypeId == options.TypeId && c.IsActive)
             .OrderBy(c => c.DisplayOrder ?? int.MaxValue)
@@ -74,7 +74,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
         var course = await _dbContext.Courses
             .AsNoTracking()
             .Where(c => c.CourseId == courseId && c.IsActive)
-            .Join(_dbContext.LibraryCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new
+            .Join(_dbContext.MainCourseCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new
             {
                 c.CourseId,
                 c.CourseTitle,
@@ -135,7 +135,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
         var titleMatches = await _dbContext.Courses
             .AsNoTracking()
             .Where(c => c.IsActive && EF.Functions.Like(c.CourseTitle, term, "\\"))
-            .Join(_dbContext.LibraryCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new { c, cat })
+            .Join(_dbContext.MainCourseCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new { c, cat })
             .Where(x => x.cat.IsActive)
             .OrderBy(x => x.c.CourseTitle)
             .Take(limit)
@@ -155,7 +155,7 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
             .Where(c => c.IsActive && !matchedIds.Contains(c.CourseId)
                 && ((c.AboutContent != null && EF.Functions.Like(c.AboutContent, term, "\\"))
                     || (c.OverviewContent != null && EF.Functions.Like(c.OverviewContent, term, "\\"))))
-            .Join(_dbContext.LibraryCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new { c, cat })
+            .Join(_dbContext.MainCourseCategories.AsNoTracking(), c => c.CategoryId, cat => cat.CategoryId, (c, cat) => new { c, cat })
             .Where(x => x.cat.IsActive)
             .OrderBy(x => x.c.CourseTitle)
             .Take(remaining)

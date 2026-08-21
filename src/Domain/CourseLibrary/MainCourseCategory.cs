@@ -1,8 +1,8 @@
 namespace SkillsetsBackend.Domain.CourseLibrary;
 
-/// <summary>Maps to the existing "LibraryCategories" table. Read-only - TypeID distinguishes
-/// NON-IT (1) from IT (2) categories; do not hard-code that mapping anywhere else.</summary>
-public class LibraryCategory
+/// <summary>Maps to the "MainCourseCategories" table (renamed from "LibraryCategories"). Read-only -
+/// TypeID distinguishes NON-IT (1) from IT (2) categories; do not hard-code that mapping anywhere else.</summary>
+public class MainCourseCategory
 {
     public int CategoryId { get; private set; }
 
@@ -18,7 +18,7 @@ public class LibraryCategory
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    private LibraryCategory()
+    private MainCourseCategory()
     {
     }
 }

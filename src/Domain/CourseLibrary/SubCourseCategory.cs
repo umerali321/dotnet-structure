@@ -1,9 +1,9 @@
 namespace SkillsetsBackend.Domain.CourseLibrary;
 
-/// <summary>Maps to the existing "SubCategories" table. Read-only - not yet surfaced in the
-/// Course Library UI (parent-category-only display for now), but mapped so Courses.SubCategoryId
-/// can be resolved later without a schema change.</summary>
-public class SubCategory
+/// <summary>Maps to the "SubCourseCategories" table (renamed from "SubCategories"). Read-only - not
+/// yet surfaced in the Course Library UI (parent-category-only display for now), but mapped so
+/// Courses.SubCategoryId can be resolved later without a schema change.</summary>
+public class SubCourseCategory
 {
     public int SubCategoryId { get; private set; }
 
@@ -19,7 +19,7 @@ public class SubCategory
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    private SubCategory()
+    private SubCourseCategory()
     {
     }
 }

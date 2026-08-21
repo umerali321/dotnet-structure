@@ -23,7 +23,7 @@ public class GetCourseLibraryQueryHandler
         return new CourseLibraryResponseDto(label, categories);
     }
 
-    // TypeID meaning (LibraryCategories.TypeID) is a data fact, not something to hard-code as a
+    // TypeID meaning (MainCourseCategories.TypeID) is a data fact, not something to hard-code as a
     // magic number scattered across the codebase - this is the single place the client-facing
     // "non-it"/"it" tab value is translated to it.
     private static (int TypeId, string Label) MapType(string type) => type?.Trim().ToLowerInvariant() switch

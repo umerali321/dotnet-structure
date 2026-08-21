@@ -45,9 +45,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<SupportContact> SupportContacts => Set<SupportContact>();
 
-    public DbSet<LibraryCategory> LibraryCategories => Set<LibraryCategory>();
+    public DbSet<MainCourseCategory> MainCourseCategories => Set<MainCourseCategory>();
 
-    public DbSet<SubCategory> SubCategories => Set<SubCategory>();
+    public DbSet<SubCourseCategory> SubCourseCategories => Set<SubCourseCategory>();
 
     public DbSet<Course> Courses => Set<Course>();
 

@@ -42,7 +42,7 @@ public class SkillsoftController : ControllerBase
         _searchCoursesHandler = searchCoursesHandler;
     }
 
-    // Not company-scoped: LibraryCategories/Courses are a shared global catalog, unlike the
+    // Not company-scoped: MainCourseCategories/Courses are a shared global catalog, unlike the
     // Skillsoft OLSA endpoints above which require an active per-company library card.
     // Name-only listing - full course content is fetched separately, on demand (see below).
     [HttpGet("course-library")]

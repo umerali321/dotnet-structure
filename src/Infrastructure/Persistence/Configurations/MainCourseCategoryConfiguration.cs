@@ -5,11 +5,11 @@ using SkillsetsBackend.Infrastructure.Persistence.Conversions;
 
 namespace SkillsetsBackend.Infrastructure.Persistence.Configurations;
 
-public class LibraryCategoryConfiguration : IEntityTypeConfiguration<LibraryCategory>
+public class MainCourseCategoryConfiguration : IEntityTypeConfiguration<MainCourseCategory>
 {
-    public void Configure(EntityTypeBuilder<LibraryCategory> builder)
+    public void Configure(EntityTypeBuilder<MainCourseCategory> builder)
     {
-        builder.ToTable("LibraryCategories");
+        builder.ToTable("MainCourseCategories");
         builder.HasKey(x => x.CategoryId);
 
         builder.Property(x => x.CategoryId).HasColumnName("CategoryID").ValueGeneratedOnAdd();
