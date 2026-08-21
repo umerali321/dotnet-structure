@@ -95,12 +95,12 @@ public static class DependencyInjection
 
         var superAdminSettings = configuration.GetSection(SuperAdminSettings.SectionName).Get<SuperAdminSettings>();
         if (superAdminSettings is null
-            || superAdminSettings.Id == Guid.Empty
-            || string.IsNullOrWhiteSpace(superAdminSettings.Email)
-            || string.IsNullOrWhiteSpace(superAdminSettings.PasswordHash))
+            || superAdminSettings.Accounts.Count == 0
+            || superAdminSettings.Accounts.Any(a =>
+                a.Id == Guid.Empty || string.IsNullOrWhiteSpace(a.Email) || string.IsNullOrWhiteSpace(a.PasswordHash)))
         {
             throw new InvalidOperationException(
-                "SuperAdmin settings are not configured. Set SuperAdmin:Id, SuperAdmin:Email, and SuperAdmin:PasswordHash in configuration.");
+                "SuperAdmin settings are not configured. Set at least one SuperAdmin:Accounts entry with Id, Email, and PasswordHash in configuration.");
         }
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();

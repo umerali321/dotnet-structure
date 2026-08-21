@@ -18,16 +18,14 @@ public class SuperAdminAuthenticator : ISuperAdminAuthenticator
 
     public SuperAdminIdentity? Validate(string email, string password)
     {
-        if (!string.Equals(email, _settings.Email, StringComparison.OrdinalIgnoreCase))
+        var account = _settings.Accounts.FirstOrDefault(
+            a => string.Equals(email, a.Email, StringComparison.OrdinalIgnoreCase));
+
+        if (account is null || !_passwordHasher.Verify(password, account.PasswordHash))
         {
             return null;
         }
 
-        if (!_passwordHasher.Verify(password, _settings.PasswordHash))
-        {
-            return null;
-        }
-
-        return new SuperAdminIdentity(_settings.Id, _settings.Email, Roles.SuperAdmin);
+        return new SuperAdminIdentity(account.Id, account.Email, Roles.SuperAdmin);
     }
 }
