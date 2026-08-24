@@ -8,12 +8,13 @@ using SkillsetsBackend.Shared.Common;
 namespace SkillsetsBackend.Infrastructure.Dashboard;
 
 /// <summary>
-/// Every count here is built as a server-translatable IQueryable (COUNT DISTINCT / EXISTS-subquery
-/// shapes) rather than materializing user-id lists into memory first - the Users/UserCompanyRoles
-/// tables are large enough (100k+ rows) that a client-evaluated ".Contains(bigList)" would blow past
-/// SQL Server's ~2100 parameter limit. ActiveLibraryCards is the one exception - it's a small, fixed
-/// ~4.5k-row table, so pulling a filtered slice into memory to group by (Email, CompanyCode) is safe
-/// and simpler than fighting EF's grouped-aggregate SQL translation.
+/// GetStatsAsync is backed by a stored procedure (see below). The list/history queries below it are
+/// still built as server-translatable IQueryables (COUNT DISTINCT / EXISTS-subquery shapes) rather
+/// than materializing user-id lists into memory first - the Users/UserCompanyRoles tables are large
+/// enough (100k+ rows) that a client-evaluated ".Contains(bigList)" would blow past SQL Server's
+/// ~2100 parameter limit. ActiveLibraryCards is the one exception - it's a small, fixed ~4.5k-row
+/// table, so pulling a filtered slice into memory to group by (Email, CompanyCode) is safe and
+/// simpler than fighting EF's grouped-aggregate SQL translation.
 /// </summary>
 public class DashboardQueryService : IDashboardQueryService
 {
@@ -24,107 +25,38 @@ public class DashboardQueryService : IDashboardQueryService
         _dbContext = dbContext;
     }
 
+    /// <summary>Backed by dbo.sp_GetDashboardStats (see Persistence/Migrations -
+    /// CreateDashboardStatsStoredProcedure) rather than ~14 sequential LINQ COUNT queries - this
+    /// endpoint loads on every admin dashboard visit, so all the buckets are computed server-side
+    /// in one round trip instead of one network/query round trip per KPI card.</summary>
     public async Task<DashboardStatsDto> GetStatsAsync(
         IReadOnlyCollection<int>? companyIds,
         DateOnly? startDate,
         DateOnly? endDate,
         CancellationToken cancellationToken)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Distinguish "no restriction" (null -> NULL param) from "restricted to zero companies"
+        // (empty collection -> empty-string param, which the proc treats as matching nothing).
+        var restrictParam = companyIds is null ? null : string.Join(",", companyIds);
 
-        // ---- Company snapshot buckets - reuses the exact Trial/License/Inactive predicate from
-        // CompanyQueryService/sp_ListCompanies. Never date-filtered (see DashboardStatsDto). ----
-        var companiesQuery = _dbContext.Companies.AsNoTracking();
-        if (companyIds is not null)
-        {
-            companiesQuery = companiesQuery.Where(c => companyIds.Contains(c.CompanyId));
-        }
+        var rows = await _dbContext.Database
+            .SqlQuery<DashboardStatsRow>(
+                $"EXEC dbo.sp_GetDashboardStats @RestrictToCompanyIds={restrictParam}, @StartDate={startDate}, @EndDate={endDate}")
+            .ToListAsync(cancellationToken);
 
-        var totalCompanies = await companiesQuery.CountAsync(cancellationToken);
-        var trialCompanies = await companiesQuery.CountAsync(
-            c => c.IsActive && c.PlanEndDate >= today && c.PlanType == Company.TrialPlan, cancellationToken);
-        var licensedCompanies = await companiesQuery.CountAsync(
-            c => c.IsActive && c.PlanEndDate >= today && c.PlanType == Company.LicensePlan, cancellationToken);
-        var inactiveCompanies = await companiesQuery.CountAsync(
-            c => !c.IsActive || c.PlanEndDate < today, cancellationToken);
-        var thirtyDaysOut = today.AddDays(30);
-        var expiringLicensesIn30Days = await companiesQuery.CountAsync(
-            c => c.IsActive && c.PlanType == Company.LicensePlan && c.PlanEndDate >= today && c.PlanEndDate <= thirtyDaysOut,
-            cancellationToken);
-
-        // ---- Headcounts - active UserCompanyRoles by role, not gated on Company.IsActive (a
-        // headcount should still count a company's people even if its license just lapsed). ----
-        var totalCompanyAdmins = await ActiveRoleUserIdsQuery(companyIds, [Roles.CompanyAdmin], today).CountAsync(cancellationToken);
-        var totalManagers = await ActiveRoleUserIdsQuery(companyIds, ManagerRoleNames, today).CountAsync(cancellationToken);
-        var employeeIdsQuery = ActiveRoleUserIdsQuery(companyIds, [Roles.Student], today);
-        var totalEmployees = await employeeIdsQuery.CountAsync(cancellationToken);
-
-        // ---- IT / NON-IT split of that same active-employee set. Real data has ~10 distinct
-        // StudentType values (mostly "IT"/"NON" plus a handful of legacy stragglers) - bucket as
-        // exact "IT" vs everything else so IT + NON-IT always equals TotalEmployees exactly. ----
-        var itEmployees = await _dbContext.StudentProfiles.AsNoTracking()
-            .Where(sp => sp.StudentType == "IT" && employeeIdsQuery.Contains(sp.UserId))
-            .CountAsync(cancellationToken);
-        var nonItEmployees = totalEmployees - itEmployees;
-
-        // ---- Course Library (ActiveLibraryCards) - distinct (Email, CompanyCode) pairs. ----
-        var companyCodes = await ResolveCompanyCodesAsync(companyIds, cancellationToken);
-        var cardsQuery = _dbContext.ActiveLibraryCards.AsNoTracking().Where(c => c.Email != null);
-        if (companyCodes is not null)
-        {
-            cardsQuery = cardsQuery.Where(c => companyCodes.Contains(c.CompanyCode));
-        }
-
-        var courseLibraryUsers = await cardsQuery
-            .Select(c => new { Email = c.Email!.ToLower(), c.CompanyCode })
-            .Distinct()
-            .CountAsync(cancellationToken);
-
-        // ---- Date-range "activity in period" numbers - the only fields the date filter changes. ----
-        var companiesAddedInPeriod = 0;
-        var usersAddedInPeriod = 0;
-        var sessionsStartedInPeriod = 0;
-
-        if (startDate.HasValue || endDate.HasValue)
-        {
-            DateTimeOffset? rangeStart = startDate.HasValue
-                ? new DateTimeOffset(startDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)
-                : null;
-            DateTimeOffset? rangeEnd = endDate.HasValue
-                ? new DateTimeOffset(endDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero)
-                : null;
-
-            companiesAddedInPeriod = await companiesQuery.CountAsync(
-                c => (rangeStart == null || c.CreatedAt >= rangeStart) && (rangeEnd == null || c.CreatedAt <= rangeEnd),
-                cancellationToken);
-
-            var scopedPersonIdsQuery = _dbContext.UserCompanyRoles.AsNoTracking()
-                .Where(ucr => ucr.IsActive
-                    && (ucr.Role.RoleName == Roles.CompanyAdmin || ucr.Role.RoleName == Roles.Manager
-                        || ucr.Role.RoleName == LegacyAdminRoleName || ucr.Role.RoleName == Roles.Student)
-                    && (ucr.StartDate == null || ucr.StartDate <= today)
-                    && (ucr.EndDate == null || ucr.EndDate >= today)
-                    && (companyIds == null || companyIds.Contains(ucr.CompanyId)))
-                .Select(ucr => ucr.UserId);
-
-            usersAddedInPeriod = await _dbContext.Users.AsNoTracking()
-                .Where(u => scopedPersonIdsQuery.Contains(u.UserId)
-                    && (rangeStart == null || u.CreatedAt >= rangeStart) && (rangeEnd == null || u.CreatedAt <= rangeEnd))
-                .CountAsync(cancellationToken);
-
-            DateTime? cardRangeStart = startDate?.ToDateTime(TimeOnly.MinValue);
-            DateTime? cardRangeEnd = endDate?.ToDateTime(TimeOnly.MaxValue);
-            sessionsStartedInPeriod = await cardsQuery.CountAsync(
-                c => (cardRangeStart == null || c.StartDate >= cardRangeStart) && (cardRangeEnd == null || c.StartDate <= cardRangeEnd),
-                cancellationToken);
-        }
-
+        var row = rows[0];
         return new DashboardStatsDto(
-            totalCompanies, totalCompanyAdmins, totalManagers, totalEmployees,
-            trialCompanies, licensedCompanies, inactiveCompanies, expiringLicensesIn30Days,
-            itEmployees, nonItEmployees, courseLibraryUsers,
-            companiesAddedInPeriod, usersAddedInPeriod, sessionsStartedInPeriod);
+            row.TotalCompanies, row.TotalCompanyAdmins, row.TotalManagers, row.TotalEmployees,
+            row.TrialCompanies, row.LicensedCompanies, row.InactiveCompanies, row.ExpiringLicensesIn30Days,
+            row.ItEmployees, row.NonItEmployees, row.CourseLibraryUsers,
+            row.CompaniesAddedInPeriod, row.UsersAddedInPeriod, row.CourseLibrarySessionsStartedInPeriod);
     }
+
+    private sealed record DashboardStatsRow(
+        int TotalCompanies, int TotalCompanyAdmins, int TotalManagers, int TotalEmployees,
+        int TrialCompanies, int LicensedCompanies, int InactiveCompanies, int ExpiringLicensesIn30Days,
+        int ItEmployees, int NonItEmployees, int CourseLibraryUsers,
+        int CompaniesAddedInPeriod, int UsersAddedInPeriod, int CourseLibrarySessionsStartedInPeriod);
 
     public async Task<PaginatedList<CourseLibraryUserDto>> GetCourseLibraryUsersAsync(
         IReadOnlyCollection<int>? companyIds,
@@ -274,17 +206,11 @@ public class DashboardQueryService : IDashboardQueryService
             .ToList();
     }
 
-    /// <summary>The DB still has a distinct legacy "Admin" Roles row, separate from "Manager" -
-    /// Roles.Normalize() folds it into Manager everywhere else in the app (see Roles.cs), so the
-    /// Manager headcount here must match both names too, not just an exact "Manager".</summary>
-    private const string LegacyAdminRoleName = "Admin";
-    private static readonly string[] ManagerRoleNames = [Roles.Manager, LegacyAdminRoleName];
-
     /// <summary>A Manager's Course Library visibility: themselves, plus any Student in their
     /// company/companies who is either explicitly assigned to them (StudentProfile.ManagerId) or
     /// not assigned to anyone yet - the exact same "assigned, or falls through to any manager"
-    /// rule StudentAuthorization.EnsureCanViewStudentAsync uses. EXISTS-subquery shaped (like
-    /// ActiveRoleUserIdsQuery above) rather than materializing ids first, for the same reason.</summary>
+    /// rule StudentAuthorization.EnsureCanViewStudentAsync uses. EXISTS-subquery shaped rather
+    /// than materializing ids first, since Users/UserCompanyRoles are 100k+ row tables.</summary>
     private IQueryable<string> VisibleEmailsForManagerQuery(int managerId, IReadOnlyCollection<int>? companyIds) =>
         _dbContext.Users.AsNoTracking()
             .Where(u => u.Email != null && (
@@ -295,15 +221,6 @@ public class DashboardQueryService : IDashboardQueryService
                     && _dbContext.StudentProfiles.Any(sp => sp.UserId == u.UserId && (sp.ManagerId == managerId || sp.ManagerId == null))
                 )))
             .Select(u => u.Email!.ToLower());
-
-    private IQueryable<int> ActiveRoleUserIdsQuery(IReadOnlyCollection<int>? companyIds, IReadOnlyCollection<string> roleNames, DateOnly today) =>
-        _dbContext.UserCompanyRoles.AsNoTracking()
-            .Where(ucr => ucr.IsActive && roleNames.Contains(ucr.Role.RoleName)
-                && (ucr.StartDate == null || ucr.StartDate <= today)
-                && (ucr.EndDate == null || ucr.EndDate >= today)
-                && (companyIds == null || companyIds.Contains(ucr.CompanyId)))
-            .Select(ucr => ucr.UserId)
-            .Distinct();
 
     /// <summary>ActiveLibraryCards only has a text Company_Code, not a CompanyId FK - resolve the
     /// selected company scope down to the matching codes once, reused by every query below. Null
