@@ -45,3 +45,8 @@ public record CourseLibraryCategoryDto(
 public record CourseLibraryResponseDto(
     string Type,
     IReadOnlyList<CourseLibraryCategoryDto> Categories);
+
+/// <summary>Lightweight batch lookup result for a known set of CourseIds - used by SkillTrax/
+/// Assignment creation to validate a proposed title list and populate display fields in one round
+/// trip, without the heavier About content/Table of Contents that GetCourseDetailAsync loads.</summary>
+public record CourseLookupDto(long CourseId, string CourseTitle, string? Duration, string? CourseUrl, string? LaunchUrl);

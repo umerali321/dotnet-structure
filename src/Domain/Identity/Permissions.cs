@@ -125,4 +125,28 @@ public static class Permissions
         public const int ViewCatalogId = 83;
         public const string ViewCatalog = "Skillsoft.ViewCatalog";
     }
+
+    public static class Assignments
+    {
+        public const int ViewId = 91;
+        public const string View = "Assignments.View";
+
+        public const int CreateId = 92;
+        public const string Create = "Assignments.Create";
+
+        public const int CancelId = 93;
+        public const string Cancel = "Assignments.Cancel";
+    }
+
+    public static class SkillTrax
+    {
+        public const int ViewId = 101;
+        public const string View = "SkillTrax.View";
+
+        public const int CreateId = 102;
+        public const string Create = "SkillTrax.Create";
+
+        public const int DeleteId = 103;
+        public const string Delete = "SkillTrax.Delete";
+    }
 }

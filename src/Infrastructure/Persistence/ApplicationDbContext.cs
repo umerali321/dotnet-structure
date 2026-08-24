@@ -1,5 +1,6 @@
 using System.Reflection;
 using SkillsetsBackend.Application.Common.Interfaces;
+using SkillsetsBackend.Domain.Assignments;
 using SkillsetsBackend.Domain.CourseLibrary;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Domain.Skillsoft;
@@ -56,6 +57,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<LoginActivityLog> LoginActivityLogs => Set<LoginActivityLog>();
 
     public DbSet<CourseTaken> CourseTakens => Set<CourseTaken>();
+
+    public DbSet<SkillTrax> SkillTrax => Set<SkillTrax>();
+
+    public DbSet<SkillTraxCourse> SkillTraxCourses => Set<SkillTraxCourse>();
+
+    public DbSet<Assignment> Assignments => Set<Assignment>();
+
+    public DbSet<AssignmentEmployee> AssignmentEmployees => Set<AssignmentEmployee>();
+
+    public DbSet<AssignmentTitle> AssignmentTitles => Set<AssignmentTitle>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

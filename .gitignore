@@ -489,3 +489,10 @@ $RECYCLE.BIN/
 # deployed by hand alongside the rest of the publish output. Never commit real production
 # credentials to source control.
 src/API/appsettings.Production.json
+
+# Skillport scraper - generated run artifacts (scraped JSON/SQL/XLSX exports, progress files,
+# failure screenshots) are per-run local output, not source, and can be large/numerous. The
+# script itself (skillport_scraper.py) is still tracked.
+tools/skillport-scraper/output/
+tools/skillport-scraper/__pycache__/
+tools/**/*.pyc

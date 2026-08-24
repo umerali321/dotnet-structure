@@ -16,4 +16,9 @@ public interface ICourseLibraryQueryService
     /// <summary>Global course search - title matches first, then description (About/Overview)
     /// matches, each result reporting which one it matched on. Active courses only.</summary>
     Task<IReadOnlyList<CourseSearchResultDto>> SearchAsync(string searchTerm, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>Batch lookup for a known set of CourseIds, active courses only - one round trip
+    /// regardless of how many ids are requested. Missing/inactive ids are simply absent from the
+    /// result, letting the caller detect and report them.</summary>
+    Task<IReadOnlyList<CourseLookupDto>> GetCoursesByIdsAsync(IReadOnlyCollection<long> courseIds, CancellationToken cancellationToken = default);
 }

@@ -62,6 +62,12 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             Permissions.Skillsoft.LaunchCourseId,
             Permissions.Skillsoft.ViewTranscriptId,
             Permissions.Skillsoft.ViewCatalogId,
+            Permissions.Assignments.ViewId,
+            Permissions.Assignments.CreateId,
+            Permissions.Assignments.CancelId,
+            Permissions.SkillTrax.ViewId,
+            Permissions.SkillTrax.CreateId,
+            Permissions.SkillTrax.DeleteId,
         };
 
         var companyAdminPermissions = new[]
@@ -92,6 +98,12 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             Permissions.Skillsoft.LaunchCourseId,
             Permissions.Skillsoft.ViewTranscriptId,
             Permissions.Skillsoft.ViewCatalogId,
+            Permissions.Assignments.ViewId,
+            Permissions.Assignments.CreateId,
+            Permissions.Assignments.CancelId,
+            Permissions.SkillTrax.ViewId,
+            Permissions.SkillTrax.CreateId,
+            Permissions.SkillTrax.DeleteId,
         };
 
         var seedRows = new List<object>();

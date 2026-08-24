@@ -58,7 +58,15 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 
             Seed(Permissions.Skillsoft.LaunchCourseId, Permissions.Skillsoft.LaunchCourse, "Course Provider", "Launch Courses"),
             Seed(Permissions.Skillsoft.ViewTranscriptId, Permissions.Skillsoft.ViewTranscript, "Course Provider", "View Learning Transcript"),
-            Seed(Permissions.Skillsoft.ViewCatalogId, Permissions.Skillsoft.ViewCatalog, "Course Provider", "View Course Catalog")
+            Seed(Permissions.Skillsoft.ViewCatalogId, Permissions.Skillsoft.ViewCatalog, "Course Provider", "View Course Catalog"),
+
+            Seed(Permissions.Assignments.ViewId, Permissions.Assignments.View, "Assignments", "View Training Assignments"),
+            Seed(Permissions.Assignments.CreateId, Permissions.Assignments.Create, "Assignments", "Assign Training"),
+            Seed(Permissions.Assignments.CancelId, Permissions.Assignments.Cancel, "Assignments", "Cancel Training Assignments"),
+
+            Seed(Permissions.SkillTrax.ViewId, Permissions.SkillTrax.View, "SkillTrax", "View SkillTrax"),
+            Seed(Permissions.SkillTrax.CreateId, Permissions.SkillTrax.Create, "SkillTrax", "Create SkillTrax"),
+            Seed(Permissions.SkillTrax.DeleteId, Permissions.SkillTrax.Delete, "SkillTrax", "Delete SkillTrax")
         );
     }
 

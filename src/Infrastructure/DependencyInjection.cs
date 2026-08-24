@@ -21,6 +21,11 @@ using SkillsetsBackend.Infrastructure.Skillsoft;
 using SkillsetsBackend.Infrastructure.Skillsoft.Olsa;
 using SkillsetsBackend.Application.CourseLibrary.Interfaces;
 using SkillsetsBackend.Infrastructure.CourseLibrary;
+using SkillsetsBackend.Application.SkillTrax.Interfaces;
+using SkillsetsBackend.Application.Assignments.Interfaces;
+using SkillsetsBackend.Infrastructure.Assignments;
+using SkillsetsBackend.Application.Scraper.Interfaces;
+using SkillsetsBackend.Infrastructure.Scraper;
 using SkillsetsBackend.Application.RoleManagement.Interfaces;
 using SkillsetsBackend.Infrastructure.RoleManagement;
 using SkillsetsBackend.Application.Dashboard.Interfaces;
@@ -128,8 +133,15 @@ public static class DependencyInjection
         services.AddScoped<ISupportContactRepository, SupportContactRepository>();
         services.AddScoped<ICourseLibraryQueryService, CourseLibraryQueryService>();
         services.AddScoped<ICourseTakenRepository, CourseTakenRepository>();
+        services.AddScoped<IScraperCategoryQueryService, ScraperCategoryQueryService>();
+        services.AddSingleton<ScraperRunnerService>();
+        services.AddSingleton<IScraperRunnerService>(provider => provider.GetRequiredService<ScraperRunnerService>());
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IDashboardQueryService, DashboardQueryService>();
+        services.AddScoped<ISkillTraxRepository, SkillTraxRepository>();
+        services.AddScoped<ISkillTraxQueryService, SkillTraxQueryService>();
+        services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+        services.AddScoped<IAssignmentQueryService, AssignmentQueryService>();
 
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()
@@ -138,6 +150,8 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SkillsoftOlsaSettings.SectionName));
         services.AddOptions<SkillsoftProvisioningSettings>()
             .Bind(configuration.GetSection(SkillsoftProvisioningSettings.SectionName));
+        services.AddOptions<SkillsoftScraperSettings>()
+            .Bind(configuration.GetSection(SkillsoftScraperSettings.SectionName));
         services.AddOptions<EmailSettings>()
             .Bind(configuration.GetSection(EmailSettings.SectionName));
         services.AddScoped<IEmailSender, SmtpEmailSender>();

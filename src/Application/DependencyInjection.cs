@@ -31,6 +31,11 @@ using SkillsetsBackend.Application.Companies.Commands.ActivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
 using SkillsetsBackend.Application.Companies.Commands.ImportCompanies;
+using SkillsetsBackend.Application.Scraper.Commands.StartScraperRun;
+using SkillsetsBackend.Application.Scraper.Commands.StopScraperRun;
+using SkillsetsBackend.Application.Scraper.Queries.GetScraperRunStatus;
+using SkillsetsBackend.Application.Scraper.Queries.GetScraperSqlFile;
+using SkillsetsBackend.Application.Scraper.Queries.ListScraperCategories;
 using SkillsetsBackend.Application.Dashboard.Queries.GetDashboardStats;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHistory;
@@ -60,9 +65,20 @@ using SkillsetsBackend.Application.SupportContacts.Commands.DeactivateSupportCon
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibrary;
 using SkillsetsBackend.Application.CourseLibrary.Queries.GetCourseLibraryCourseDetail;
 using SkillsetsBackend.Application.CourseLibrary.Queries.ListCourseTaken;
+using SkillsetsBackend.Application.CourseLibrary.Queries.GetMyActiveCourse;
 using SkillsetsBackend.Application.CourseLibrary.Queries.SearchCourses;
 using SkillsetsBackend.Application.CourseLibrary.Commands.TakeCourse;
 using SkillsetsBackend.Application.CourseLibrary.Commands.MarkCourseTakenComplete;
+using SkillsetsBackend.Application.SkillTrax.Commands.CreateSkillTrax;
+using SkillsetsBackend.Application.SkillTrax.Commands.UpdateSkillTrax;
+using SkillsetsBackend.Application.SkillTrax.Commands.DeleteSkillTrax;
+using SkillsetsBackend.Application.SkillTrax.Queries.ListSkillTrax;
+using SkillsetsBackend.Application.SkillTrax.Queries.GetSkillTraxDetail;
+using SkillsetsBackend.Application.Assignments.Commands.CreateAssignment;
+using SkillsetsBackend.Application.Assignments.Commands.UpdateAssignment;
+using SkillsetsBackend.Application.Assignments.Commands.CancelAssignment;
+using SkillsetsBackend.Application.Assignments.Queries.ListOngoingAssignments;
+using SkillsetsBackend.Application.Assignments.Queries.ListMyAssignments;
 using SkillsetsBackend.Application.RoleManagement.Queries.ListPermissions;
 using SkillsetsBackend.Application.RoleManagement.Queries.ListRoles;
 using SkillsetsBackend.Application.RoleManagement.Queries.GetRoleById;
@@ -116,6 +132,11 @@ public static class DependencyInjection
         services.AddScoped<SetCompanyLicenseCommandHandler>();
         services.AddScoped<UpdateCompanyLogoCommandHandler>();
         services.AddScoped<ImportCompaniesCommandHandler>();
+        services.AddScoped<StartScraperRunCommandHandler>();
+        services.AddScoped<StopScraperRunCommandHandler>();
+        services.AddScoped<GetScraperRunStatusQueryHandler>();
+        services.AddScoped<ListScraperCategoriesQueryHandler>();
+        services.AddScoped<GetScraperSqlFileQueryHandler>();
         services.AddScoped<ListManagersQueryHandler>();
         services.AddScoped<GetManagerByIdQueryHandler>();
         services.AddScoped<GetManagerCompaniesQueryHandler>();
@@ -151,6 +172,7 @@ public static class DependencyInjection
         services.AddScoped<TakeCourseCommandHandler>();
         services.AddScoped<MarkCourseTakenCompleteCommandHandler>();
         services.AddScoped<ListCourseTakenQueryHandler>();
+        services.AddScoped<GetMyActiveCourseQueryHandler>();
 
         services.AddScoped<ListPermissionsQueryHandler>();
         services.AddScoped<ListRolesQueryHandler>();
@@ -164,6 +186,18 @@ public static class DependencyInjection
         services.AddScoped<UpdateRoleCommandHandler>();
         services.AddScoped<DeactivateRoleCommandHandler>();
         services.AddScoped<ActivateRoleCommandHandler>();
+
+        services.AddScoped<CreateSkillTraxCommandHandler>();
+        services.AddScoped<UpdateSkillTraxCommandHandler>();
+        services.AddScoped<DeleteSkillTraxCommandHandler>();
+        services.AddScoped<ListSkillTraxQueryHandler>();
+        services.AddScoped<GetSkillTraxDetailQueryHandler>();
+
+        services.AddScoped<CreateAssignmentCommandHandler>();
+        services.AddScoped<UpdateAssignmentCommandHandler>();
+        services.AddScoped<CancelAssignmentCommandHandler>();
+        services.AddScoped<ListOngoingAssignmentsQueryHandler>();
+        services.AddScoped<ListMyAssignmentsQueryHandler>();
 
         return services;
     }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.CourseLibrary.Commands.MarkCourseTakenComplete;
 using SkillsetsBackend.Application.CourseLibrary.Commands.TakeCourse;
+using SkillsetsBackend.Application.CourseLibrary.Queries.GetMyActiveCourse;
 using SkillsetsBackend.Application.CourseLibrary.Queries.ListCourseTaken;
 
 namespace SkillsetsBackend.API.Controllers;
@@ -18,15 +19,18 @@ public class CourseTakenController : ControllerBase
     private readonly TakeCourseCommandHandler _takeCourseHandler;
     private readonly MarkCourseTakenCompleteCommandHandler _markCompleteHandler;
     private readonly ListCourseTakenQueryHandler _listHandler;
+    private readonly GetMyActiveCourseQueryHandler _getMyActiveCourseHandler;
 
     public CourseTakenController(
         TakeCourseCommandHandler takeCourseHandler,
         MarkCourseTakenCompleteCommandHandler markCompleteHandler,
-        ListCourseTakenQueryHandler listHandler)
+        ListCourseTakenQueryHandler listHandler,
+        GetMyActiveCourseQueryHandler getMyActiveCourseHandler)
     {
         _takeCourseHandler = takeCourseHandler;
         _markCompleteHandler = markCompleteHandler;
         _listHandler = listHandler;
+        _getMyActiveCourseHandler = getMyActiveCourseHandler;
     }
 
     [HttpGet]
@@ -39,6 +43,13 @@ public class CourseTakenController : ControllerBase
     {
         var result = await _listHandler.Handle(new ListCourseTakenQuery(page, pageSize, studentName, courseTitle), GetCaller(), cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("active-mine")]
+    public async Task<IActionResult> GetMyActiveCourse(CancellationToken cancellationToken)
+    {
+        var result = await _getMyActiveCourseHandler.Handle(GetCaller(), cancellationToken);
+        return result is null ? NoContent() : Ok(result);
     }
 
     [HttpPost]

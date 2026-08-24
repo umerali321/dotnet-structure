@@ -165,6 +165,21 @@ public class CourseLibraryQueryService : ICourseLibraryQueryService
         return titleMatches.Concat(descriptionMatches).ToList();
     }
 
+    public async Task<IReadOnlyList<CourseLookupDto>> GetCoursesByIdsAsync(
+        IReadOnlyCollection<long> courseIds, CancellationToken cancellationToken = default)
+    {
+        if (courseIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.Courses
+            .AsNoTracking()
+            .Where(c => courseIds.Contains(c.CourseId) && c.IsActive)
+            .Select(c => new CourseLookupDto(c.CourseId, c.CourseTitle, c.Duration, c.CourseUrl, c.LaunchUrl))
+            .ToListAsync(cancellationToken);
+    }
+
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
 }

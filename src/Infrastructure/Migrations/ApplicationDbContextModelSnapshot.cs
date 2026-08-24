@@ -22,6 +22,136 @@ namespace SkillsetsBackend.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.Assignment", b =>
+                {
+                    b.Property<int>("AssignmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AssignmentId"));
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsCancelled")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("SourceSkillTraxId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("AssignmentId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("SourceSkillTraxId");
+
+                    b.ToTable("Assignments", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.AssignmentEmployee", b =>
+                {
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StudentUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AssignmentId", "StudentUserId");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("AssignmentEmployees", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.AssignmentTitle", b =>
+                {
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("CourseId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AssignmentId", "CourseId");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("AssignmentTitles", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.SkillTrax", b =>
+                {
+                    b.Property<int>("SkillTraxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkillTraxId"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("SkillTraxId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.ToTable("SkillTrax", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.SkillTraxCourse", b =>
+                {
+                    b.Property<int>("SkillTraxId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("CourseId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("SkillTraxId", "CourseId");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("SkillTraxCourses", (string)null);
+                });
+
             modelBuilder.Entity("SkillsetsBackend.Domain.CourseLibrary.Course", b =>
                 {
                     b.Property<long>("CourseId")
@@ -206,7 +336,7 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.ToTable("CourseTakens", (string)null);
                 });
 
-            modelBuilder.Entity("SkillsetsBackend.Domain.CourseLibrary.LibraryCategory", b =>
+            modelBuilder.Entity("SkillsetsBackend.Domain.CourseLibrary.MainCourseCategory", b =>
                 {
                     b.Property<int>("CategoryId")
                         .ValueGeneratedOnAdd()
@@ -244,10 +374,10 @@ namespace SkillsetsBackend.Infrastructure.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("LibraryCategories", (string)null);
+                    b.ToTable("MainCourseCategories", (string)null);
                 });
 
-            modelBuilder.Entity("SkillsetsBackend.Domain.CourseLibrary.SubCategory", b =>
+            modelBuilder.Entity("SkillsetsBackend.Domain.CourseLibrary.SubCourseCategory", b =>
                 {
                     b.Property<int>("SubCategoryId")
                         .ValueGeneratedOnAdd()
@@ -285,7 +415,7 @@ namespace SkillsetsBackend.Infrastructure.Migrations
 
                     b.HasKey("SubCategoryId");
 
-                    b.ToTable("SubCategories", (string)null);
+                    b.ToTable("SubCourseCategories", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.AppUser", b =>
@@ -714,6 +844,48 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                             Category = "Course Provider",
                             Description = "View Course Catalog",
                             PermissionKey = "Skillsoft.ViewCatalog"
+                        },
+                        new
+                        {
+                            PermissionId = 91,
+                            Category = "Assignments",
+                            Description = "View Training Assignments",
+                            PermissionKey = "Assignments.View"
+                        },
+                        new
+                        {
+                            PermissionId = 92,
+                            Category = "Assignments",
+                            Description = "Assign Training",
+                            PermissionKey = "Assignments.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 93,
+                            Category = "Assignments",
+                            Description = "Cancel Training Assignments",
+                            PermissionKey = "Assignments.Cancel"
+                        },
+                        new
+                        {
+                            PermissionId = 101,
+                            Category = "SkillTrax",
+                            Description = "View SkillTrax",
+                            PermissionKey = "SkillTrax.View"
+                        },
+                        new
+                        {
+                            PermissionId = 102,
+                            Category = "SkillTrax",
+                            Description = "Create SkillTrax",
+                            PermissionKey = "SkillTrax.Create"
+                        },
+                        new
+                        {
+                            PermissionId = 103,
+                            Category = "SkillTrax",
+                            Description = "Delete SkillTrax",
+                            PermissionKey = "SkillTrax.Delete"
                         });
                 });
 
@@ -972,6 +1144,36 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         },
                         new
                         {
+                            RoleId = (byte)2,
+                            PermissionId = 91
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 92
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 93
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 101
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 102
+                        },
+                        new
+                        {
+                            RoleId = (byte)2,
+                            PermissionId = 103
+                        },
+                        new
+                        {
                             RoleId = (byte)4,
                             PermissionId = 1
                         },
@@ -1074,6 +1276,36 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         {
                             RoleId = (byte)4,
                             PermissionId = 83
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 91
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 92
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 93
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 101
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 102
+                        },
+                        new
+                        {
+                            RoleId = (byte)4,
+                            PermissionId = 103
                         },
                         new
                         {
@@ -1204,32 +1436,37 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         {
                             RoleId = (byte)5,
                             PermissionId = 83
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 91
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 92
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 93
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 101
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 102
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 103
                         });
-                });
-
-            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserPermissionOverride", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PermissionId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsGranted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("UserId", "PermissionId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.ToTable("UserPermissionOverrides", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.StudentProfile", b =>
@@ -1341,6 +1578,31 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserCredentials", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserPermissionOverride", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsGranted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("UserId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("UserPermissionOverrides", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.ActiveLibraryCard", b =>
@@ -1553,6 +1815,86 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.ToTable("SupportContacts", (string)null);
                 });
 
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.Assignment", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.Identity.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.Assignments.SkillTrax", null)
+                        .WithMany()
+                        .HasForeignKey("SourceSkillTraxId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.AssignmentEmployee", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.Assignments.Assignment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.AssignmentTitle", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.Assignments.Assignment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.CourseLibrary.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.SkillTrax", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.Identity.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Assignments.SkillTraxCourse", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.CourseLibrary.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.Assignments.SkillTrax", null)
+                        .WithMany()
+                        .HasForeignKey("SkillTraxId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SkillsetsBackend.Domain.Identity.RolePermission", b =>
                 {
                     b.HasOne("SkillsetsBackend.Domain.Identity.Permission", null)
@@ -1564,21 +1906,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasOne("SkillsetsBackend.Domain.Identity.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserPermissionOverride", b =>
-                {
-                    b.HasOne("SkillsetsBackend.Domain.Identity.Permission", null)
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SkillsetsBackend.Domain.Identity.AppUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1600,6 +1927,21 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.Navigation("Company");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.Identity.UserPermissionOverride", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.Identity.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillsetsBackend.Domain.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

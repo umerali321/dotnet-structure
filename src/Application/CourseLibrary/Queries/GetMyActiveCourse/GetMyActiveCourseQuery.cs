@@ -1,0 +1,3 @@
+namespace SkillsetsBackend.Application.CourseLibrary.Queries.GetMyActiveCourse;
+
+public record GetMyActiveCourseQuery;
