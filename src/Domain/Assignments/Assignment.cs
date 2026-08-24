@@ -35,6 +35,10 @@ public class Assignment : IAggregateRoot
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    public int? UpdatedByUserId { get; private set; }
+
+    public DateTimeOffset? UpdatedAt { get; private set; }
+
     private Assignment()
     {
     }
@@ -64,6 +68,15 @@ public class Assignment : IAggregateRoot
     {
         StartDate = startDate;
         EndDate = startDate.AddDays(FocusSessionDays);
+    }
+
+    /// <summary>Called on every edit (employees, start date, and/or titles) - null for a SuperAdmin
+    /// caller, which has no DbUserId of its own (see AGENTS.md). Not called by Cancel(), which
+    /// already has its own CancelledAt/IsCancelled lifecycle tracking.</summary>
+    public void MarkUpdated(int? updatedByUserId)
+    {
+        UpdatedByUserId = updatedByUserId;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     public bool IsActiveOrScheduled(DateOnly today) => !IsCancelled && EndDate >= today;

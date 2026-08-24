@@ -17,6 +17,7 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
         // Restrict, not Cascade - see SkillTraxConfiguration for why (Users/Companies are never
         // hard-deleted; Restrict avoids SQL Server's multi-cascade-path error).
         builder.HasOne<AppUser>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UpdatedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
 
         // Deleting a SkillTrax must never erase historical assignment data (blueprint requirement)

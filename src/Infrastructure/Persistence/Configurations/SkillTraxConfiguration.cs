@@ -26,6 +26,7 @@ public class SkillTraxConfiguration : IEntityTypeConfiguration<SkillTrax>
         // AssignmentEmployee also cascades from a different root down to rows that ultimately
         // trace back to Users.
         builder.HasOne<AppUser>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UpdatedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.CompanyId);

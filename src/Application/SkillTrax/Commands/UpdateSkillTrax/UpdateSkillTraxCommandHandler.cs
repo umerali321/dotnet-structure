@@ -67,6 +67,7 @@ public class UpdateSkillTraxCommandHandler
         }
 
         skillTrax.Rename(command.Name.Trim());
+        skillTrax.MarkUpdated(caller.DbUserId);
         await _repository.UpdateAsync(skillTrax, distinctCourseIds, cancellationToken);
 
         return await _queryService.GetDetailAsync(skillTraxId, cancellationToken)

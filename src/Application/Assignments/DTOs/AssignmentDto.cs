@@ -39,7 +39,11 @@ public record AssignmentDto(
     DateTimeOffset? CancelledAt,
     DateTimeOffset CreatedAt,
     int CreatedByUserId,
+    string? CreatedByName,
     string? CreatedByEmail,
+    string? UpdatedByName,
+    string? UpdatedByEmail,
+    DateTimeOffset? UpdatedAt,
     IReadOnlyList<AssignmentEmployeeDto> Employees,
     IReadOnlyList<AssignmentTitleDto> Titles);
 

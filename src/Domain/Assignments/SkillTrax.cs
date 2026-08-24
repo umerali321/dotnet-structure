@@ -25,6 +25,10 @@ public class SkillTrax : IAggregateRoot
 
     public DateTimeOffset? DeletedAt { get; private set; }
 
+    public int? UpdatedByUserId { get; private set; }
+
+    public DateTimeOffset? UpdatedAt { get; private set; }
+
     private SkillTrax()
     {
     }
@@ -43,6 +47,14 @@ public class SkillTrax : IAggregateRoot
     public void Rename(string name)
     {
         Name = name;
+    }
+
+    /// <summary>Called alongside every edit (rename and/or course membership change) - null for a
+    /// SuperAdmin caller, which has no DbUserId of its own (see AGENTS.md).</summary>
+    public void MarkUpdated(int? updatedByUserId)
+    {
+        UpdatedByUserId = updatedByUserId;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     public void Delete()

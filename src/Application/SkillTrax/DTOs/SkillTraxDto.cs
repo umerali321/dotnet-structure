@@ -11,9 +11,14 @@ public record SkillTraxDto(
     int SkillTraxId,
     string Name,
     int CompanyId,
+    string? CompanyName,
     int CreatedByUserId,
+    string? CreatedByName,
     string? CreatedByEmail,
     DateTimeOffset CreatedAt,
+    string? UpdatedByName,
+    string? UpdatedByEmail,
+    DateTimeOffset? UpdatedAt,
     IReadOnlyList<SkillTraxCourseDto> Courses,
     IReadOnlyList<SkillTraxAssignmentUsageDto> Assignments);
 
@@ -21,8 +26,14 @@ public record SkillTraxSummaryDto(
     int SkillTraxId,
     string Name,
     int CompanyId,
+    string? CompanyName,
     DateTimeOffset CreatedAt,
     int CourseCount,
     /// <summary>Distinct employees currently covered by a non-cancelled assignment sourced from
     /// this SkillTrax - "how many people is this bundle assigned to right now."</summary>
-    int AssignedMemberCount);
+    int AssignedMemberCount,
+    string? CreatedByName,
+    string? CreatedByEmail,
+    string? UpdatedByName,
+    string? UpdatedByEmail,
+    DateTimeOffset? UpdatedAt);

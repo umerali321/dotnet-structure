@@ -133,6 +133,7 @@ public class UpdateAssignmentCommandHandler
             await _repository.UpdateTitlesAsync(assignmentId, effectiveCourseIds, cancellationToken);
         }
         assignment.UpdateStartDate(command.StartDate);
+        assignment.MarkUpdated(caller.DbUserId);
         await _repository.SaveChangesAsync(cancellationToken);
 
         await SendAddedEmailsAsync(newlyAdded, assignment, cancellationToken);

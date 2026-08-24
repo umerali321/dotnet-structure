@@ -91,11 +91,16 @@ public class AssignmentQueryService : IAssignmentQueryService
             select new { at.AssignmentId, c.CourseId, c.CourseTitle, c.CourseUrl, c.LaunchUrl })
             .ToListAsync(cancellationToken);
 
-        var creatorIds = assignments.Select(a => a.CreatedByUserId).Distinct().ToList();
-        var creatorEmails = await _dbContext.Users
+        var creatorIds = assignments.Select(a => a.CreatedByUserId)
+            .Concat(assignments.Where(a => a.UpdatedByUserId.HasValue).Select(a => a.UpdatedByUserId!.Value))
+            .Distinct().ToList();
+        var creatorRows = await _dbContext.Users
             .AsNoTracking()
             .Where(u => creatorIds.Contains(u.UserId))
-            .ToDictionaryAsync(u => u.UserId, u => u.Email, cancellationToken);
+            .Select(u => new { u.UserId, u.Email, u.FirstName, u.LastName })
+            .ToListAsync(cancellationToken);
+        var creatorEmails = creatorRows.ToDictionary(u => u.UserId, u => u.Email);
+        var creatorNames = creatorRows.ToDictionary(u => u.UserId, u => $"{u.FirstName} {u.LastName}".Trim());
 
         // IgnoreQueryFilters() - a soft-deleted SkillTrax must still resolve its name here. Deleting
         // a SkillTrax only removes it from SkillTrax's own list/detail queries; it must never blank
@@ -151,7 +156,11 @@ public class AssignmentQueryService : IAssignmentQueryService
                 a.CancelledAt,
                 a.CreatedAt,
                 a.CreatedByUserId,
+                creatorNames.GetValueOrDefault(a.CreatedByUserId),
                 creatorEmails.GetValueOrDefault(a.CreatedByUserId),
+                a.UpdatedByUserId.HasValue ? creatorNames.GetValueOrDefault(a.UpdatedByUserId.Value) : null,
+                a.UpdatedByUserId.HasValue ? creatorEmails.GetValueOrDefault(a.UpdatedByUserId.Value) : null,
+                a.UpdatedAt,
                 employeesByAssignment.GetValueOrDefault(a.AssignmentId, []),
                 titleDtosByAssignment.GetValueOrDefault(a.AssignmentId, [])))
             .ToList();
