@@ -15,17 +15,14 @@ public class CourseTakenConfiguration : IEntityTypeConfiguration<CourseTaken>
         builder.Property(x => x.CourseId).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();
 
-        // The real exclusivity guarantee (app-layer checks in the command handler are the fast
-        // path / friendly error message; these indexes are what actually prevents a race from
-        // producing two active rows for the same student or the same course).
+        // The real exclusivity guarantee (the app-layer check in the command handler is just the
+        // fast path / friendly error message) - one active course per student. Deliberately no
+        // equivalent unique index on CourseId alone: a course must be startable by many students
+        // across many companies at the same time (see CourseTaken's class doc for the bug this
+        // used to cause when such a global per-course index existed).
         builder.HasIndex(x => x.UserId)
             .IsUnique()
             .HasFilter("[IsActive] = 1")
             .HasDatabaseName("IX_CourseTakens_ActiveUser");
-
-        builder.HasIndex(x => x.CourseId)
-            .IsUnique()
-            .HasFilter("[IsActive] = 1")
-            .HasDatabaseName("IX_CourseTakens_ActiveCourse");
     }
 }

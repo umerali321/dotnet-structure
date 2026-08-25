@@ -18,4 +18,5 @@ public record CompanyListItemDto(
     string? State = null,
     string? Zip = null,
     string? PaymentForm = null,
-    decimal? TotalPayment = null);
+    decimal? TotalPayment = null,
+    DateOnly? PurchaseDate = null);

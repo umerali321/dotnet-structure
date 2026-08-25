@@ -42,6 +42,8 @@ using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHist
 using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
 using SkillsetsBackend.Application.Managers.Commands.AddManagerRole;
 using SkillsetsBackend.Application.Managers.Commands.RemoveManagerRole;
+using SkillsetsBackend.Application.Managers.Commands.AddCompanyAdminRole;
+using SkillsetsBackend.Application.Managers.Commands.RemoveCompanyAdminRole;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
@@ -150,6 +152,8 @@ public static class DependencyInjection
         services.AddScoped<ActivateManagerCommandHandler>();
         services.AddScoped<AddManagerRoleCommandHandler>();
         services.AddScoped<RemoveManagerRoleCommandHandler>();
+        services.AddScoped<AddCompanyAdminRoleCommandHandler>();
+        services.AddScoped<RemoveCompanyAdminRoleCommandHandler>();
 
         services.AddScoped<GetDashboardStatsQueryHandler>();
         services.AddScoped<GetCourseLibraryUsersQueryHandler>();

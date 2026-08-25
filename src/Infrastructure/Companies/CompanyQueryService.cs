@@ -48,7 +48,7 @@ public class CompanyQueryService : ICompanyQueryService
         var items = rows
             .Select(r => new CompanyListItemDto(
                 r.CompanyId, r.CompanyCode, r.CompanyName, r.IsActive, r.LogoUrl, r.PlanType, r.PlanStartDate, r.PlanEndDate, r.IsExpired,
-                r.CompanyEmail, r.CompanyPhone, r.Street1, r.Street2, r.City, r.State, r.Zip, r.PaymentForm, r.TotalPayment))
+                r.CompanyEmail, r.CompanyPhone, r.Street1, r.Street2, r.City, r.State, r.Zip, r.PaymentForm, r.TotalPayment, r.PurchaseDate))
             .ToList();
 
         return new PaginatedList<CompanyListItemDto>(items, totalCount, page, pageSize);
@@ -58,5 +58,5 @@ public class CompanyQueryService : ICompanyQueryService
         int CompanyId, string CompanyCode, string CompanyName, bool IsActive, string? LogoUrl,
         string PlanType, DateOnly PlanStartDate, DateOnly PlanEndDate, bool IsExpired,
         string? CompanyEmail, string? CompanyPhone, string? Street1, string? Street2, string? City,
-        string? State, string? Zip, string? PaymentForm, decimal? TotalPayment, int TotalCount);
+        string? State, string? Zip, string? PaymentForm, decimal? TotalPayment, DateOnly? PurchaseDate, int TotalCount);
 }

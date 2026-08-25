@@ -109,7 +109,7 @@ public class ImportCompaniesCommandHandler
                         parsed.CompanyCode!, parsed.CompanyName!, parsed.Email, parsed.Phone,
                         Company.LicensePlan, parsed.StartDate, parsed.EndDate,
                         parsed.Street1, parsed.Street2, parsed.City, parsed.State, parsed.Zip,
-                        parsed.PaymentForm, parsed.TotalPayment);
+                        parsed.PaymentForm, parsed.TotalPayment, parsed.PurchaseDate);
                     var admin = AppUser.CreateStudent(
                         parsed.Email!, phone: null, parsed.AdminFirstName!, parsed.AdminLastName!, parsed.Email!, GenerateRandomPassword());
 
@@ -157,6 +157,12 @@ public class ImportCompaniesCommandHandler
                     // the unset sentinel dates was never meaningfully classified either way, and
                     // License is this tool's documented default for imported companies.
                     existing.SetLicense(parsed.StartDate.Value, parsed.EndDate.Value);
+                    companyChanged = true;
+                }
+
+                if (existing.PurchaseDate is null && parsed.PurchaseDate is not null)
+                {
+                    existing.SetPurchaseDate(parsed.PurchaseDate.Value);
                     companyChanged = true;
                 }
 
@@ -301,6 +307,7 @@ public class ImportCompaniesCommandHandler
 
         parsed.StartDate = ParseDate(row.StartDate, "Start Date", parsed.Warnings);
         parsed.EndDate = ParseDate(row.ExpirationDate, "Expiration Date", parsed.Warnings);
+        parsed.PurchaseDate = ParseDate(row.PurchaseDate, "Purchase Date", parsed.Warnings);
 
         var contact = Trim(row.PointOfContact);
         if (contact is not null)
@@ -376,6 +383,8 @@ public class ImportCompaniesCommandHandler
         public DateOnly? StartDate { get; set; }
 
         public DateOnly? EndDate { get; set; }
+
+        public DateOnly? PurchaseDate { get; set; }
 
         public string? AdminFirstName { get; set; }
 

@@ -86,8 +86,21 @@ public class StudentRepository : IStudentRepository
                 _dbContext.StudentProfiles.Add(new StudentProfile(userId, null, createdBy));
             }
 
-            var membership = new UserCompanyRole(userId, companyId, studentRoleId, startDate);
-            _dbContext.UserCompanyRoles.Add(membership);
+            // UX_UserCompanyRoles_User_Company_Role uniquely constrains (UserId, CompanyId, RoleId)
+            // with no IsActive filter - a person who once held Student at this company (even long
+            // since revoked) already has a row for that triple, so reactivate it instead of
+            // inserting a second one, which would violate the index.
+            var existingMembership = await _dbContext.UserCompanyRoles
+                .FirstOrDefaultAsync(ucr => ucr.UserId == userId && ucr.CompanyId == companyId && ucr.RoleId == studentRoleId, cancellationToken);
+            if (existingMembership is not null)
+            {
+                existingMembership.Reactivate(startDate);
+            }
+            else
+            {
+                _dbContext.UserCompanyRoles.Add(new UserCompanyRole(userId, companyId, studentRoleId, startDate));
+            }
+
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);

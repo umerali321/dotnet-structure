@@ -23,9 +23,6 @@ public class CourseTakenRepository : ICourseTakenRepository
     public Task<CourseTaken?> FindActiveByUserAsync(int userId, CancellationToken cancellationToken = default) =>
         _dbContext.CourseTakens.FirstOrDefaultAsync(x => x.UserId == userId && x.IsActive, cancellationToken);
 
-    public Task<CourseTaken?> FindActiveByCourseAsync(long courseId, CancellationToken cancellationToken = default) =>
-        _dbContext.CourseTakens.FirstOrDefaultAsync(x => x.CourseId == courseId && x.IsActive, cancellationToken);
-
     public Task<CourseTaken?> GetByIdAsync(int courseTakenId, CancellationToken cancellationToken = default) =>
         _dbContext.CourseTakens.FirstOrDefaultAsync(x => x.CourseTakenId == courseTakenId, cancellationToken);
 

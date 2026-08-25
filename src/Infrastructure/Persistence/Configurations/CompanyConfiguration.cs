@@ -31,6 +31,7 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(x => x.PlanType).HasMaxLength(20).HasDefaultValue(Company.LicensePlan);
         builder.Property(x => x.PlanStartDate).HasDefaultValue(new DateOnly(2020, 1, 1));
         builder.Property(x => x.PlanEndDate).HasDefaultValue(new DateOnly(2099, 12, 31));
+        builder.Property(x => x.PurchaseDate);
         builder.Ignore(x => x.IsExpired);
 
         // See AppUserConfiguration - existing columns are datetime2, not datetimeoffset.

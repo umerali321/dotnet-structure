@@ -2,10 +2,14 @@ using SkillsetsBackend.Domain.Common;
 
 namespace SkillsetsBackend.Domain.CourseLibrary;
 
-/// <summary>Brand-new table - tracks which course a student has launched from the Course Library.
-/// Exclusivity (one active course per student, one active taker per course) is enforced both here
-/// and, as the real safety net, via filtered unique indexes at the DB level - see
-/// CourseTakenConfiguration.</summary>
+/// <summary>Tracks which course a student has launched from the Course Library. Exclusivity is
+/// per-student only (one active course per student, matching the 30-day Focus Session model) -
+/// enforced both here and, as the real safety net, via a filtered unique index at the DB level, see
+/// CourseTakenConfiguration. There is deliberately no per-course exclusivity: the same course (e.g.
+/// a standardized compliance title) must be startable by many students across many companies at
+/// once - an earlier version of this schema had a global "one active taker per course" unique index,
+/// which was a bug (it let one student's abandoned, never-completed session permanently block every
+/// other student on the platform from ever starting that course).</summary>
 public class CourseTaken : IAggregateRoot
 {
     public int CourseTakenId { get; private set; }

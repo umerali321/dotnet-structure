@@ -46,6 +46,11 @@ public class Company : IAggregateRoot
 
     public DateOnly PlanEndDate { get; private set; }
 
+    /// <summary>When the company actually paid/purchased (distinct from PlanStartDate, when
+    /// coverage begins) - optional, only ever populated from a Company Import file's "Purchase
+    /// Date" column or SetPurchaseDate; null for any company that never had one on file.</summary>
+    public DateOnly? PurchaseDate { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -78,7 +83,8 @@ public class Company : IAggregateRoot
         string? state = null,
         string? zip = null,
         string? paymentForm = null,
-        decimal? totalPayment = null)
+        decimal? totalPayment = null,
+        DateOnly? purchaseDate = null)
     {
         var isTrial = planType != LicensePlan;
 
@@ -95,6 +101,7 @@ public class Company : IAggregateRoot
             Zip = zip,
             PaymentForm = paymentForm,
             TotalPayment = totalPayment,
+            PurchaseDate = purchaseDate,
             IsActive = true,
             PlanType = isTrial ? TrialPlan : LicensePlan,
             PlanStartDate = licenseStartDate!.Value,
@@ -135,6 +142,12 @@ public class Company : IAggregateRoot
         PlanType = LicensePlan;
         PlanStartDate = startDate;
         PlanEndDate = endDate;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SetPurchaseDate(DateOnly purchaseDate)
+    {
+        PurchaseDate = purchaseDate;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

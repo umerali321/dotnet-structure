@@ -42,4 +42,16 @@ public class UserCompanyRole
         IsActive = false;
         EndDate = endDate;
     }
+
+    /// <summary>Re-activates a previously-deactivated row for the same (UserId, CompanyId, RoleId)
+    /// triple, rather than inserting a new one - UX_UserCompanyRoles_User_Company_Role is a real,
+    /// unfiltered unique index on that triple in the underlying legacy table (it does not exempt
+    /// inactive rows), so a second insert for a role this person already held (even long since
+    /// revoked) at this company would violate it.</summary>
+    public void Reactivate(DateOnly? startDate)
+    {
+        IsActive = true;
+        StartDate = startDate;
+        EndDate = null;
+    }
 }

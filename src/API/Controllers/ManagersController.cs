@@ -6,6 +6,8 @@ using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
 using SkillsetsBackend.Application.Managers.Commands.AddManagerRole;
 using SkillsetsBackend.Application.Managers.Commands.RemoveManagerRole;
+using SkillsetsBackend.Application.Managers.Commands.AddCompanyAdminRole;
+using SkillsetsBackend.Application.Managers.Commands.RemoveCompanyAdminRole;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
 using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
@@ -38,6 +40,8 @@ public sealed class ManagersController : ControllerBase
     private readonly ActivateManagerCommandHandler _activateHandler;
     private readonly AddManagerRoleCommandHandler _addManagerRoleHandler;
     private readonly RemoveManagerRoleCommandHandler _removeManagerRoleHandler;
+    private readonly AddCompanyAdminRoleCommandHandler _addCompanyAdminRoleHandler;
+    private readonly RemoveCompanyAdminRoleCommandHandler _removeCompanyAdminRoleHandler;
 
     public ManagersController(
         ListManagersQueryHandler listHandler,
@@ -52,7 +56,9 @@ public sealed class ManagersController : ControllerBase
         DeactivateManagerCommandHandler deactivateHandler,
         ActivateManagerCommandHandler activateHandler,
         AddManagerRoleCommandHandler addManagerRoleHandler,
-        RemoveManagerRoleCommandHandler removeManagerRoleHandler)
+        RemoveManagerRoleCommandHandler removeManagerRoleHandler,
+        AddCompanyAdminRoleCommandHandler addCompanyAdminRoleHandler,
+        RemoveCompanyAdminRoleCommandHandler removeCompanyAdminRoleHandler)
     {
         _listHandler = listHandler;
         _getByIdHandler = getByIdHandler;
@@ -67,6 +73,8 @@ public sealed class ManagersController : ControllerBase
         _activateHandler = activateHandler;
         _addManagerRoleHandler = addManagerRoleHandler;
         _removeManagerRoleHandler = removeManagerRoleHandler;
+        _addCompanyAdminRoleHandler = addCompanyAdminRoleHandler;
+        _removeCompanyAdminRoleHandler = removeCompanyAdminRoleHandler;
     }
 
     [HttpGet]
@@ -175,6 +183,24 @@ public sealed class ManagersController : ControllerBase
     public async Task<IActionResult> RemoveManagerRole(int id, [FromQuery] int companyId, CancellationToken cancellationToken)
     {
         await _removeManagerRoleHandler.Handle(new RemoveManagerRoleCommand(id, companyId), GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Grants a Company Admin role to an already-existing user at the given company -
+    /// SuperAdmin/CompanyAdmin only.</summary>
+    [HttpPost("{id:int}/company-admin-role")]
+    public async Task<IActionResult> AddCompanyAdminRole(int id, AddManagerRoleRequest request, CancellationToken cancellationToken)
+    {
+        await _addCompanyAdminRoleHandler.Handle(new AddCompanyAdminRoleCommand(id, request.CompanyId), GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Revokes the Company Admin role from a user at the given company - SuperAdmin/CompanyAdmin
+    /// only. Refused if it's the person's only active role anywhere.</summary>
+    [HttpDelete("{id:int}/company-admin-role")]
+    public async Task<IActionResult> RemoveCompanyAdminRole(int id, [FromQuery] int companyId, CancellationToken cancellationToken)
+    {
+        await _removeCompanyAdminRoleHandler.Handle(new RemoveCompanyAdminRoleCommand(id, companyId), GetCaller(), cancellationToken);
         return NoContent();
     }
 

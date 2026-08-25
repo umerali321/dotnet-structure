@@ -35,5 +35,10 @@ public interface IManagerRepository
     /// are untouched.</summary>
     Task RemoveManagerRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>Deactivates this user's active CompanyAdmin UserCompanyRole at the given company
+    /// (never Manager) - a no-op if they don't have one. The Users row and any other role they hold
+    /// are untouched.</summary>
+    Task RemoveCompanyAdminRoleAsync(int userId, int companyId, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

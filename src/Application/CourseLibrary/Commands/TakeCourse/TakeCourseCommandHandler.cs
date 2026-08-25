@@ -65,20 +65,14 @@ public class TakeCourseCommandHandler
             throw new ConflictException($"You already have an active course: {activeTitle}. Complete it before starting a new one.");
         }
 
-        var activeForCourse = await _repository.FindActiveByCourseAsync(command.CourseId, cancellationToken);
-        if (activeForCourse is not null)
-        {
-            throw new ConflictException("This course is currently taken by another student.");
-        }
-
         var courseTaken = CourseTaken.Create(userId, command.CourseId);
 
         var added = await _repository.TryAddAsync(courseTaken, cancellationToken);
         if (!added)
         {
-            // A concurrent request won the race - the filtered unique indexes are the real
-            // guarantee here, the checks above are just for a fast, friendly error message.
-            throw new ConflictException("This course could not be started - it may already be active for you or taken by another student.");
+            // A concurrent request won the race - the filtered unique index is the real
+            // guarantee here, the check above is just for a fast, friendly error message.
+            throw new ConflictException("This course could not be started - you may already have an active course.");
         }
 
         return await _repository.GetDtoAsync(courseTaken.CourseTakenId, cancellationToken);
