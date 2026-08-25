@@ -1,6 +1,7 @@
 using System.Reflection;
 using SkillsetsBackend.Application.Common.Interfaces;
 using SkillsetsBackend.Domain.Assignments;
+using SkillsetsBackend.Domain.Communications;
 using SkillsetsBackend.Domain.CourseLibrary;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Domain.Skillsoft;
@@ -67,6 +68,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AssignmentEmployee> AssignmentEmployees => Set<AssignmentEmployee>();
 
     public DbSet<AssignmentTitle> AssignmentTitles => Set<AssignmentTitle>();
+
+    public DbSet<SmtpSettings> SmtpSettings => Set<SmtpSettings>();
+
+    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

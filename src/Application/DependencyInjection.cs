@@ -39,6 +39,12 @@ using SkillsetsBackend.Application.Scraper.Queries.ListScraperCategories;
 using SkillsetsBackend.Application.Dashboard.Queries.GetDashboardStats;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHistory;
+using SkillsetsBackend.Application.Settings.Queries.GetSmtpSettings;
+using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
+using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
+using SkillsetsBackend.Application.Settings.Commands.SendTestEmail;
+using SkillsetsBackend.Application.Settings.Queries.ListEmailHistory;
+using SkillsetsBackend.Application.Settings.Queries.GetEmailLogDetail;
 using SkillsetsBackend.Application.Managers.Commands.ActivateManager;
 using SkillsetsBackend.Application.Managers.Commands.AddManagerRole;
 using SkillsetsBackend.Application.Managers.Commands.RemoveManagerRole;
@@ -158,6 +164,13 @@ public static class DependencyInjection
         services.AddScoped<GetDashboardStatsQueryHandler>();
         services.AddScoped<GetCourseLibraryUsersQueryHandler>();
         services.AddScoped<GetCourseLibrarySessionHistoryQueryHandler>();
+
+        services.AddScoped<GetSmtpSettingsQueryHandler>();
+        services.AddScoped<SaveSmtpSettingsCommandHandler>();
+        services.AddScoped<TestSmtpConnectionCommandHandler>();
+        services.AddScoped<SendTestEmailCommandHandler>();
+        services.AddScoped<ListEmailHistoryQueryHandler>();
+        services.AddScoped<GetEmailLogDetailQueryHandler>();
 
         services.AddScoped<ListFaqsQueryHandler>();
         services.AddScoped<GetFaqByIdQueryHandler>();

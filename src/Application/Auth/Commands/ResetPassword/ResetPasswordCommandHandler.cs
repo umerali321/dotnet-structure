@@ -67,6 +67,7 @@ public class ResetPasswordCommandHandler
             account.FirstName,
             "Your SkillSets password has been reset",
             BuildResetEmailBody(account.FirstName, newPassword),
+            purpose: "PasswordReset",
             cancellationToken: cancellationToken);
 
         await _activityLogRepository.AddAsync(LoginActivityLog.PasswordResetSucceeded(email, account.UserId), cancellationToken);

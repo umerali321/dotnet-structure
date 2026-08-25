@@ -81,6 +81,7 @@ public class CancelAssignmentCommandHandler
                     user.FirstName,
                     "A training assignment was cancelled",
                     BuildCancellationEmailBody(user.FirstName ?? "there"),
+                    purpose: "AssignmentCancelled",
                     cancellationToken: cancellationToken);
             }
             catch (Exception ex)

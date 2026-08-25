@@ -36,7 +36,7 @@ public class CustomerSupportRequestCommandHandler
 
     // Reply-to the submitter directly, so a support agent hitting "Reply" in their inbox
     // reaches the user rather than the support mailbox this was sent through.
-    await _emailSender.SendToSupportAsync(subject, body, command.Email, command.Name, cancellationToken);
+    await _emailSender.SendToSupportAsync(subject, body, command.Email, command.Name, purpose: "CustomerSupport", cancellationToken: cancellationToken);
 
     await _activityLogRepository.AddAsync(
         LoginActivityLog.SupportRequestSubmitted(command.Name, command.Email, command.Phone, command.CompanyName, command.Message),

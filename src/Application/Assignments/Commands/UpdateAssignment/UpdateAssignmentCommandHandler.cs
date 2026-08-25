@@ -160,6 +160,7 @@ public class UpdateAssignmentCommandHandler
                     user.FirstName,
                     "New training assigned to you",
                     BuildAddedEmailBody(user.FirstName ?? "there", assignment),
+                    purpose: "AssignmentUpdated",
                     cancellationToken: cancellationToken);
             }
             catch (Exception ex)
@@ -186,6 +187,7 @@ public class UpdateAssignmentCommandHandler
                     user.FirstName,
                     "A training assignment was updated",
                     BuildRemovedEmailBody(user.FirstName ?? "there"),
+                    purpose: "AssignmentUpdated",
                     cancellationToken: cancellationToken);
             }
             catch (Exception ex)

@@ -31,6 +31,9 @@ using SkillsetsBackend.Infrastructure.RoleManagement;
 using SkillsetsBackend.Application.Dashboard.Interfaces;
 using SkillsetsBackend.Infrastructure.Dashboard;
 using SkillsetsBackend.Infrastructure.Email;
+using SkillsetsBackend.Application.Settings.Interfaces;
+using SkillsetsBackend.Infrastructure.Settings;
+using SkillsetsBackend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -155,6 +158,11 @@ public static class DependencyInjection
         services.AddOptions<EmailSettings>()
             .Bind(configuration.GetSection(EmailSettings.SectionName));
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<ISmtpConnectionTester, SmtpConnectionTester>();
+        services.AddScoped<ISmtpSettingsRepository, SmtpSettingsRepository>();
+        services.AddScoped<IEmailLogRepository, EmailLogRepository>();
+        services.AddDataProtection();
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
         services.AddHttpClient<OlsaSoapClient>();
         services.AddHttpClient<SkillsoftProvisioningClient>();
         services.AddScoped<ActiveLibraryCardResolver>();

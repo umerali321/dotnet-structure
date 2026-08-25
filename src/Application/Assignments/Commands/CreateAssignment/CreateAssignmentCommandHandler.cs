@@ -149,6 +149,7 @@ public class CreateAssignmentCommandHandler
                     user.FirstName,
                     "New training assigned to you",
                     BuildAssignmentEmailBody(user.FirstName ?? "there", assignment),
+                    purpose: "AssignmentCreated",
                     cancellationToken: cancellationToken);
             }
             catch (Exception ex)
