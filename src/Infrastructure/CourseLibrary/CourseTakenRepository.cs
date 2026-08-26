@@ -18,7 +18,10 @@ public class CourseTakenRepository : ICourseTakenRepository
     }
 
     public Task<CourseTaken?> FindByUserAndCourseAsync(int userId, long courseId, CancellationToken cancellationToken = default) =>
-        _dbContext.CourseTakens.FirstOrDefaultAsync(x => x.UserId == userId && x.CourseId == courseId, cancellationToken);
+        _dbContext.CourseTakens
+            .Where(x => x.UserId == userId && x.CourseId == courseId)
+            .OrderByDescending(x => x.CourseTakenId)
+            .FirstOrDefaultAsync(cancellationToken);
 
     public Task<CourseTaken?> FindActiveByUserAsync(int userId, CancellationToken cancellationToken = default) =>
         _dbContext.CourseTakens.FirstOrDefaultAsync(x => x.UserId == userId && x.IsActive, cancellationToken);

@@ -22,3 +22,12 @@ public record CourseTakenDto(
     DateTimeOffset AccessedAt,
     DateTimeOffset? CompletedAt,
     string? CourseUrl);
+
+/// <summary>Result of a take-course attempt. When the student already completed this course before
+/// and hasn't passed ConfirmRetake yet, CourseTaken is null and RequiresConfirmation is true instead
+/// of throwing - the client shows ConfirmationMessage in a dialog and resubmits with
+/// ConfirmRetake=true to proceed.</summary>
+public record TakeCourseResultDto(
+    CourseTakenDto? CourseTaken,
+    bool RequiresConfirmation,
+    string? ConfirmationMessage);

@@ -26,7 +26,7 @@ public class TakeCourseCommandHandler
         _courseLibraryQueryService = courseLibraryQueryService;
     }
 
-    public async Task<CourseTakenDto> Handle(TakeCourseCommand command, CallerContext caller, CancellationToken cancellationToken)
+    public async Task<TakeCourseResultDto> Handle(TakeCourseCommand command, CallerContext caller, CancellationToken cancellationToken)
     {
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
@@ -51,10 +51,20 @@ public class TakeCourseCommandHandler
             {
                 // Idempotent - re-clicking Launch/Take Course on your own current course just
                 // re-opens it, it does not create another record.
-                return await _repository.GetDtoAsync(existing.CourseTakenId, cancellationToken);
+                var dto = await _repository.GetDtoAsync(existing.CourseTakenId, cancellationToken);
+                return new TakeCourseResultDto(dto, RequiresConfirmation: false, ConfirmationMessage: null);
             }
 
-            throw new ConflictException("You have already completed this course.");
+            if (!command.ConfirmRetake)
+            {
+                return new TakeCourseResultDto(
+                    CourseTaken: null,
+                    RequiresConfirmation: true,
+                    ConfirmationMessage: "You have already completed this course. Are you sure you want to take it again?");
+            }
+
+            // Confirmed retake - fall through and create a new CourseTaken row below, preserving
+            // the prior completed record's history instead of reactivating it in place.
         }
 
         var activeForUser = await _repository.FindActiveByUserAsync(userId, cancellationToken);
@@ -75,6 +85,7 @@ public class TakeCourseCommandHandler
             throw new ConflictException("This course could not be started - you may already have an active course.");
         }
 
-        return await _repository.GetDtoAsync(courseTaken.CourseTakenId, cancellationToken);
+        var createdDto = await _repository.GetDtoAsync(courseTaken.CourseTakenId, cancellationToken);
+        return new TakeCourseResultDto(createdDto, RequiresConfirmation: false, ConfirmationMessage: null);
     }
 }

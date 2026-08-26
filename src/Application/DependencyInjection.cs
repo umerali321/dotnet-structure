@@ -14,6 +14,7 @@ using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
+using SkillsetsBackend.Application.Students.Commands.ActivateStudent;
 using SkillsetsBackend.Application.Students.Commands.ProvisionStudentSkillport;
 using SkillsetsBackend.Application.Students.Commands.UpdateStudent;
 using SkillsetsBackend.Application.Students.Queries.GetStudentById;
@@ -125,6 +126,7 @@ public static class DependencyInjection
         services.AddScoped<UpdateStudentCommandHandler>();
         services.AddScoped<ChangeStudentPasswordCommandHandler>();
         services.AddScoped<DeactivateStudentCommandHandler>();
+        services.AddScoped<ActivateStudentCommandHandler>();
         services.AddScoped<ProvisionStudentSkillportCommandHandler>();
         services.AddScoped<AssignStudentManagerCommandHandler>();
         services.AddScoped<AddEmployeeRoleCommandHandler>();

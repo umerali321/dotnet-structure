@@ -8,6 +8,7 @@ using SkillsetsBackend.Application.Students.Commands.RemoveEmployeeRole;
 using SkillsetsBackend.Application.Students.Commands.AssignStudentManager;
 using SkillsetsBackend.Application.Students.Commands.ChangeStudentPassword;
 using SkillsetsBackend.Application.Students.Commands.CreateStudent;
+using SkillsetsBackend.Application.Students.Commands.ActivateStudent;
 using SkillsetsBackend.Application.Students.Commands.DeactivateStudent;
 using SkillsetsBackend.Application.Students.Commands.ProvisionStudentSkillport;
 using SkillsetsBackend.Application.Students.Commands.UpdateStudent;
@@ -34,6 +35,7 @@ public class StudentsController : ControllerBase
     private readonly UpdateStudentCommandHandler _updateHandler;
     private readonly ChangeStudentPasswordCommandHandler _changePasswordHandler;
     private readonly DeactivateStudentCommandHandler _deactivateHandler;
+    private readonly ActivateStudentCommandHandler _activateHandler;
     private readonly ProvisionStudentSkillportCommandHandler _provisionSkillportHandler;
     private readonly AssignStudentManagerCommandHandler _assignManagerHandler;
     private readonly AddEmployeeRoleCommandHandler _addEmployeeRoleHandler;
@@ -49,6 +51,7 @@ public class StudentsController : ControllerBase
         UpdateStudentCommandHandler updateHandler,
         ChangeStudentPasswordCommandHandler changePasswordHandler,
         DeactivateStudentCommandHandler deactivateHandler,
+        ActivateStudentCommandHandler activateHandler,
         ProvisionStudentSkillportCommandHandler provisionSkillportHandler,
         AssignStudentManagerCommandHandler assignManagerHandler,
         AddEmployeeRoleCommandHandler addEmployeeRoleHandler,
@@ -63,6 +66,7 @@ public class StudentsController : ControllerBase
         _updateHandler = updateHandler;
         _changePasswordHandler = changePasswordHandler;
         _deactivateHandler = deactivateHandler;
+        _activateHandler = activateHandler;
         _provisionSkillportHandler = provisionSkillportHandler;
         _assignManagerHandler = assignManagerHandler;
         _addEmployeeRoleHandler = addEmployeeRoleHandler;
@@ -143,6 +147,13 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {
         await _deactivateHandler.Handle(id, GetCaller(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/activate")]
+    public async Task<IActionResult> Activate(int id, CancellationToken cancellationToken)
+    {
+        await _activateHandler.Handle(id, GetCaller(), cancellationToken);
         return NoContent();
     }
 

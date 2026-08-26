@@ -14,8 +14,10 @@ public record CourseTakenListOptions(
 
 public interface ICourseTakenRepository
 {
-    /// <summary>Any record (active or completed) for this exact student+course pair - used to
-    /// detect "already taken this course before" vs. "resuming the current active one".</summary>
+    /// <summary>The most recent record (active or completed) for this exact student+course pair -
+    /// used to detect "already taken this course before" vs. "resuming the current active one". A
+    /// student can retake a completed course, so more than one row per pair can exist; this always
+    /// returns the latest one.</summary>
     Task<CourseTaken?> FindByUserAndCourseAsync(int userId, long courseId, CancellationToken cancellationToken = default);
 
     Task<CourseTaken?> FindActiveByUserAsync(int userId, CancellationToken cancellationToken = default);
