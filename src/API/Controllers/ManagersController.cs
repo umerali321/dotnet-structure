@@ -131,13 +131,7 @@ public sealed class ManagersController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { id = result.UserId, version = "1.0" },
-            new
-            {
-                manager = created,
-                skillportRequested = result.SkillportRequested,
-                skillportProvisioned = result.SkillportProvisioned,
-                skillportError = result.SkillportError,
-            });
+            new { manager = created });
     }
 
     [HttpPut("{id:int}")]

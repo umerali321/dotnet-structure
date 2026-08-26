@@ -13,5 +13,4 @@ public record CreateStudentCommand(
     string? StudentType,
     int CompanyId,
     DateOnly? StartDate,
-    bool CreateInSkillport = false,
     bool AlsoCreateManager = false);

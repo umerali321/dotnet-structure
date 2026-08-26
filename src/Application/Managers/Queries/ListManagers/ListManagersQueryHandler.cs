@@ -42,7 +42,9 @@ public sealed class ListManagersQueryHandler(IManagerQueryService service, IUser
             allowed = companyId is null ? managed : [companyId.Value];
         }
 
+        // 5000 (not 200) - high enough to cover a full company roster in one page for "select
+        // managers" pickers, which intentionally request one big page instead of paginating.
         return await service.ListAsync(
-            new(Math.Max(1, page), pageSize <= 0 ? 50 : Math.Min(200, pageSize), search, active, sort, descending, allowed, role), ct);
+            new(Math.Max(1, page), pageSize <= 0 ? 50 : Math.Min(5000, pageSize), search, active, sort, descending, allowed, role), ct);
     }
 }

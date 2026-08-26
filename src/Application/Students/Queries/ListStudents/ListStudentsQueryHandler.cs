@@ -10,7 +10,11 @@ namespace SkillsetsBackend.Application.Students.Queries.ListStudents;
 public class ListStudentsQueryHandler
 {
     public const int DefaultPageSize = 50;
-    public const int MaxPageSize = 200;
+
+    // High enough to cover a full company roster in one page for "select employees" pickers
+    // (e.g. the Assign Training wizard) - those intentionally request one big page instead of
+    // paginating, so this ceiling must exceed any real company's employee count.
+    public const int MaxPageSize = 5000;
 
     private readonly IStudentQueryService _queryService;
     private readonly IUserDirectory _userDirectory;

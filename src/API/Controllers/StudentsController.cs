@@ -120,13 +120,7 @@ public class StudentsController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { id = result.UserId, version = "1.0" },
-            new
-            {
-                student = created,
-                skillportRequested = result.SkillportRequested,
-                skillportProvisioned = result.SkillportProvisioned,
-                skillportError = result.SkillportError,
-            });
+            new { student = created });
     }
 
     [HttpPut("{id:int}")]

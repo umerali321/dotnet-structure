@@ -28,37 +28,6 @@ public class SkillportSessionManager : ISkillportSessionService
         _provisioningService = provisioningService;
     }
 
-    /// <summary>Called after a user is registered - creates their Skillport account right away, but dormant (no session window yet). Best-effort: a failure here does not throw, it just means EnsureActiveAsync will try again from scratch later.</summary>
-    public async Task<SkillsoftProvisionResult> EnsureDormantAccountAsync(int userId, int companyId, CancellationToken cancellationToken = default)
-    {
-        var existing = await LatestSessionAsync(userId, companyId, cancellationToken);
-        if (existing is not null)
-        {
-            return new SkillsoftProvisionResult(true, null);
-        }
-
-        var user = await GetUserAsync(userId, cancellationToken);
-        if (user is null)
-        {
-            return new SkillsoftProvisionResult(false, "User not found.");
-        }
-
-        // New Skillport registration - a random numeric password, not the user's own app password
-        // (matches the legacy convention: real ActiveLibraryCards rows use short numeric PINs).
-        var skillportPassword = GenerateRandomPassword();
-
-        var accountResult = await _provisioningService.CreateAccountAsync(user.Username, skillportPassword, user.FirstName, user.LastName, cancellationToken);
-        if (!accountResult.Success)
-        {
-            return accountResult;
-        }
-
-        _dbContext.SkillportSessions.Add(SkillportSession.CreateDormant(userId, companyId, user.Username, skillportPassword));
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return new SkillsoftProvisionResult(true, null);
-    }
-
     /// <summary>Whether the caller currently has an active session, without changing anything - also adopts a matching legacy ActiveLibraryCards entitlement into our table the first time it's seen.</summary>
     public async Task<SkillportSessionStatus> GetStatusAsync(int userId, int companyId, CancellationToken cancellationToken = default)
     {
@@ -122,7 +91,11 @@ public class SkillportSessionManager : ISkillportSessionService
 
         var (managerEmail, managerName) = await _managerResolver.ResolveAsync(userId, companyId, cancellationToken);
 
-        if (session is not null)
+        // A dormant account already exists over on Skillport under this identity (legacy path -
+        // created ahead of time, never activated yet) - just start its 30-day clock. We can't
+        // rename an account that already exists there, so this is the one case that keeps reusing
+        // an existing username/password.
+        if (session is not null && session.IsDormant)
         {
             var entitlement = new SkillsoftEntitlementRequest(
                 companyId, session.SkillportUsername, session.SkillportPassword, user.FirstName, user.LastName, user.Email,
@@ -134,25 +107,19 @@ public class SkillportSessionManager : ISkillportSessionService
                 return entitlementResult;
             }
 
-            if (session.IsDormant)
-            {
-                session.Activate(today, today.AddDays(30));
-            }
-            else
-            {
-                // Expired - leave that row as history, add a new one for this restart, same identity.
-                _dbContext.SkillportSessions.Add(SkillportSession.CreateActive(
-                    userId, companyId, session.SkillportUsername, session.SkillportPassword, today, today.AddDays(30)));
-            }
-
+            session.Activate(today, today.AddDays(30));
             await _dbContext.SaveChangesAsync(cancellationToken);
             return new SkillsoftProvisionResult(true, null);
         }
 
-        // No account at all - the only case that ever registers a brand-new Skillport identity.
-        var password = initialPassword ?? GenerateRandomPassword();
+        // No account at all, or the previous one expired - either way, a brand-new Skillport
+        // identity: a fresh random username, and the caller's current app password unless an
+        // explicit one was supplied (the admin-triggered "retry from profile" flow). The expired
+        // row (if any) is left alone as history.
+        var newUsername = await GenerateUniqueSkillportUsernameAsync(cancellationToken);
+        var password = initialPassword ?? user.PasswordHash;
 
-        var accountResult = await _provisioningService.CreateAccountAsync(user.Username, password, user.FirstName, user.LastName, cancellationToken);
+        var accountResult = await _provisioningService.CreateAccountAsync(newUsername, password, user.FirstName, user.LastName, cancellationToken);
         if (!accountResult.Success)
         {
             return accountResult;
@@ -160,7 +127,7 @@ public class SkillportSessionManager : ISkillportSessionService
 
         var newEntitlementResult = await _provisioningService.RecordEntitlementAsync(
             new SkillsoftEntitlementRequest(
-                companyId, user.Username, password, user.FirstName, user.LastName, user.Email,
+                companyId, newUsername, password, user.FirstName, user.LastName, user.Email,
                 managerEmail ?? user.Email, managerName ?? "Unassigned"),
             cancellationToken);
 
@@ -169,7 +136,7 @@ public class SkillportSessionManager : ISkillportSessionService
             return newEntitlementResult;
         }
 
-        _dbContext.SkillportSessions.Add(SkillportSession.CreateActive(userId, companyId, user.Username, password, today, today.AddDays(30)));
+        _dbContext.SkillportSessions.Add(SkillportSession.CreateActive(userId, companyId, newUsername, password, today, today.AddDays(30)));
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new SkillsoftProvisionResult(true, null);
@@ -204,11 +171,27 @@ public class SkillportSessionManager : ISkillportSessionService
 
     private record UserSnapshot(string Username, string PasswordHash, string FirstName, string LastName, string Email);
 
-    private static string GenerateRandomPassword()
+    /// <summary>Builds a random "10LC######" Skillport username (10 characters total) and retries
+    /// on the rare chance of a collision against every username we know of - both our own
+    /// SkillportSessions history and the legacy ActiveLibraryCards table.</summary>
+    private async Task<string> GenerateUniqueSkillportUsernameAsync(CancellationToken cancellationToken)
     {
-        Span<byte> bytes = stackalloc byte[4];
-        RandomNumberGenerator.Fill(bytes);
-        var value = BitConverter.ToUInt32(bytes) % 100_000_000;
-        return value.ToString("D8");
+        const int maxAttempts = 20;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var suffix = RandomNumberGenerator.GetInt32(1_000_000).ToString("D6");
+            var candidate = $"10LC{suffix}";
+
+            var inUse = await _dbContext.SkillportSessions.AnyAsync(s => s.SkillportUsername == candidate, cancellationToken)
+                || await _dbContext.ActiveLibraryCards.AnyAsync(c => c.UserId == candidate, cancellationToken);
+
+            if (!inUse)
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException("Could not generate a unique Skillport username.");
     }
 }

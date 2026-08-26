@@ -3,15 +3,13 @@ using FluentValidation.Results;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Interfaces;
-using SkillsetsBackend.Application.Skillsoft.Interfaces;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
 using AppValidationException = SkillsetsBackend.Application.Common.Exceptions.ValidationException;
 
 namespace SkillsetsBackend.Application.Students.Commands.CreateStudent;
 
-/// <summary>SkillportProvisioned means the Skillport account was created - the 30-day session itself stays dormant until the student first enters the course library.</summary>
-public record CreateStudentResult(int UserId, bool SkillportRequested, bool SkillportProvisioned, string? SkillportError);
+public record CreateStudentResult(int UserId);
 
 public class CreateStudentCommandHandler
 {
@@ -20,22 +18,19 @@ public class CreateStudentCommandHandler
     private readonly IManagerRepository _managerRepository;
     private readonly IUserDirectory _userDirectory;
     private readonly IPermissionService _permissionService;
-    private readonly ISkillportSessionService _skillportSessionService;
 
     public CreateStudentCommandHandler(
         IValidator<CreateStudentCommand> validator,
         IStudentRepository repository,
         IManagerRepository managerRepository,
         IUserDirectory userDirectory,
-        IPermissionService permissionService,
-        ISkillportSessionService skillportSessionService)
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
         _managerRepository = managerRepository;
         _userDirectory = userDirectory;
         _permissionService = permissionService;
-        _skillportSessionService = skillportSessionService;
     }
 
     public async Task<CreateStudentResult> Handle(CreateStudentCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -81,22 +76,6 @@ public class CreateStudentCommandHandler
             await _managerRepository.AddManagerRoleAsync(userId, command.CompanyId, startDate: null, cancellationToken);
         }
 
-        if (!command.CreateInSkillport)
-        {
-            return new CreateStudentResult(userId, SkillportRequested: false, SkillportProvisioned: false, SkillportError: null);
-        }
-
-        // Best-effort: the student account is already created above regardless of what happens here.
-        // This only creates the Skillport account (dormant) - the session activates on their first visit.
-        try
-        {
-            var provisionResult = await _skillportSessionService.EnsureDormantAccountAsync(userId, command.CompanyId, cancellationToken);
-
-            return new CreateStudentResult(userId, SkillportRequested: true, provisionResult.Success, provisionResult.ErrorMessage);
-        }
-        catch (Exception ex)
-        {
-            return new CreateStudentResult(userId, SkillportRequested: true, SkillportProvisioned: false, ex.Message);
-        }
+        return new CreateStudentResult(userId);
     }
 }
