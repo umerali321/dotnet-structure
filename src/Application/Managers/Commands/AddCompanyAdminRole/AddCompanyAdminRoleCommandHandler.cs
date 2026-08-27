@@ -1,9 +1,9 @@
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
-using SkillsetsBackend.Application.Common.Exceptions;
 using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Application.Students;
 using SkillsetsBackend.Domain.Identity;
+using NotFoundException = SkillsetsBackend.Application.Common.Exceptions.NotFoundException;
 
 namespace SkillsetsBackend.Application.Managers.Commands.AddCompanyAdminRole;
 
@@ -30,15 +30,11 @@ public class AddCompanyAdminRoleCommandHandler
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);
         }
 
-        var user = await _repository.GetUserAsync(command.UserId, cancellationToken)
+        _ = await _repository.GetUserAsync(command.UserId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), command.UserId);
 
-        var activeRoles = await _userDirectory.GetActiveCompanyRolesAsync(command.UserId, cancellationToken);
-        if (activeRoles.Any(r => r.CompanyId == command.CompanyId && (r.RoleName == Roles.Manager || r.RoleName == Roles.CompanyAdmin)))
-        {
-            throw new ConflictException("This person is already a Manager or Company Admin at this company.");
-        }
-
+        // A person can hold Employee, Manager, and Company Admin at the same company at once - no
+        // exclusivity between them, so granting one never blocks granting another.
         await _repository.AddCompanyAdminRoleAsync(command.UserId, command.CompanyId, startDate: null, cancellationToken);
     }
 }

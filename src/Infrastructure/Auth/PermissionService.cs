@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SkillsetsBackend.Application.Auth;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Domain.Identity;
@@ -9,10 +10,12 @@ namespace SkillsetsBackend.Infrastructure.Auth;
 public class PermissionService : IPermissionService
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IUserDirectory _userDirectory;
 
-    public PermissionService(ApplicationDbContext dbContext)
+    public PermissionService(ApplicationDbContext dbContext, IUserDirectory userDirectory)
     {
         _dbContext = dbContext;
+        _userDirectory = userDirectory;
     }
 
     public async Task<bool> HasPermissionAsync(CallerContext caller, string permissionKey, CancellationToken cancellationToken = default)
@@ -41,7 +44,16 @@ public class PermissionService : IPermissionService
 
     public async Task<IReadOnlyList<string>> GetEffectivePermissionKeysForUserAsync(int userId, string normalizedRoleName, CancellationToken cancellationToken = default)
     {
-        var roleKeys = await GetEffectivePermissionKeysForRoleAsync(normalizedRoleName, cancellationToken);
+        // normalizedRoleName comes from the caller's JWT, issued at login/refresh - it goes stale
+        // the moment an admin changes this person's roles mid-session, since the token keeps working
+        // until it naturally expires/refreshes. Cross-check it against their current live role
+        // assignments so a revoked role stops granting its permissions immediately, on this very
+        // request, instead of only after the access token's lifetime runs out.
+        var activeRoles = await _userDirectory.GetActiveCompanyRolesAsync(userId, cancellationToken);
+        var stillHoldsClaimedRole = activeRoles.Any(r => Roles.Normalize(r.RoleName) == normalizedRoleName);
+        var effectiveRoleName = stillHoldsClaimedRole ? normalizedRoleName : CompanyContextResolver.Resolve(activeRoles).Role;
+
+        var roleKeys = await GetEffectivePermissionKeysForRoleAsync(effectiveRoleName, cancellationToken);
 
         var overrides = await _dbContext.UserPermissionOverrides
             .AsNoTracking()
