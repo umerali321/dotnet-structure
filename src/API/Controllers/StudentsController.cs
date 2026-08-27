@@ -17,6 +17,8 @@ using SkillsetsBackend.Application.Students.Queries.GetStudentCompanies;
 using SkillsetsBackend.Application.Students.Queries.GetStudentCredentials;
 using SkillsetsBackend.Application.Students.Queries.GetStudentRoles;
 using SkillsetsBackend.Application.Students.Queries.ListStudents;
+using SkillsetsBackend.Application.Students.DTOs;
+using SkillsetsBackend.Infrastructure.Common;
 
 namespace SkillsetsBackend.API.Controllers;
 
@@ -82,6 +84,42 @@ public class StudentsController : ControllerBase
 
         var result = await _listHandler.Handle(query, GetCaller(), cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>Same filters as List, but every matching row in one file instead of one page - the
+    /// "Export" button downloads exactly what the current search/filter combination would show.</summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> Export([FromQuery] ListStudentsRequest request, CancellationToken cancellationToken)
+    {
+        var query = new ListStudentsQuery(
+            1, ListStudentsQueryHandler.MaxPageSize, request.Search, request.CompanyId,
+            request.StudentType, request.IsActive, request.SortBy, request.SortDescending);
+
+        var result = await _listHandler.Handle(query, GetCaller(), cancellationToken);
+        var bytes = BuildExportFile(result.Items);
+        return File(bytes, ExcelExportWriter.ContentType, "Employees.xlsx");
+    }
+
+    private static byte[] BuildExportFile(IReadOnlyCollection<StudentListItemDto> items)
+    {
+        string[] headers = ["First Name", "Last Name", "Email", "Username", "Phone", "Type", "Company", "Manager", "Status", "Course Library", "Created At"];
+
+        var rows = items.Select(s => (IReadOnlyList<string>)
+        [
+            s.FirstName ?? "",
+            s.LastName ?? "",
+            s.Email ?? "",
+            s.Username ?? "",
+            s.Phone ?? "",
+            s.StudentType ?? "",
+            string.Join(", ", s.Companies.Select(c => c.CompanyName)),
+            s.ManagerName ?? "",
+            s.IsActive ? "Active" : "Inactive",
+            s.HasSkillportAccount ? "Yes" : "No",
+            s.CreatedAt.ToString("yyyy-MM-dd"),
+        ]);
+
+        return ExcelExportWriter.Write("Employees", headers, rows);
     }
 
     [HttpGet("{id:int}")]

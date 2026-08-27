@@ -15,6 +15,8 @@ using SkillsetsBackend.Application.Companies.Interfaces;
 using SkillsetsBackend.Application.Companies.Queries.GetCompanyById;
 using SkillsetsBackend.Application.Companies.Queries.GetCompanyLogo;
 using SkillsetsBackend.Application.Companies.Queries.ListCompanies;
+using SkillsetsBackend.Application.Companies.DTOs;
+using SkillsetsBackend.Infrastructure.Common;
 
 namespace SkillsetsBackend.API.Controllers;
 
@@ -81,6 +83,48 @@ public class CompaniesController : ControllerBase
     {
         var result = await _listHandler.Handle(new ListCompaniesQuery(search, includeInactive, page, pageSize, statusFilter), GetCaller(), cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>Same filters as List, but every matching row in one file instead of one page.</summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search, [FromQuery] bool includeInactive, [FromQuery] string? statusFilter = null, CancellationToken cancellationToken = default)
+    {
+        // 5000 - matches the cap ListCompaniesQueryHandler itself clamps to.
+        var result = await _listHandler.Handle(new ListCompaniesQuery(search, includeInactive, 1, 5000, statusFilter), GetCaller(), cancellationToken);
+        var bytes = BuildExportFile(result.Items);
+        return File(bytes, ExcelExportWriter.ContentType, "Companies.xlsx");
+    }
+
+    private static byte[] BuildExportFile(IReadOnlyCollection<CompanyListItemDto> items)
+    {
+        string[] headers =
+        [
+            "Company", "Company Code", "Email", "Phone", "Street 1", "Street 2", "City", "State", "Zip",
+            "Payment Form", "Total Payment", "Plan", "Purchased", "Starts", "Expires", "Status",
+        ];
+
+        var rows = items.Select(c => (IReadOnlyList<string>)
+        [
+            c.CompanyName,
+            c.CompanyCode,
+            c.CompanyEmail ?? "",
+            c.CompanyPhone ?? "",
+            c.Street1 ?? "",
+            c.Street2 ?? "",
+            c.City ?? "",
+            c.State ?? "",
+            c.Zip ?? "",
+            c.PaymentForm ?? "",
+            c.TotalPayment?.ToString("0.00") ?? "",
+            c.PlanType,
+            c.PurchaseDate?.ToString("yyyy-MM-dd") ?? "",
+            c.PlanStartDate.ToString("yyyy-MM-dd"),
+            c.PlanEndDate.ToString("yyyy-MM-dd"),
+            c.IsActive ? (c.IsExpired ? "Expired" : "Active") : "Deactivated",
+        ]);
+
+        return ExcelExportWriter.Write("Companies", headers, rows);
     }
 
     [HttpGet("{id:int}")]

@@ -18,6 +18,8 @@ using SkillsetsBackend.Application.Managers.Queries.GetManagerCompanies;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerCredentials;
 using SkillsetsBackend.Application.Managers.Queries.GetManagerRoles;
 using SkillsetsBackend.Application.Managers.Queries.ListManagers;
+using SkillsetsBackend.Application.Managers.DTOs;
+using SkillsetsBackend.Infrastructure.Common;
 
 namespace SkillsetsBackend.API.Controllers;
 
@@ -93,6 +95,56 @@ public sealed class ManagersController : ControllerBase
             cancellationToken);
 
         return Ok(result);
+    }
+
+    /// <summary>Same filters as List, but every matching row in one file instead of one page - used
+    /// by both the Managers grid and the Company Admins grid (roleFilter='CompanyAdmin'), since they
+    /// share the same underlying list.</summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> Export([FromQuery] ManagerRequest request, CancellationToken cancellationToken)
+    {
+        // 5000 - matches the cap ListManagersQueryHandler itself clamps to, high enough to cover a
+        // full company roster in one file.
+        var result = await _listHandler.Handle(
+            1, 5000, request.Search, request.CompanyId, request.IsActive, request.SortBy, request.SortDescending,
+            request.Role, GetCaller(), cancellationToken);
+
+        var isCompanyAdminExport = request.Role == "CompanyAdmin";
+        var bytes = BuildExportFile(result.Items, isCompanyAdminExport);
+        return File(bytes, ExcelExportWriter.ContentType, isCompanyAdminExport ? "CompanyAdmins.xlsx" : "Managers.xlsx");
+    }
+
+    private static byte[] BuildExportFile(IReadOnlyCollection<ManagerListItemDto> items, bool isCompanyAdminExport)
+    {
+        string[] headers = isCompanyAdminExport
+            ? ["First Name", "Last Name", "Email", "Username", "Phone", "Company", "Status", "Created At"]
+            : ["First Name", "Last Name", "Email", "Username", "Phone", "Company", "Status", "Course Library"];
+
+        var rows = items.Select(m => (IReadOnlyList<string>)(isCompanyAdminExport
+            ?
+            [
+                m.FirstName ?? "",
+                m.LastName ?? "",
+                m.Email ?? "",
+                m.Username ?? "",
+                m.Phone ?? "",
+                string.Join(", ", m.Companies.Select(c => c.CompanyName)),
+                m.IsActive ? "Active" : "Inactive",
+                m.CreatedAt.ToString("yyyy-MM-dd"),
+            ]
+            :
+            [
+                m.FirstName ?? "",
+                m.LastName ?? "",
+                m.Email ?? "",
+                m.Username ?? "",
+                m.Phone ?? "",
+                string.Join(", ", m.Companies.Select(c => c.CompanyName)),
+                m.IsActive ? "Active" : "Inactive",
+                m.HasSkillportAccount ? "Yes" : "No",
+            ]));
+
+        return ExcelExportWriter.Write(isCompanyAdminExport ? "Company Admins" : "Managers", headers, rows);
     }
 
     [HttpGet("{id:int}")]

@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common.Interfaces;
 using SkillsetsBackend.Domain.Identity;
@@ -161,7 +162,20 @@ public static class DependencyInjection
         services.AddScoped<ISmtpConnectionTester, SmtpConnectionTester>();
         services.AddScoped<ISmtpSettingsRepository, SmtpSettingsRepository>();
         services.AddScoped<IEmailLogRepository, EmailLogRepository>();
-        services.AddDataProtection();
+        // Without an explicit key-storage location, ASP.NET Core's Data Protection key ring can end
+        // up ephemeral (or tied to a specific deployment folder/user profile) and gets thrown away
+        // on every app restart/redeploy - anything encrypted with the old key (e.g. the stored SMTP
+        // password, see DataProtectionSecretProtector) then throws "key not found in key ring" the
+        // next time it's read. Pinning both the application name (so a redeploy to a different
+        // folder path doesn't count as a different app) and a stable, machine-wide key folder
+        // outside the deployment directory keeps the same key ring across restarts and redeploys.
+        var dataProtectionKeysPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "SkillsetsBackend", "DataProtection-Keys");
+
+        services.AddDataProtection()
+            .SetApplicationName("SkillsetsBackend")
+            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
         services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
         services.AddHttpClient<OlsaSoapClient>();
         services.AddHttpClient<SkillsoftProvisioningClient>();
