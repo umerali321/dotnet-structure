@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260828222145_FixLearningTranscriptStatsNullAggregates")]
+    partial class FixLearningTranscriptStatsNullAggregates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2062,10 +2065,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("GroupPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("LastName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -2213,30 +2212,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasKey("ActiveLibraryCardId");
 
                     b.ToTable("ActiveLibraryCards", (string)null);
-                });
-
-            modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.SkillportScraperSettings", b =>
-                {
-                    b.Property<int>("SkillportScraperSettingsId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkillportScraperSettingsId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GroupName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("SkillportScraperSettingsId");
-
-                    b.ToTable("SkillportScraperSettings", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.SkillportSession", b =>

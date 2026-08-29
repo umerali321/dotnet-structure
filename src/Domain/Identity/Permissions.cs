@@ -149,4 +149,22 @@ public static class Permissions
         public const int DeleteId = 103;
         public const string Delete = "SkillTrax.Delete";
     }
+
+    public static class LearningTranscript
+    {
+        public const int ViewId = 111;
+        public const string View = "LearningTranscript.View";
+
+        public const int ViewReportId = 112;
+        public const string ViewReport = "LearningTranscript.ViewReport";
+
+        public const int ViewEmployeeTranscriptId = 113;
+        public const string ViewEmployeeTranscript = "LearningTranscript.ViewEmployeeTranscript";
+
+        public const int ExportId = 114;
+        public const string Export = "LearningTranscript.Export";
+
+        public const int ImportId = 115;
+        public const string Import = "LearningTranscript.Import";
+    }
 }

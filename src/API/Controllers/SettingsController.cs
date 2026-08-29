@@ -6,9 +6,11 @@ using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
 using SkillsetsBackend.Application.Settings.Commands.SendTestEmail;
 using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
+using SkillsetsBackend.Application.Settings.Commands.SaveSkillportScraperSettings;
 using SkillsetsBackend.Application.Settings.Queries.GetSmtpSettings;
 using SkillsetsBackend.Application.Settings.Queries.ListEmailHistory;
 using SkillsetsBackend.Application.Settings.Queries.GetEmailLogDetail;
+using SkillsetsBackend.Application.Settings.Queries.GetSkillportScraperSettings;
 
 namespace SkillsetsBackend.API.Controllers;
 
@@ -24,6 +26,8 @@ public class SettingsController : ControllerBase
     private readonly SendTestEmailCommandHandler _sendTestEmailHandler;
     private readonly ListEmailHistoryQueryHandler _listEmailHistoryHandler;
     private readonly GetEmailLogDetailQueryHandler _getEmailLogDetailHandler;
+    private readonly GetSkillportScraperSettingsQueryHandler _getSkillportScraperSettingsHandler;
+    private readonly SaveSkillportScraperSettingsCommandHandler _saveSkillportScraperSettingsHandler;
 
     public SettingsController(
         GetSmtpSettingsQueryHandler getSmtpSettingsHandler,
@@ -31,7 +35,9 @@ public class SettingsController : ControllerBase
         TestSmtpConnectionCommandHandler testSmtpConnectionHandler,
         SendTestEmailCommandHandler sendTestEmailHandler,
         ListEmailHistoryQueryHandler listEmailHistoryHandler,
-        GetEmailLogDetailQueryHandler getEmailLogDetailHandler)
+        GetEmailLogDetailQueryHandler getEmailLogDetailHandler,
+        GetSkillportScraperSettingsQueryHandler getSkillportScraperSettingsHandler,
+        SaveSkillportScraperSettingsCommandHandler saveSkillportScraperSettingsHandler)
     {
         _getSmtpSettingsHandler = getSmtpSettingsHandler;
         _saveSmtpSettingsHandler = saveSmtpSettingsHandler;
@@ -39,6 +45,8 @@ public class SettingsController : ControllerBase
         _sendTestEmailHandler = sendTestEmailHandler;
         _listEmailHistoryHandler = listEmailHistoryHandler;
         _getEmailLogDetailHandler = getEmailLogDetailHandler;
+        _getSkillportScraperSettingsHandler = getSkillportScraperSettingsHandler;
+        _saveSkillportScraperSettingsHandler = saveSkillportScraperSettingsHandler;
     }
 
     [HttpGet("smtp")]
@@ -82,6 +90,20 @@ public class SettingsController : ControllerBase
     {
         var result = await _getEmailLogDetailHandler.Handle(id, GetCaller(), cancellationToken);
         return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpGet("skillport-scraper")]
+    public async Task<IActionResult> GetSkillportScraperSettings(CancellationToken cancellationToken)
+    {
+        var result = await _getSkillportScraperSettingsHandler.Handle(GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPut("skillport-scraper")]
+    public async Task<IActionResult> SaveSkillportScraperSettings(SaveSkillportScraperSettingsCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _saveSkillportScraperSettingsHandler.Handle(command, GetCaller(), cancellationToken);
+        return Ok(result);
     }
 
     private CallerContext GetCaller() => new(

@@ -66,7 +66,13 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 
             Seed(Permissions.SkillTrax.ViewId, Permissions.SkillTrax.View, "SkillTrax", "View SkillTrax"),
             Seed(Permissions.SkillTrax.CreateId, Permissions.SkillTrax.Create, "SkillTrax", "Create SkillTrax"),
-            Seed(Permissions.SkillTrax.DeleteId, Permissions.SkillTrax.Delete, "SkillTrax", "Delete SkillTrax")
+            Seed(Permissions.SkillTrax.DeleteId, Permissions.SkillTrax.Delete, "SkillTrax", "Delete SkillTrax"),
+
+            Seed(Permissions.LearningTranscript.ViewId, Permissions.LearningTranscript.View, "Learning Transcript", "View My Learning Transcript"),
+            Seed(Permissions.LearningTranscript.ViewReportId, Permissions.LearningTranscript.ViewReport, "Learning Transcript", "View Learning Transcript Report"),
+            Seed(Permissions.LearningTranscript.ViewEmployeeTranscriptId, Permissions.LearningTranscript.ViewEmployeeTranscript, "Learning Transcript", "View an Employee's Transcript"),
+            Seed(Permissions.LearningTranscript.ExportId, Permissions.LearningTranscript.Export, "Learning Transcript", "Export Learning Transcript Report"),
+            Seed(Permissions.LearningTranscript.ImportId, Permissions.LearningTranscript.Import, "Learning Transcript", "Import Learning Transcript Data")
         );
     }
 

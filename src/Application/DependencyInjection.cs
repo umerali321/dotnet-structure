@@ -41,7 +41,9 @@ using SkillsetsBackend.Application.Dashboard.Queries.GetDashboardStats;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHistory;
 using SkillsetsBackend.Application.Settings.Queries.GetSmtpSettings;
+using SkillsetsBackend.Application.Settings.Queries.GetSkillportScraperSettings;
 using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
+using SkillsetsBackend.Application.Settings.Commands.SaveSkillportScraperSettings;
 using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
 using SkillsetsBackend.Application.Settings.Commands.SendTestEmail;
 using SkillsetsBackend.Application.Settings.Queries.ListEmailHistory;
@@ -100,6 +102,9 @@ using SkillsetsBackend.Application.RoleManagement.Queries.GetUserPermissionOverr
 using SkillsetsBackend.Application.RoleManagement.Commands.UpdateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.DeactivateRole;
 using SkillsetsBackend.Application.RoleManagement.Commands.ActivateRole;
+using SkillsetsBackend.Application.LearningTranscript.Queries.ListLearningTranscript;
+using SkillsetsBackend.Application.LearningTranscript.Queries.GetLearningTranscriptStats;
+using SkillsetsBackend.Application.LearningTranscript.Commands.ImportLearningTranscriptBatch;
 
 namespace SkillsetsBackend.Application;
 
@@ -169,6 +174,8 @@ public static class DependencyInjection
 
         services.AddScoped<GetSmtpSettingsQueryHandler>();
         services.AddScoped<SaveSmtpSettingsCommandHandler>();
+        services.AddScoped<GetSkillportScraperSettingsQueryHandler>();
+        services.AddScoped<SaveSkillportScraperSettingsCommandHandler>();
         services.AddScoped<TestSmtpConnectionCommandHandler>();
         services.AddScoped<SendTestEmailCommandHandler>();
         services.AddScoped<ListEmailHistoryQueryHandler>();
@@ -217,6 +224,10 @@ public static class DependencyInjection
         services.AddScoped<CancelAssignmentCommandHandler>();
         services.AddScoped<ListOngoingAssignmentsQueryHandler>();
         services.AddScoped<ListMyAssignmentsQueryHandler>();
+
+        services.AddScoped<ListLearningTranscriptQueryHandler>();
+        services.AddScoped<GetLearningTranscriptStatsQueryHandler>();
+        services.AddScoped<ImportLearningTranscriptBatchCommandHandler>();
 
         return services;
     }

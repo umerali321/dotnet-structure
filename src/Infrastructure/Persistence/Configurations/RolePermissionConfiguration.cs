@@ -37,6 +37,10 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             Permissions.Skillsoft.ViewCatalogId,
             Permissions.Faq.ViewId,
             Permissions.ContactInfo.ViewId,
+            Permissions.LearningTranscript.ViewId,
+            Permissions.LearningTranscript.ViewReportId,
+            Permissions.LearningTranscript.ViewEmployeeTranscriptId,
+            Permissions.LearningTranscript.ExportId,
         };
 
         var managerPermissions = new[]
@@ -68,6 +72,10 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             Permissions.SkillTrax.ViewId,
             Permissions.SkillTrax.CreateId,
             Permissions.SkillTrax.DeleteId,
+            Permissions.LearningTranscript.ViewId,
+            Permissions.LearningTranscript.ViewReportId,
+            Permissions.LearningTranscript.ViewEmployeeTranscriptId,
+            Permissions.LearningTranscript.ExportId,
         };
 
         var companyAdminPermissions = new[]
@@ -104,6 +112,11 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             Permissions.SkillTrax.ViewId,
             Permissions.SkillTrax.CreateId,
             Permissions.SkillTrax.DeleteId,
+            Permissions.LearningTranscript.ViewId,
+            Permissions.LearningTranscript.ViewReportId,
+            Permissions.LearningTranscript.ViewEmployeeTranscriptId,
+            Permissions.LearningTranscript.ExportId,
+            Permissions.LearningTranscript.ImportId, // CompanyAdmin only - Student/Manager don't get Import by default
         };
 
         var seedRows = new List<object>();

@@ -27,6 +27,8 @@ using SkillsetsBackend.Application.Assignments.Interfaces;
 using SkillsetsBackend.Infrastructure.Assignments;
 using SkillsetsBackend.Application.Scraper.Interfaces;
 using SkillsetsBackend.Infrastructure.Scraper;
+using SkillsetsBackend.Application.LearningTranscript.Interfaces;
+using SkillsetsBackend.Infrastructure.LearningTranscript;
 using SkillsetsBackend.Application.RoleManagement.Interfaces;
 using SkillsetsBackend.Infrastructure.RoleManagement;
 using SkillsetsBackend.Application.Dashboard.Interfaces;
@@ -146,6 +148,8 @@ public static class DependencyInjection
         services.AddScoped<ISkillTraxQueryService, SkillTraxQueryService>();
         services.AddScoped<IAssignmentRepository, AssignmentRepository>();
         services.AddScoped<IAssignmentQueryService, AssignmentQueryService>();
+        services.AddScoped<ILearningTranscriptQueryService, LearningTranscriptQueryService>();
+        services.AddScoped<ILearningTranscriptImportService, LearningTranscriptImportService>();
 
         services.AddMemoryCache();
         services.AddOptions<SkillsoftSsoSettings>()
@@ -161,6 +165,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<ISmtpConnectionTester, SmtpConnectionTester>();
         services.AddScoped<ISmtpSettingsRepository, SmtpSettingsRepository>();
+        services.AddScoped<ISkillportScraperSettingsRepository, SkillportScraperSettingsRepository>();
         services.AddScoped<IEmailLogRepository, EmailLogRepository>();
         // Without an explicit key-storage location, ASP.NET Core's Data Protection key ring can end
         // up ephemeral (or tied to a specific deployment folder/user profile) and gets thrown away

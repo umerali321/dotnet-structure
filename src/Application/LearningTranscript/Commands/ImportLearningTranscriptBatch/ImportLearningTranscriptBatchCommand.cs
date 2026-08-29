@@ -1,0 +1,3 @@
+namespace SkillsetsBackend.Application.LearningTranscript.Commands.ImportLearningTranscriptBatch;
+
+public record ImportLearningTranscriptBatchCommand(Stream FileContent, string SourceFileName);

@@ -4,6 +4,7 @@ using SkillsetsBackend.Domain.Assignments;
 using SkillsetsBackend.Domain.Communications;
 using SkillsetsBackend.Domain.CourseLibrary;
 using SkillsetsBackend.Domain.Identity;
+using SkillsetsBackend.Domain.LearningTranscript;
 using SkillsetsBackend.Domain.Skillsoft;
 using SkillsetsBackend.Domain.Support;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<SkillportSession> SkillportSessions => Set<SkillportSession>();
 
+    public DbSet<SkillportScraperSettings> SkillportScraperSettings => Set<SkillportScraperSettings>();
+
     public DbSet<Faq> Faqs => Set<Faq>();
 
     public DbSet<SupportContact> SupportContacts => Set<SupportContact>();
@@ -72,6 +75,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SmtpSettings> SmtpSettings => Set<SmtpSettings>();
 
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
+
+    public DbSet<LearningTranscriptImportBatch> LearningTranscriptImportBatches => Set<LearningTranscriptImportBatch>();
+
+    public DbSet<LearningTranscriptAsset> LearningTranscriptAssets => Set<LearningTranscriptAsset>();
+
+    public DbSet<LearningTranscriptIdentity> LearningTranscriptIdentities => Set<LearningTranscriptIdentity>();
+
+    public DbSet<LearningTranscriptActivity> LearningTranscriptActivities => Set<LearningTranscriptActivity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

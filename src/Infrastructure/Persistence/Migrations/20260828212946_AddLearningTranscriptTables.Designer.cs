@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260828212946_AddLearningTranscriptTables")]
+    partial class AddLearningTranscriptTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1029,41 +1032,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                             Category = "SkillTrax",
                             Description = "Delete SkillTrax",
                             PermissionKey = "SkillTrax.Delete"
-                        },
-                        new
-                        {
-                            PermissionId = 111,
-                            Category = "Learning Transcript",
-                            Description = "View My Learning Transcript",
-                            PermissionKey = "LearningTranscript.View"
-                        },
-                        new
-                        {
-                            PermissionId = 112,
-                            Category = "Learning Transcript",
-                            Description = "View Learning Transcript Report",
-                            PermissionKey = "LearningTranscript.ViewReport"
-                        },
-                        new
-                        {
-                            PermissionId = 113,
-                            Category = "Learning Transcript",
-                            Description = "View an Employee's Transcript",
-                            PermissionKey = "LearningTranscript.ViewEmployeeTranscript"
-                        },
-                        new
-                        {
-                            PermissionId = 114,
-                            Category = "Learning Transcript",
-                            Description = "Export Learning Transcript Report",
-                            PermissionKey = "LearningTranscript.Export"
-                        },
-                        new
-                        {
-                            PermissionId = 115,
-                            Category = "Learning Transcript",
-                            Description = "Import Learning Transcript Data",
-                            PermissionKey = "LearningTranscript.Import"
                         });
                 });
 
@@ -1217,26 +1185,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         },
                         new
                         {
-                            RoleId = (byte)1,
-                            PermissionId = 111
-                        },
-                        new
-                        {
-                            RoleId = (byte)1,
-                            PermissionId = 112
-                        },
-                        new
-                        {
-                            RoleId = (byte)1,
-                            PermissionId = 113
-                        },
-                        new
-                        {
-                            RoleId = (byte)1,
-                            PermissionId = 114
-                        },
-                        new
-                        {
                             RoleId = (byte)2,
                             PermissionId = 1
                         },
@@ -1372,26 +1320,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         },
                         new
                         {
-                            RoleId = (byte)2,
-                            PermissionId = 111
-                        },
-                        new
-                        {
-                            RoleId = (byte)2,
-                            PermissionId = 112
-                        },
-                        new
-                        {
-                            RoleId = (byte)2,
-                            PermissionId = 113
-                        },
-                        new
-                        {
-                            RoleId = (byte)2,
-                            PermissionId = 114
-                        },
-                        new
-                        {
                             RoleId = (byte)4,
                             PermissionId = 1
                         },
@@ -1524,26 +1452,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         {
                             RoleId = (byte)4,
                             PermissionId = 103
-                        },
-                        new
-                        {
-                            RoleId = (byte)4,
-                            PermissionId = 111
-                        },
-                        new
-                        {
-                            RoleId = (byte)4,
-                            PermissionId = 112
-                        },
-                        new
-                        {
-                            RoleId = (byte)4,
-                            PermissionId = 113
-                        },
-                        new
-                        {
-                            RoleId = (byte)4,
-                            PermissionId = 114
                         },
                         new
                         {
@@ -1704,31 +1612,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         {
                             RoleId = (byte)5,
                             PermissionId = 103
-                        },
-                        new
-                        {
-                            RoleId = (byte)5,
-                            PermissionId = 111
-                        },
-                        new
-                        {
-                            RoleId = (byte)5,
-                            PermissionId = 112
-                        },
-                        new
-                        {
-                            RoleId = (byte)5,
-                            PermissionId = 113
-                        },
-                        new
-                        {
-                            RoleId = (byte)5,
-                            PermissionId = 114
-                        },
-                        new
-                        {
-                            RoleId = (byte)5,
-                            PermissionId = 115
                         });
                 });
 
@@ -2062,10 +1945,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("GroupPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("LastName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -2213,30 +2092,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasKey("ActiveLibraryCardId");
 
                     b.ToTable("ActiveLibraryCards", (string)null);
-                });
-
-            modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.SkillportScraperSettings", b =>
-                {
-                    b.Property<int>("SkillportScraperSettingsId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkillportScraperSettingsId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GroupName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("SkillportScraperSettingsId");
-
-                    b.ToTable("SkillportScraperSettings", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.SkillportSession", b =>
