@@ -65,7 +65,27 @@ public class SmtpEmailSender : IEmailSender
         string purpose,
         CancellationToken cancellationToken)
     {
-        var (resolved, providerLabel) = await ResolveActiveConfigAsync(cancellationToken);
+        ResolvedSmtpConfig resolved;
+        string providerLabel;
+        try
+        {
+            (resolved, providerLabel) = await ResolveActiveConfigAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Resolving the configuration can fail on its own - most importantly when the stored SMTP
+            // password cannot be decrypted because this instance's Data Protection key ring is not the
+            // one that encrypted it (moving servers, a rebuilt container, or a changed app identity all
+            // do this). That threw out of here before anything was written, so the send vanished with
+            // no Email History row and no error anywhere - every notification silently disappearing
+            // with nothing to diagnose it by. Record the attempt, then let the caller see the failure.
+            await LogAsync(
+                fromAddress: null, fromName: null, toAddress, toName, subject, bodyHtml, purpose,
+                provider: "Unresolved", success: false,
+                errorMessage: $"Could not resolve the email configuration: {ex.Message}",
+                cancellationToken);
+            throw;
+        }
 
         if (string.IsNullOrWhiteSpace(resolved.SmtpHost) || string.IsNullOrWhiteSpace(resolved.Username)
             || string.IsNullOrWhiteSpace(resolved.Password) || string.IsNullOrWhiteSpace(toAddress))

@@ -5,6 +5,7 @@ using SkillsetsBackend.Domain.Communications;
 using SkillsetsBackend.Domain.CourseLibrary;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Domain.LearningTranscript;
+using SkillsetsBackend.Domain.Notifications;
 using SkillsetsBackend.Domain.Skillsoft;
 using SkillsetsBackend.Domain.Support;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SkillportSession> SkillportSessions => Set<SkillportSession>();
 
     public DbSet<SkillportScraperSettings> SkillportScraperSettings => Set<SkillportScraperSettings>();
+
+    public DbSet<NotificationSettings> NotificationSettings => Set<NotificationSettings>();
 
     public DbSet<Faq> Faqs => Set<Faq>();
 

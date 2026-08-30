@@ -7,6 +7,8 @@ using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
 using SkillsetsBackend.Application.Settings.Commands.SendTestEmail;
 using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
 using SkillsetsBackend.Application.Settings.Commands.SaveSkillportScraperSettings;
+using SkillsetsBackend.Application.Settings.Commands.SaveNotificationSettings;
+using SkillsetsBackend.Application.Settings.Queries.GetNotificationSettings;
 using SkillsetsBackend.Application.Settings.Queries.GetSmtpSettings;
 using SkillsetsBackend.Application.Settings.Queries.ListEmailHistory;
 using SkillsetsBackend.Application.Settings.Queries.GetEmailLogDetail;
@@ -28,6 +30,8 @@ public class SettingsController : ControllerBase
     private readonly GetEmailLogDetailQueryHandler _getEmailLogDetailHandler;
     private readonly GetSkillportScraperSettingsQueryHandler _getSkillportScraperSettingsHandler;
     private readonly SaveSkillportScraperSettingsCommandHandler _saveSkillportScraperSettingsHandler;
+    private readonly GetNotificationSettingsQueryHandler _getNotificationSettingsHandler;
+    private readonly SaveNotificationSettingsCommandHandler _saveNotificationSettingsHandler;
 
     public SettingsController(
         GetSmtpSettingsQueryHandler getSmtpSettingsHandler,
@@ -37,7 +41,9 @@ public class SettingsController : ControllerBase
         ListEmailHistoryQueryHandler listEmailHistoryHandler,
         GetEmailLogDetailQueryHandler getEmailLogDetailHandler,
         GetSkillportScraperSettingsQueryHandler getSkillportScraperSettingsHandler,
-        SaveSkillportScraperSettingsCommandHandler saveSkillportScraperSettingsHandler)
+        SaveSkillportScraperSettingsCommandHandler saveSkillportScraperSettingsHandler,
+        GetNotificationSettingsQueryHandler getNotificationSettingsHandler,
+        SaveNotificationSettingsCommandHandler saveNotificationSettingsHandler)
     {
         _getSmtpSettingsHandler = getSmtpSettingsHandler;
         _saveSmtpSettingsHandler = saveSmtpSettingsHandler;
@@ -47,6 +53,8 @@ public class SettingsController : ControllerBase
         _getEmailLogDetailHandler = getEmailLogDetailHandler;
         _getSkillportScraperSettingsHandler = getSkillportScraperSettingsHandler;
         _saveSkillportScraperSettingsHandler = saveSkillportScraperSettingsHandler;
+        _getNotificationSettingsHandler = getNotificationSettingsHandler;
+        _saveNotificationSettingsHandler = saveNotificationSettingsHandler;
     }
 
     [HttpGet("smtp")]
@@ -79,9 +87,11 @@ public class SettingsController : ControllerBase
 
     [HttpGet("email-history")]
     public async Task<IActionResult> ListEmailHistory(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string? search = null, CancellationToken cancellationToken = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string? search = null,
+        [FromQuery] string? purpose = null, CancellationToken cancellationToken = default)
     {
-        var result = await _listEmailHistoryHandler.Handle(new ListEmailHistoryQuery(page, pageSize, search), GetCaller(), cancellationToken);
+        var result = await _listEmailHistoryHandler.Handle(
+            new ListEmailHistoryQuery(page, pageSize, search, purpose), GetCaller(), cancellationToken);
         return Ok(result);
     }
 
@@ -103,6 +113,20 @@ public class SettingsController : ControllerBase
     public async Task<IActionResult> SaveSkillportScraperSettings(SaveSkillportScraperSettingsCommand command, CancellationToken cancellationToken)
     {
         var result = await _saveSkillportScraperSettingsHandler.Handle(command, GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("notifications")]
+    public async Task<IActionResult> GetNotificationSettings(CancellationToken cancellationToken)
+    {
+        var result = await _getNotificationSettingsHandler.Handle(GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPut("notifications")]
+    public async Task<IActionResult> SaveNotificationSettings(SaveNotificationSettingsCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _saveNotificationSettingsHandler.Handle(command, GetCaller(), cancellationToken);
         return Ok(result);
     }
 

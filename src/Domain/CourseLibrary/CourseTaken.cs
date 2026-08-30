@@ -48,4 +48,13 @@ public class CourseTaken : IAggregateRoot
         IsActive = false;
         CompletedAt = DateTimeOffset.UtcNow;
     }
+
+    /// <summary>Abandons this course so the student can start a different one - deliberately does
+    /// NOT set CompletedAt, since the course was given up rather than finished. Only the imported
+    /// Skillport transcript records a genuine completion, so claiming one here would put a
+    /// completion into the record that Skillport never reported.</summary>
+    public void Cancel()
+    {
+        IsActive = false;
+    }
 }

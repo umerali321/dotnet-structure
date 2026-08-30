@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using SkillsetsBackend.Application.Auth;
 using SkillsetsBackend.Application.Auth.Commands.Login;
 using SkillsetsBackend.Application.Auth.Commands.Logout;
 using SkillsetsBackend.Application.Auth.Commands.Refresh;
@@ -42,6 +43,9 @@ using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibraryUsers;
 using SkillsetsBackend.Application.Dashboard.Queries.GetCourseLibrarySessionHistory;
 using SkillsetsBackend.Application.Settings.Queries.GetSmtpSettings;
 using SkillsetsBackend.Application.Settings.Queries.GetSkillportScraperSettings;
+using SkillsetsBackend.Application.Settings.Queries.GetNotificationSettings;
+using SkillsetsBackend.Application.Settings.Commands.SaveNotificationSettings;
+using SkillsetsBackend.Application.Notifications;
 using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
 using SkillsetsBackend.Application.Settings.Commands.SaveSkillportScraperSettings;
 using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
@@ -122,6 +126,9 @@ public static class DependencyInjection
         services.AddScoped<ResetPasswordCommandHandler>();
         services.AddScoped<ListLoginActivityLogsQueryHandler>();
 
+        // Shared by the Company Admin / Manager / Employee creation handlers.
+        services.AddScoped<AccountWelcomeEmail>();
+
         services.AddScoped<ListStudentsQueryHandler>();
         services.AddScoped<GetStudentByIdQueryHandler>();
         services.AddScoped<GetStudentCompaniesQueryHandler>();
@@ -176,6 +183,12 @@ public static class DependencyInjection
         services.AddScoped<SaveSmtpSettingsCommandHandler>();
         services.AddScoped<GetSkillportScraperSettingsQueryHandler>();
         services.AddScoped<SaveSkillportScraperSettingsCommandHandler>();
+        services.AddScoped<GetNotificationSettingsQueryHandler>();
+        services.AddScoped<SaveNotificationSettingsCommandHandler>();
+
+        // Every automated notification email goes through this one service, which is also where
+        // the SuperAdmin on/off switches are enforced.
+        services.AddScoped<NotificationDispatcher>();
         services.AddScoped<TestSmtpConnectionCommandHandler>();
         services.AddScoped<SendTestEmailCommandHandler>();
         services.AddScoped<ListEmailHistoryQueryHandler>();

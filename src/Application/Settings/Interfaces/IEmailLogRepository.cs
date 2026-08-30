@@ -12,8 +12,9 @@ public interface IEmailLogRepository
     Task AddAsync(EmailLog log, CancellationToken cancellationToken = default);
 
     /// <summary>search, when provided, filters to rows whose ToAddress contains the term
-    /// (case-insensitive).</summary>
-    Task<PaginatedList<EmailLogDto>> ListAsync(int page, int pageSize, string? search, CancellationToken cancellationToken = default);
+    /// (case-insensitive). purpose, when provided, filters to that exact Purpose value.</summary>
+    Task<PaginatedList<EmailLogDto>> ListAsync(
+        int page, int pageSize, string? search, string? purpose, CancellationToken cancellationToken = default);
 
     Task<EmailLogDetailDto?> GetByIdAsync(int emailLogId, CancellationToken cancellationToken = default);
 }

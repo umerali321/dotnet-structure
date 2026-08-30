@@ -15,11 +15,15 @@ namespace SkillsetsBackend.Infrastructure.LearningTranscript;
 /// one table-valued parameter instead of one round-trip per row.
 ///
 /// The source report groups activity rows under a per-person header row that contains ONLY that
-/// person's Skillport username (e.g. "adachhn") with every other cell blank - confirmed from the
-/// user's own sample export. This class "carries down" that username onto every subsequent data
-/// row until the next such header row appears, since the raw file has no per-row username column
-/// of its own. A header row is detected as: the first cell has text, and every other mapped column
-/// on that row is blank - a real data row always has values in far more than just column 1.
+/// person's Skillport LOGIN username (e.g. "adachhn" or "10lc387010") with every other cell blank -
+/// confirmed from the user's own sample exports. This class "carries down" that username onto every
+/// subsequent data row until the next such header row appears. A header row is detected as: the
+/// first cell has text, and every other mapped column on that row is blank - a real data row always
+/// has values in far more than just column 1.
+///
+/// Note the file ALSO has a "User ID" column on each data row, but it holds Skillport's internal
+/// numeric account id (e.g. "510605"), NOT the login username - only the header value resolves
+/// against SkillportSessions/ActiveLibraryCards, so the header always wins as the identity key.
 /// </summary>
 public class LearningTranscriptImportService : ILearningTranscriptImportService
 {
@@ -325,31 +329,30 @@ public class LearningTranscriptImportService : ILearningTranscriptImportService
                 continue;
             }
 
-            // Confirmed live: a real scraper-produced export (unlike the older Skillport-UI-exported
-            // files this carry-down logic was originally built for) never has a separate
-            // username-only header row at all - EVERY row is fully populated, including its own
-            // "User ID" cell. Use that row's own identity value directly when present, instead of
-            // depending exclusively on the carry-down from a header row this file format doesn't
-            // have - dropping every single row for want of one was the actual bug (978 real rows
-            // imported as 0). Still falls back to the carried-down value for the older format, where
-            // data rows genuinely don't repeat the identity on every row.
+            // The group-header row's value (e.g. "10lc387010") is the person's real Skillport
+            // LOGIN username - the identifier that actually resolves against
+            // SkillportSessions.SkillportUsername / ActiveLibraryCards.User_ID, both of which store
+            // exactly that "<n>LC<digits>" shape. The per-row "User ID" COLUMN holds something
+            // different: Skillport's internal numeric account id (e.g. "510605"), which corresponds
+            // to nothing in this system. So the carried-down header value always wins; the row's own
+            // column is only a last-resort key for an export that has no group-header rows at all.
+            // Preferring the row's own column here instead was a real bug: it keyed 630 of 658
+            // identities by that numeric id, which then could only ever be resolved by the fragile
+            // name-matching fallback rather than by a genuine identifier match.
             var ownIdentity = cells.TryGetValue("SkillportUserIdText", out var idCell) && !idCell.IsEmpty()
                 ? idCell.GetString().Trim()
                 : string.Empty;
-            if (ownIdentity.Length > 0)
-            {
-                currentSkillportUsername = ownIdentity;
-            }
+            var rowIdentity = currentSkillportUsername.Length > 0 ? currentSkillportUsername : ownIdentity;
 
-            if (currentSkillportUsername.Length == 0)
+            if (rowIdentity.Length == 0)
             {
-                // A data row appeared before any header row was seen - shouldn't happen in a real
-                // export, but skip rather than insert an orphaned row with no identity to attach to.
+                // A data row appeared before any header row was seen and carries no identity of its
+                // own - skip rather than insert an orphaned row with nothing to attach it to.
                 continue;
             }
 
             var dataRow = table.NewRow();
-            dataRow["SkillportUsername"] = currentSkillportUsername;
+            dataRow["SkillportUsername"] = rowIdentity;
             foreach (var (column, _) in activeColumns)
             {
                 dataRow[column] = ConvertValue(column, cells[column]);

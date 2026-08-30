@@ -70,9 +70,18 @@ public class TakeCourseCommandHandler
         var activeForUser = await _repository.FindActiveByUserAsync(userId, cancellationToken);
         if (activeForUser is not null)
         {
-            var activeCourse = await _courseLibraryQueryService.GetCourseDetailAsync(activeForUser.CourseId, cancellationToken);
-            var activeTitle = activeCourse?.CourseTitle ?? "another course";
-            throw new ConflictException($"You already have an active course: {activeTitle}. Complete it before starting a new one.");
+            if (!command.CancelActive)
+            {
+                var activeCourse = await _courseLibraryQueryService.GetCourseDetailAsync(activeForUser.CourseId, cancellationToken);
+                var activeTitle = activeCourse?.CourseTitle ?? "another course";
+                throw new ConflictException($"You already have an active course: {activeTitle}. Complete it before starting a new one.");
+            }
+
+            // The student chose "cancel my current course and start this one" and confirmed it.
+            // Cancelled, not completed - see CourseTaken.Cancel. This also has to clear before the
+            // insert below, or the filtered unique index on "one active row per user" rejects it.
+            activeForUser.Cancel();
+            await _repository.SaveChangesAsync(cancellationToken);
         }
 
         var courseTaken = CourseTaken.Create(userId, command.CourseId);

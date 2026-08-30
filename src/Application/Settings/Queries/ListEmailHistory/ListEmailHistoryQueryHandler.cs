@@ -21,6 +21,6 @@ public class ListEmailHistoryQueryHandler
             throw new UnauthorizedAccessException("Only SuperAdmin can view Email History.");
         }
 
-        return await _repository.ListAsync(query.Page, query.PageSize, query.Search, cancellationToken);
+        return await _repository.ListAsync(query.Page, query.PageSize, query.Search, query.Purpose, cancellationToken);
     }
 }

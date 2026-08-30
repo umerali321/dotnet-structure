@@ -6,6 +6,7 @@ using SkillsetsBackend.Application.Assignments.Interfaces;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.CourseLibrary.Interfaces;
+using SkillsetsBackend.Application.Notifications;
 using SkillsetsBackend.Application.Students;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Assignments;
@@ -30,7 +31,7 @@ public class CreateAssignmentCommandHandler
     private readonly IUserDirectory _userDirectory;
     private readonly IStudentRepository _studentRepository;
     private readonly IPermissionService _permissionService;
-    private readonly IEmailSender _emailSender;
+    private readonly NotificationDispatcher _notifications;
     private readonly ILogger<CreateAssignmentCommandHandler> _logger;
 
     public CreateAssignmentCommandHandler(
@@ -42,7 +43,7 @@ public class CreateAssignmentCommandHandler
         IUserDirectory userDirectory,
         IStudentRepository studentRepository,
         IPermissionService permissionService,
-        IEmailSender emailSender,
+        NotificationDispatcher notifications,
         ILogger<CreateAssignmentCommandHandler> logger)
     {
         _validator = validator;
@@ -53,7 +54,7 @@ public class CreateAssignmentCommandHandler
         _userDirectory = userDirectory;
         _studentRepository = studentRepository;
         _permissionService = permissionService;
-        _emailSender = emailSender;
+        _notifications = notifications;
         _logger = logger;
     }
 
@@ -126,14 +127,35 @@ public class CreateAssignmentCommandHandler
         var assignment = Assignment.Create(creatorUserId, command.CompanyId, sourceType, sourceSkillTraxId, command.StartDate);
         var assignmentId = await _repository.CreateAsync(assignment, distinctEmployeeIds, courseIds, cancellationToken);
 
-        await SendAssignmentEmailsAsync(distinctEmployeeIds, assignment, cancellationToken);
+        await SendAssignmentEmailsAsync(distinctEmployeeIds, assignment, courseIds, cancellationToken);
 
         var dto = await _queryService.GetDtoAsync(assignmentId, cancellationToken);
         return new CreateAssignmentResultDto(dto, []);
     }
 
-    private async Task SendAssignmentEmailsAsync(IReadOnlyList<int> employeeIds, Assignment assignment, CancellationToken cancellationToken)
+    /// <summary>Sent only after the assignment is durably created, and only to the employees on it.
+    /// Best-effort: SMTP isn't configured in every environment, and a delivery problem must never
+    /// roll back an assignment that already exists.</summary>
+    private async Task SendAssignmentEmailsAsync(
+        IReadOnlyList<int> employeeIds,
+        Assignment assignment,
+        IReadOnlyList<long> courseIds,
+        CancellationToken cancellationToken)
     {
+        // Look the titles up once for the whole batch rather than per recipient - every employee on
+        // this assignment is being told about the same courses.
+        IReadOnlyList<string> courseTitles;
+        try
+        {
+            var courses = await _courseLibraryQueryService.GetCoursesByIdsAsync(courseIds, cancellationToken);
+            courseTitles = courses.Select(c => c.CourseTitle).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not load course titles for assignment {AssignmentId} notification", assignment.AssignmentId);
+            courseTitles = [];
+        }
+
         foreach (var employeeId in employeeIds)
         {
             try
@@ -144,49 +166,23 @@ public class CreateAssignmentCommandHandler
                     continue;
                 }
 
-                await _emailSender.SendAsync(
-                    user.Email,
-                    user.FirstName,
-                    "New training assigned to you",
-                    BuildAssignmentEmailBody(user.FirstName ?? "there", assignment),
-                    purpose: "AssignmentCreated",
-                    cancellationToken: cancellationToken);
+                var roles = await _userDirectory.GetActiveCompanyRolesAsync(employeeId, cancellationToken);
+                var companyName = roles.FirstOrDefault(r => r.CompanyId == assignment.CompanyId)?.CompanyName ?? "your company";
+
+                await _notifications.SendAssignmentAsync(
+                    new AssignmentNotification(
+                        user.Email,
+                        user.FirstName,
+                        companyName,
+                        courseTitles,
+                        assignment.StartDate,
+                        assignment.EndDate),
+                    cancellationToken);
             }
             catch (Exception ex)
             {
-                // Best-effort - the assignment itself is already durably created by this point, and
-                // SMTP isn't configured in every environment yet (see EmailSettings). A delivery
-                // failure here must never roll back or fail the assignment.
                 _logger.LogWarning(ex, "Failed to send assignment notification email to employee {EmployeeId}", employeeId);
             }
         }
     }
-
-    private static string BuildAssignmentEmailBody(string firstName, Assignment assignment) => $$"""
-        <div style="background-color:#f4f4f5;padding:32px 16px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e7e5e3;">
-            <tr>
-              <td style="background:#c81322;padding:22px 28px;">
-                <div style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.5px;">SKILLSETS</div>
-                <div style="color:#ffd9dc;font-size:12px;margin-top:4px;">New training assigned</div>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:28px;">
-                <p style="margin:0 0 16px;color:#1a1918;font-size:14px;line-height:1.6;">Hi {{WebUtility.HtmlEncode(firstName)}},</p>
-                <p style="margin:0 0 20px;color:#1a1918;font-size:14px;line-height:1.6;">
-                  New training has been assigned to you. Your 30-day Focus Session window is below - sign in to your
-                  dashboard to see the full list of titles and get started.
-                </p>
-                <div style="background:#f7f6f5;border:1px solid #e7e5e3;border-radius:10px;padding:16px 20px;text-align:center;margin-bottom:20px;">
-                  <span style="font-size:14px;color:#1a1918;">{{assignment.StartDate:MMM d, yyyy}} &ndash; {{assignment.EndDate:MMM d, yyyy}}</span>
-                </div>
-                <p style="margin:0;color:#6b6663;font-size:12px;line-height:1.6;">
-                  Sign in to SkillSets and check "My Training" on your dashboard for the full details.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </div>
-        """;
 }

@@ -22,9 +22,16 @@ public class EmailLogRepository : IEmailLogRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<PaginatedList<EmailLogDto>> ListAsync(int page, int pageSize, string? search, CancellationToken cancellationToken = default)
+    public async Task<PaginatedList<EmailLogDto>> ListAsync(
+        int page, int pageSize, string? search, string? purpose, CancellationToken cancellationToken = default)
     {
         var query = _dbContext.EmailLogs.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(purpose))
+        {
+            var exactPurpose = purpose.Trim();
+            query = query.Where(x => x.Purpose == exactPurpose);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {

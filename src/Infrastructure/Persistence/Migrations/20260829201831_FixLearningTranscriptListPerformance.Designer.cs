@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260829201831_FixLearningTranscriptListPerformance")]
+    partial class FixLearningTranscriptListPerformance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2139,34 +2142,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasKey("ImportBatchId");
 
                     b.ToTable("LearningTranscriptImportBatches", (string)null);
-                });
-
-            modelBuilder.Entity("SkillsetsBackend.Domain.Notifications.NotificationSettings", b =>
-                {
-                    b.Property<int>("NotificationSettingsId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationSettingsId"));
-
-                    b.Property<bool>("AssignmentNotificationsEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("LoginNotificationsEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ReminderNotificationsEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("NotificationSettingsId");
-
-                    b.ToTable("NotificationSettings", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.ActiveLibraryCard", b =>

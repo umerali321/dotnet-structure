@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
+using SkillsetsBackend.Application.Auth;
 using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.Interfaces;
@@ -19,19 +20,22 @@ public class CreateManagerCommandHandler
     private readonly IStudentRepository _studentRepository;
     private readonly IUserDirectory _userDirectory;
     private readonly IPermissionService _permissionService;
+    private readonly AccountWelcomeEmail _welcomeEmail;
 
     public CreateManagerCommandHandler(
         IValidator<CreateManagerCommand> validator,
         IManagerRepository repository,
         IStudentRepository studentRepository,
         IUserDirectory userDirectory,
-        IPermissionService permissionService)
+        IPermissionService permissionService,
+        AccountWelcomeEmail welcomeEmail)
     {
         _validator = validator;
         _repository = repository;
         _studentRepository = studentRepository;
         _userDirectory = userDirectory;
         _permissionService = permissionService;
+        _welcomeEmail = welcomeEmail;
     }
 
     public async Task<CreateManagerResult> Handle(CreateManagerCommand command, CallerContext caller, CancellationToken cancellationToken)
@@ -84,6 +88,10 @@ public class CreateManagerCommandHandler
         {
             await _studentRepository.AddEmployeeRoleAsync(userId, command.CompanyId, caller.Email, startDate: null, cancellationToken);
         }
+
+        // Only once the account genuinely exists - and with the password that was actually stored,
+        // whether the admin typed it or let the form generate one.
+        await _welcomeEmail.SendAsync(command.Email, command.FirstName, command.Password, cancellationToken);
 
         return new CreateManagerResult(userId);
     }

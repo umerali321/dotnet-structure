@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SkillsetsBackend.Application.Assignments;
 using SkillsetsBackend.Application.Assignments.DTOs;
 using SkillsetsBackend.Application.Assignments.Interfaces;
 using SkillsetsBackend.Domain.Assignments;
@@ -118,26 +119,104 @@ public class AssignmentQueryService : IAssignmentQueryService
         // one query per assignment/employee.
         var employeeIds = employeeRows.Select(e => e.UserId).Distinct().ToList();
         var courseIds = titleRows.Select(t => t.CourseId).Distinct().ToList();
-        var courseTakenLookup = employeeIds.Count == 0 || courseIds.Count == 0
-            ? new Dictionary<(int UserId, long CourseId), bool>()
+
+        // Grouped, not ToDictionary keyed on (UserId, CourseId): a student may retake a course, and
+        // the repository's own docs say more than one row per pair can exist - so keying directly
+        // would throw on a duplicate key the first time anyone retook an assigned title.
+        var courseTakenRows = employeeIds.Count == 0 || courseIds.Count == 0
+            ? []
             : await _dbContext.CourseTakens
                 .AsNoTracking()
                 .Where(ct => employeeIds.Contains(ct.UserId) && courseIds.Contains(ct.CourseId))
-                .ToDictionaryAsync(ct => (ct.UserId, ct.CourseId), ct => ct.IsActive, cancellationToken);
+                .Select(ct => new { ct.UserId, ct.CourseId, ct.IsActive, ct.AccessedAt })
+                .ToListAsync(cancellationToken);
+
+        var courseTakenLookup = courseTakenRows
+            .GroupBy(ct => (ct.UserId, ct.CourseId))
+            // Any still-active row means in progress; otherwise every attempt is finished.
+            .ToDictionary(g => g.Key, g => g.Any(ct => ct.IsActive));
+
+        // When they FIRST opened it - the earliest attempt, since a later retake says nothing about
+        // whether they began on time.
+        var firstAccessLookup = courseTakenRows
+            .GroupBy(ct => (ct.UserId, ct.CourseId))
+            .ToDictionary(g => g.Key, g => DateOnly.FromDateTime(g.Min(ct => ct.AccessedAt).UtcDateTime));
+
+        // A title opened directly in Skillport never produces a CourseTaken row, so on that data
+        // alone the person looks like they never started. The imported transcript does record it, so
+        // fall back to its first-access date - otherwise anyone working outside the Course Library
+        // would be reported Not started, and then Late, entirely wrongly.
+        if (employeeIds.Count > 0 && courseIds.Count > 0)
+        {
+            var transcriptFirstAccess = await (
+                from activity in _dbContext.LearningTranscriptActivities.AsNoTracking()
+                join identity in _dbContext.LearningTranscriptIdentities.AsNoTracking()
+                    on activity.LearningTranscriptIdentityId equals identity.LearningTranscriptIdentityId
+                join asset in _dbContext.LearningTranscriptAssets.AsNoTracking()
+                    on activity.AssetId equals asset.AssetId
+                where activity.IsLatest
+                      && identity.UserId != null
+                      && asset.InternalCourseId != null
+                      && employeeIds.Contains(identity.UserId!.Value)
+                      && courseIds.Contains(asset.InternalCourseId!.Value)
+                      && activity.FirstAccessDate != null
+                select new { UserId = identity.UserId!.Value, CourseId = asset.InternalCourseId!.Value, activity.FirstAccessDate })
+                .ToListAsync(cancellationToken);
+
+            foreach (var group in transcriptFirstAccess.GroupBy(t => (t.UserId, t.CourseId)))
+            {
+                var earliest = group.Min(t => t.FirstAccessDate!.Value);
+                // Whichever source saw them first wins - both are evidence of the same thing.
+                if (!firstAccessLookup.TryGetValue(group.Key, out var existing) || earliest < existing)
+                {
+                    firstAccessLookup[group.Key] = earliest;
+                }
+            }
+        }
 
         var titlesByAssignment = titleRows
             .GroupBy(t => t.AssignmentId)
             .ToDictionary(g => g.Key, g => g.Select(t => (t.CourseId, t.CourseTitle, t.CourseUrl, t.LaunchUrl)).ToList());
 
+        var assignmentStartDates = assignments.ToDictionary(a => a.AssignmentId, a => a.StartDate);
+
         var employeesByAssignment = employeeRows
             .GroupBy(e => e.AssignmentId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<AssignmentEmployeeDto>)g
-                .Select(e => new AssignmentEmployeeDto(
-                    e.UserId, e.FirstName, e.LastName, e.Email,
-                    titlesByAssignment.GetValueOrDefault(g.Key, [])
-                        .Select(t => new AssignmentTitleProgressDto(t.CourseId, t.CourseTitle, DeriveProgressStatus(courseTakenLookup, e.UserId, t.CourseId).ToString()))
-                        .ToList()))
-                .ToList());
+            .ToDictionary(g => g.Key, g =>
+            {
+                var assignmentStart = assignmentStartDates.GetValueOrDefault(g.Key);
+
+                return (IReadOnlyList<AssignmentEmployeeDto>)g
+                    .Select(e =>
+                    {
+                        var titleProgress = titlesByAssignment.GetValueOrDefault(g.Key, [])
+                            .Select(t =>
+                            {
+                                var startedOn = firstAccessLookup.TryGetValue((e.UserId, t.CourseId), out var firstAccess)
+                                    ? firstAccess
+                                    : (DateOnly?)null;
+
+                                return new AssignmentTitleProgressDto(
+                                    t.CourseId,
+                                    t.CourseTitle,
+                                    DeriveProgressStatus(courseTakenLookup, e.UserId, t.CourseId).ToString(),
+                                    AssignmentTiming.Derive(startedOn, assignmentStart).ToString(),
+                                    startedOn);
+                            })
+                            .ToList();
+
+                        // One late title makes the whole assignment late; otherwise the earliest
+                        // start decides, so an employee who began before day one still reads Early.
+                        var startedDates = titleProgress.Where(t => t.StartedOn.HasValue).Select(t => t.StartedOn!.Value).ToList();
+                        var employeeStartedOn = startedDates.Count == 0 ? (DateOnly?)null : startedDates.Min();
+                        var titleTimings = titleProgress.Select(t => Enum.Parse<AssignmentStartTiming>(t.Timing)).ToList();
+                        var timing = AssignmentTiming.DeriveOverall(titleTimings, employeeStartedOn, assignmentStart);
+
+                        return new AssignmentEmployeeDto(
+                            e.UserId, e.FirstName, e.LastName, e.Email, titleProgress, timing.ToString(), employeeStartedOn);
+                    })
+                    .ToList();
+            });
 
         var titleDtosByAssignment = titlesByAssignment
             .ToDictionary(kv => kv.Key, kv => (IReadOnlyList<AssignmentTitleDto>)kv.Value

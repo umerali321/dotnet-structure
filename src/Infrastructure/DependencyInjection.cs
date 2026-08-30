@@ -166,6 +166,7 @@ public static class DependencyInjection
         services.AddScoped<ISmtpConnectionTester, SmtpConnectionTester>();
         services.AddScoped<ISmtpSettingsRepository, SmtpSettingsRepository>();
         services.AddScoped<ISkillportScraperSettingsRepository, SkillportScraperSettingsRepository>();
+        services.AddScoped<INotificationSettingsRepository, NotificationSettingsRepository>();
         services.AddScoped<IEmailLogRepository, EmailLogRepository>();
         // Without an explicit key-storage location, ASP.NET Core's Data Protection key ring can end
         // up ephemeral (or tied to a specific deployment folder/user profile) and gets thrown away
