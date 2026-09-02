@@ -17,6 +17,12 @@ public class UserCompanyRole
 
     public bool IsActive { get; private set; }
 
+    /// <summary>How THIS role grant was made - see <see cref="Identity.CreationSource"/>. Separate
+    /// from AppUser.CreationSource because the two genuinely differ: someone created by hand as an
+    /// Employee can later be granted Manager by a roster import, and only this column can say so.
+    /// </summary>
+    public string CreationSource { get; private set; } = Identity.CreationSource.Manual;
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public Company Company { get; private set; } = null!;
@@ -27,13 +33,15 @@ public class UserCompanyRole
     {
     }
 
-    public UserCompanyRole(int userId, int companyId, byte roleId, DateOnly? startDate)
+    public UserCompanyRole(int userId, int companyId, byte roleId, DateOnly? startDate,
+        string creationSource = Identity.CreationSource.Manual)
     {
         UserId = userId;
         CompanyId = companyId;
         RoleId = roleId;
         StartDate = startDate;
         IsActive = true;
+        CreationSource = creationSource;
         CreatedAt = DateTimeOffset.UtcNow;
     }
 
@@ -48,10 +56,16 @@ public class UserCompanyRole
     /// unfiltered unique index on that triple in the underlying legacy table (it does not exempt
     /// inactive rows), so a second insert for a role this person already held (even long since
     /// revoked) at this company would violate it.</summary>
-    public void Reactivate(DateOnly? startDate)
+    public void Reactivate(DateOnly? startDate, string? creationSource = null)
     {
         IsActive = true;
         StartDate = startDate;
         EndDate = null;
+        // Re-granting is a new grant as far as reporting is concerned, so the caller may restamp the
+        // source. Left unchanged when omitted, so existing callers keep the original attribution.
+        if (creationSource is not null)
+        {
+            CreationSource = creationSource;
+        }
     }
 }

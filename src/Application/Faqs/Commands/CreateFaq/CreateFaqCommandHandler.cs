@@ -30,12 +30,12 @@ public class CreateFaqCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can create FAQs.");
         }
 
-        if (caller.IsSuperAdmin)
+        if (caller.IsPlatformAdmin)
         {
             // SuperAdmin may create a company-scoped FAQ or, by leaving CompanyId out, a global one.
         }

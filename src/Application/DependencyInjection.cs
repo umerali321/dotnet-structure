@@ -33,6 +33,12 @@ using SkillsetsBackend.Application.Companies.Commands.ActivateCompany;
 using SkillsetsBackend.Application.Companies.Commands.SetCompanyLicense;
 using SkillsetsBackend.Application.Companies.Commands.UpdateCompanyLogo;
 using SkillsetsBackend.Application.Companies.Commands.ImportCompanies;
+using SkillsetsBackend.Application.RosterImport;
+using SkillsetsBackend.Application.RosterImport.Commands.ImportRoster;
+using SkillsetsBackend.Application.RosterImport.Commands.PreviewRosterImport;
+using SkillsetsBackend.Application.RosterImport.Commands.SendRosterWelcomeEmails;
+using SkillsetsBackend.Application.RosterImport.Queries.GetCreationSourceStats;
+using SkillsetsBackend.Application.RosterImport.Queries.GetRosterImportBatch;
 using SkillsetsBackend.Application.Scraper.Commands.StartScraperRun;
 using SkillsetsBackend.Application.Scraper.Commands.StopScraperRun;
 using SkillsetsBackend.Application.Scraper.Queries.GetScraperRunStatus;
@@ -59,6 +65,9 @@ using SkillsetsBackend.Application.Managers.Commands.AddCompanyAdminRole;
 using SkillsetsBackend.Application.Managers.Commands.RemoveCompanyAdminRole;
 using SkillsetsBackend.Application.Managers.Commands.ChangeManagerPassword;
 using SkillsetsBackend.Application.Managers.Commands.CreateManager;
+using SkillsetsBackend.Application.SystemAdmins.Commands.CreateSystemAdmin;
+using SkillsetsBackend.Application.SystemAdmins.Commands.ResetSystemAdminPassword;
+using SkillsetsBackend.Application.SystemAdmins.Queries.ListSystemAdmins;
 using SkillsetsBackend.Application.Managers.Commands.DeactivateManager;
 using SkillsetsBackend.Application.Managers.Commands.ProvisionManagerSkillport;
 using SkillsetsBackend.Application.Managers.Commands.UpdateManager;
@@ -154,6 +163,15 @@ public static class DependencyInjection
         services.AddScoped<SetCompanyLicenseCommandHandler>();
         services.AddScoped<UpdateCompanyLogoCommandHandler>();
         services.AddScoped<ImportCompaniesCommandHandler>();
+
+        // Employee Roster Import. The planner is shared by the preview and the import so both
+        // reach the same decisions - see RosterImportPlanner.
+        services.AddScoped<RosterImportPlanner>();
+        services.AddScoped<PreviewRosterImportCommandHandler>();
+        services.AddScoped<ImportRosterCommandHandler>();
+        services.AddScoped<SendRosterWelcomeEmailsCommandHandler>();
+        services.AddScoped<GetRosterImportBatchQueryHandler>();
+        services.AddScoped<GetCreationSourceStatsQueryHandler>();
         services.AddScoped<StartScraperRunCommandHandler>();
         services.AddScoped<StopScraperRunCommandHandler>();
         services.AddScoped<GetScraperRunStatusQueryHandler>();
@@ -166,6 +184,11 @@ public static class DependencyInjection
         services.AddScoped<GetManagerCredentialsQueryHandler>();
         services.AddScoped<CreateManagerCommandHandler>();
         services.AddScoped<UpdateManagerCommandHandler>();
+
+        // SuperAdmin-only management of SystemAdmins.
+        services.AddScoped<ListSystemAdminsQueryHandler>();
+        services.AddScoped<CreateSystemAdminCommandHandler>();
+        services.AddScoped<ResetSystemAdminPasswordCommandHandler>();
         services.AddScoped<ChangeManagerPasswordCommandHandler>();
         services.AddScoped<ProvisionManagerSkillportCommandHandler>();
         services.AddScoped<DeactivateManagerCommandHandler>();

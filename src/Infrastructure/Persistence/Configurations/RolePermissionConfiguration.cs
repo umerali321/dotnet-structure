@@ -87,12 +87,20 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             Permissions.Students.ManagePasswordId,
             Permissions.Students.ViewCredentialsId,
             Permissions.Students.AssignManagerId,
+            // Roster Import defaults to CompanyAdmin only - it creates accounts in bulk, so a plain
+            // Manager gets it only if a SuperAdmin deliberately ticks it for them.
+            Permissions.Students.ImportId,
             Permissions.Managers.ViewId,
             Permissions.Managers.CreateId,
             Permissions.Managers.UpdateId,
             Permissions.Managers.ManagePasswordId,
             Permissions.Managers.ViewCredentialsId,
             Permissions.Roles.ViewId,
+            // Preserves what CompanyAdmin could already do - assigning roles used to be a hardcoded
+            // "SuperAdmin or CompanyAdmin" check. Manager/Student deliberately do NOT get it by
+            // default; a SuperAdmin can grant it to them from Roles & Permissions, which is the
+            // point of making it a permission at all.
+            Permissions.Roles.AssignId,
             Permissions.Faq.ViewId,
             Permissions.Faq.CreateId,
             Permissions.Faq.UpdateId,

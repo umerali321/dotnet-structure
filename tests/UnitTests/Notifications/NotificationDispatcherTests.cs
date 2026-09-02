@@ -19,8 +19,9 @@ public class NotificationDispatcherTests
         "employee@example.com", "Alanna", "Acme Corp", ["Harassment Prevention"],
         new DateOnly(2026, 9, 1), new DateOnly(2026, 10, 1), DaysRemaining: 3, HasStarted: false);
 
-    private static readonly LoginNotification Login = new(
-        "employee@example.com", "Alanna", new DateTimeOffset(2026, 8, 30, 9, 0, 0, TimeSpan.Zero));
+    // There is no LoginNotification any more - the sign-in email was removed at the customer's
+    // request. The login SWITCH is still passed to SettingsWith below because NotificationSettings
+    // still carries the column; nothing reads it.
 
     private static NotificationDispatcher Build(FakeSender sender, NotificationSettings? settings) =>
         new(sender, new FakeSettingsRepository(settings), NullLogger<NotificationDispatcher>.Instance);
@@ -52,14 +53,20 @@ public class NotificationDispatcherTests
         Assert.Empty(sender.Sends);
     }
 
+    /// <summary>The sign-in email is gone, so the dispatcher must expose no way to send one - a
+    /// stray caller re-adding it would not compile rather than quietly resuming the mail.</summary>
     [Fact]
-    public async Task LoginSwitchOff_SendsNothing()
+    public void LoginNotification_NoLongerExists()
     {
-        var sender = new FakeSender();
-        var sent = await Build(sender, SettingsWith(reminder: true, login: false, assignment: true)).SendLoginAsync(Login);
+        var sendMethods = typeof(NotificationDispatcher)
+            .GetMethods()
+            .Select(m => m.Name)
+            .Where(n => n.StartsWith("Send"))
+            .ToList();
 
-        Assert.False(sent);
-        Assert.Empty(sender.Sends);
+        Assert.DoesNotContain("SendLoginAsync", sendMethods);
+        Assert.Contains("SendAssignmentAsync", sendMethods);
+        Assert.Contains("SendReminderAsync", sendMethods);
     }
 
     [Fact]
@@ -69,10 +76,9 @@ public class NotificationDispatcherTests
         var dispatcher = Build(sender, SettingsWith(reminder: false, login: true, assignment: true));
 
         Assert.False(await dispatcher.SendReminderAsync(Reminder));
-        Assert.True(await dispatcher.SendLoginAsync(Login));
         Assert.True(await dispatcher.SendAssignmentAsync(Assignment));
 
-        Assert.Equal(2, sender.Sends.Count);
+        Assert.Single(sender.Sends);
     }
 
     [Fact]

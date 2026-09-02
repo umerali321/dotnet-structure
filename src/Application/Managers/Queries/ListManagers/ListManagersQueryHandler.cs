@@ -11,7 +11,7 @@ namespace SkillsetsBackend.Application.Managers.Queries.ListManagers;
 public sealed class ListManagersQueryHandler(IManagerQueryService service, IUserDirectory directory, IPermissionService permissionService)
 {
     public async Task<PaginatedList<ManagerListItemDto>> Handle(
-        int page, int pageSize, string? search, int? companyId, bool? active, string? sort, bool descending, string? role,
+        int page, int pageSize, SearchCriteria? search, int? companyId, bool? active, string? sort, bool descending, string? role,
         CallerContext caller, CancellationToken ct)
     {
         // Permission-driven (RolePermissions), not a hardcoded role check - a SuperAdmin can grant or
@@ -22,13 +22,14 @@ public sealed class ListManagersQueryHandler(IManagerQueryService service, IUser
             throw new UnauthorizedAccessException("You do not have permission to view managers.");
         }
 
-        if (role == "CompanyAdmin" && !caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (role == "CompanyAdmin" && !caller.IsPlatformAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and company admins can list company admins.");
         }
 
         IReadOnlyCollection<int>? allowed;
-        if (caller.IsSuperAdmin)
+        // Global scope, not SuperAdmin-only: a SystemAdmin also administers every company.
+        if (caller.HasGlobalCompanyScope)
         {
             allowed = companyId is null ? null : [companyId.Value];
         }

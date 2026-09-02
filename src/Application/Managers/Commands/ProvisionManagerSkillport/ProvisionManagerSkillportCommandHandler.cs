@@ -37,12 +37,12 @@ public class ProvisionManagerSkillportCommandHandler
             throw new AppValidationException(validationResult.Errors);
         }
 
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can provision Skillport accounts.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, command.UserId, _userDirectory, cancellationToken);
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);

@@ -13,4 +13,7 @@ public record CreateStudentCommand(
     string? StudentType,
     int CompanyId,
     DateOnly? StartDate,
-    bool AlsoCreateManager = false);
+    bool AlsoCreateManager = false,
+    /// <summary>Email this person their sign-in details. Defaults to TRUE - the behaviour this
+    /// endpoint has always had. The dialog exposes it so an admin can opt out per account.</summary>
+    bool SendWelcomeEmail = true);

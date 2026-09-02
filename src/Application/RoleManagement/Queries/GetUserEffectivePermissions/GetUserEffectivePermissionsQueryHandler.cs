@@ -24,14 +24,14 @@ public class GetUserEffectivePermissionsQueryHandler
 
     public async Task<UserEffectivePermissionsDto> Handle(int targetUserId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and Company Admins can view another user's permissions.");
         }
 
         var targetCompanies = await _userDirectory.GetActiveCompanyRolesAsync(targetUserId, cancellationToken);
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             var managedCompanyIds = await StudentAuthorization.GetManagedCompanyIdsAsync(caller, _userDirectory, cancellationToken);
             if (!targetCompanies.Any(tc => managedCompanyIds.Contains(tc.CompanyId)))

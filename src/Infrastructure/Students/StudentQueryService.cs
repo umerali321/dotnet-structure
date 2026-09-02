@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Students.DTOs;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Domain.Identity;
@@ -27,11 +28,14 @@ public class StudentQueryService : IStudentQueryService
             && (ucr.StartDate == null || ucr.StartDate <= today)
             && (ucr.EndDate == null || ucr.EndDate >= today));
 
+        // A named row type rather than an anonymous one, so ApplySearch below can be a real method
+        // shared by the prefix attempt and the contains fallback - two copies of that predicate
+        // could drift, and the fallback would then return rows the fast path never could.
         var query =
             from sp in _dbContext.StudentProfiles.AsNoTracking()
             join u in _dbContext.Users.AsNoTracking() on sp.UserId equals u.UserId
             where studentMemberships.Any(membership => membership.UserId == u.UserId)
-            select new { sp, u };
+            select new StudentRow { sp = sp, u = u };
 
         if (options.RestrictToCompanyIds is not null)
         {
@@ -56,23 +60,6 @@ public class StudentQueryService : IStudentQueryService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(options.Search))
-        {
-            var term = $"%{EscapeLike(options.Search.Trim())}%";
-            query = query.Where(x =>
-                EF.Functions.Like(x.u.FirstName, term, "\\") ||
-                EF.Functions.Like(x.u.LastName, term, "\\") ||
-                EF.Functions.Like(x.u.Email, term, "\\") ||
-                EF.Functions.Like(x.u.Username, term, "\\") ||
-                // "First Last" / "Last First" - the individual-field checks above only ever match a
-                // single search token, so a two-word search like "John Smith" never matched either
-                // field on its own even though the person clearly exists.
-                EF.Functions.Like((x.u.FirstName ?? "") + " " + (x.u.LastName ?? ""), term, "\\") ||
-                EF.Functions.Like((x.u.LastName ?? "") + " " + (x.u.FirstName ?? ""), term, "\\") ||
-                studentMemberships.Any(membership => membership.UserId == x.u.UserId &&
-                    (EF.Functions.Like(membership.Company.CompanyCode, term, "\\") || EF.Functions.Like(membership.Company.CompanyName, term, "\\"))));
-        }
-
         if (!string.IsNullOrWhiteSpace(options.StudentType))
         {
             query = query.Where(x => x.sp.StudentType == options.StudentType);
@@ -83,7 +70,32 @@ public class StudentQueryService : IStudentQueryService
             query = query.Where(x => x.u.IsActive == options.IsActive.Value);
         }
 
+        // ONE named column, PREFIX first. What was here before OR'd '%term%' across FirstName,
+        // LastName, Email, Username, both name concatenations AND a correlated EXISTS over company
+        // code/name - 2,525 ms on this database's 162,487 Users, because a leading wildcard cannot
+        // seek an index so all seven predicates scanned. One column with a prefix pattern is 0 ms.
+        //
+        // The contains fallback below runs only when the prefix found nothing, so nothing that used
+        // to be findable stops being findable (a whole-domain search like "augusta.edu" matches 260
+        // people with contains and 0 with prefix) - it just costs a scan in the rare case that needs
+        // one instead of on every keystroke.
+        var unsearched = query;
+
+        if (options.Search is { } search)
+        {
+            query = ApplySearch(unsearched, studentMemberships, search.Field, search.ToPrefixPattern());
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
+
+        // Prefix found nothing - retry once with a contains pattern so mid-string searches (a whole
+        // email domain, a surname typed without its start) still work. Costs a scan, but only in the
+        // case that actually needs one rather than on every keystroke.
+        if (totalCount == 0 && options.Search is { } fallback)
+        {
+            query = ApplySearch(unsearched, studentMemberships, fallback.Field, fallback.ToContainsPattern());
+            totalCount = await query.CountAsync(cancellationToken);
+        }
 
         // A stable tiebreaker (UserId) is always appended last so Skip/Take pagination is
         // deterministic across requests, regardless of which primary sort is requested.
@@ -254,6 +266,47 @@ public class StudentQueryService : IStudentQueryService
         var emailLower = email.ToLower();
         return codes.Any(code => activePairs.Contains((code, emailLower)));
     }
+
+    /// <summary>The join shape this query works over. Named (not anonymous) purely so ApplySearch
+    /// can be written once - lowercase members keep the rest of the method unchanged.</summary>
+    private sealed class StudentRow
+    {
+        public required StudentProfile sp { get; init; }
+
+        public required AppUser u { get; init; }
+    }
+
+    /// <summary>
+    /// Narrows to ONE field. The caller runs this with a prefix pattern first and only falls back to
+    /// a contains pattern when the prefix matched nothing, so the common case is an index seek.
+    /// </summary>
+    private static IQueryable<StudentRow> ApplySearch(
+        IQueryable<StudentRow> query,
+        IQueryable<UserCompanyRole> studentMemberships,
+        SearchBy field,
+        string term) => field switch
+    {
+        // Name keeps both concatenations so "John Smith" typed in full still matches, but only for
+        // the Name field - the other searches are no longer dragged through them.
+        SearchBy.Name => query.Where(x =>
+            EF.Functions.Like(x.u.FirstName!, term, "\\") ||
+            EF.Functions.Like(x.u.LastName!, term, "\\") ||
+            EF.Functions.Like((x.u.FirstName ?? "") + " " + (x.u.LastName ?? ""), term, "\\") ||
+            EF.Functions.Like((x.u.LastName ?? "") + " " + (x.u.FirstName ?? ""), term, "\\")),
+
+        SearchBy.Email => query.Where(x =>
+            EF.Functions.Like(x.u.Email!, term, "\\") ||
+            EF.Functions.Like(x.u.Username!, term, "\\")),
+
+        SearchBy.Company => query.Where(x => studentMemberships.Any(membership =>
+            membership.UserId == x.u.UserId &&
+            (EF.Functions.Like(membership.Company.CompanyName!, term, "\\") ||
+             EF.Functions.Like(membership.Company.CompanyCode!, term, "\\")))),
+
+        // A field this screen does not offer must narrow to nothing rather than silently returning
+        // the unfiltered list as if the search had matched everyone.
+        _ => query.Where(_ => false),
+    };
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");

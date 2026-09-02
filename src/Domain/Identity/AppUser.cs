@@ -32,6 +32,11 @@ public class AppUser : IAggregateRoot
 
     public bool IsActive { get; private set; }
 
+    /// <summary>How this account was created - see <see cref="Identity.CreationSource"/>. Rows that
+    /// predate this column are backfilled to "Legacy", never "Manual", so they can't be miscounted
+    /// as observed manual creations.</summary>
+    public string CreationSource { get; private set; } = Identity.CreationSource.Manual;
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -46,7 +51,8 @@ public class AppUser : IAggregateRoot
         string firstName,
         string lastName,
         string username,
-        string initialLegacyPassword)
+        string initialLegacyPassword,
+        string creationSource = Identity.CreationSource.Manual)
     {
         return new AppUser
         {
@@ -57,6 +63,7 @@ public class AppUser : IAggregateRoot
             Username = username,
             PasswordHash = initialLegacyPassword,
             IsActive = true,
+            CreationSource = creationSource,
             CreatedAt = DateTimeOffset.UtcNow,
         };
     }

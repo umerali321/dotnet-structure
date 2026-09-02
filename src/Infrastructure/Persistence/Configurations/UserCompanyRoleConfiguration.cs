@@ -24,6 +24,16 @@ public class UserCompanyRoleConfiguration : IEntityTypeConfiguration<UserCompany
 
         builder.HasIndex(x => x.UserId);
 
+        builder.Property(x => x.CreationSource)
+            .HasMaxLength(CreationSource.MaxLength)
+            .IsRequired()
+            .HasDefaultValue(CreationSource.Manual);
+
+        // Answers "how many employees/managers were created manually vs by roster import" directly
+        // off the index, without scanning UserCompanyRoles - the reason this column exists.
+        builder.HasIndex(x => new { x.CreationSource, x.RoleId })
+            .HasDatabaseName("IX_UserCompanyRoles_CreationSource_Role");
+
         // See AppUserConfiguration - existing column is datetime2, not datetimeoffset.
         builder.Property(x => x.CreatedAt).HasConversion(DateTimeOffsetToDateTime2Converter.Instance);
     }

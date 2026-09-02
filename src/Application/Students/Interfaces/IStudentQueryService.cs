@@ -1,3 +1,4 @@
+using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Students.DTOs;
 using SkillsetsBackend.Shared.Common;
 
@@ -22,7 +23,9 @@ public interface IStudentQueryService
 public record StudentListQueryOptions(
     int Page,
     int PageSize,
-    string? Search,
+    /// <summary>Which single field to search, and for what. Null means no search - never
+    /// "search every column", which is what made this screen take seconds. See SearchCriteria.</summary>
+    SearchCriteria? Search,
     string? StudentType,
     bool? IsActive,
     string? SortBy,

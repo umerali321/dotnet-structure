@@ -31,7 +31,7 @@ public class GetSkillTraxDetailQueryHandler
         var detail = await _queryService.GetDetailAsync(skillTraxId, cancellationToken)
             ?? throw new NotFoundException("SkillTrax", skillTraxId);
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, detail.CompanyId, _userDirectory, cancellationToken);
         }

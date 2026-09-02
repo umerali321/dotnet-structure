@@ -22,4 +22,9 @@ public record CreateCompanyCommand(
     string? State = null,
     string? Zip = null,
     string? PaymentForm = null,
-    decimal? TotalPayment = null);
+    decimal? TotalPayment = null,
+    /// <summary>Whether to email the Point of Contact their sign-in details once the company exists.
+    /// Defaults to false so an existing caller that does not know about this flag cannot start
+    /// mailing people by accident - the UI asks explicitly and sends true when the admin says yes.
+    /// </summary>
+    bool SendWelcomeEmailToPointOfContact = false);

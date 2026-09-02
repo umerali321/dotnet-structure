@@ -57,12 +57,12 @@ public class CreateManagerCommandHandler
 
         // A CompanyAdmin can create another CompanyAdmin; a Manager (even with "Create Managers")
         // cannot - prevents a lower-privileged role from creating a peer of a higher one.
-        if (command.Role == Roles.CompanyAdmin && !caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (command.Role == Roles.CompanyAdmin && !caller.IsPlatformAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and company admins can create company admins.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);
         }
@@ -89,9 +89,12 @@ public class CreateManagerCommandHandler
             await _studentRepository.AddEmployeeRoleAsync(userId, command.CompanyId, caller.Email, startDate: null, cancellationToken);
         }
 
-        // Only once the account genuinely exists - and with the password that was actually stored,
-        // whether the admin typed it or let the form generate one.
-        await _welcomeEmail.SendAsync(command.Email, command.FirstName, command.Password, cancellationToken);
+        // Only once the account genuinely exists, with the password that was actually stored
+        // (typed or generated), and only if the admin left the welcome email switched on.
+        if (command.SendWelcomeEmail)
+        {
+            await _welcomeEmail.SendAsync(command.Email, command.FirstName, command.Password, cancellationToken);
+        }
 
         return new CreateManagerResult(userId);
     }

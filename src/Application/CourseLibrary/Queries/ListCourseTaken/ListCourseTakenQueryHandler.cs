@@ -39,7 +39,7 @@ public class ListCourseTakenQueryHandler
 
             onlyUserId = caller.DbUserId.Value;
         }
-        else if (caller.IsSuperAdmin)
+        else if (caller.IsPlatformAdmin)
         {
             // Unrestricted - restrictToCompanyIds stays null.
         }

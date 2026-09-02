@@ -31,6 +31,11 @@ public static class Permissions
 
         public const int ViewCredentialsId = 7;
         public const string ViewCredentials = "Students.ViewCredentials";
+
+        /// <summary>Bulk Employee Roster Import. Grantable, so a Manager or Company Admin can be
+        /// allowed to import their own roster without being handed anything else.</summary>
+        public const int ImportId = 8;
+        public const string Import = "Students.Import";
     }
 
     public static class Managers
@@ -58,6 +63,12 @@ public static class Permissions
 
         public const int CreateId = 22;
         public const string Create = "Companies.Create";
+
+        /// <summary>Editing an existing company: details, logo, licence, activate/deactivate. These
+        /// actions previously had no key at all and were hardcoded to SuperAdmin, so they could not
+        /// be delegated to anyone.</summary>
+        public const int ManageId = 23;
+        public const string Manage = "Companies.Manage";
     }
 
     public static class Roles
@@ -67,6 +78,13 @@ public static class Permissions
 
         public const int ManageId = 32;
         public const string Manage = "Roles.Manage";
+
+        /// <summary>Granting or revoking a ROLE on another user (the role-assignment dialog on the
+        /// Manager/Employee screens) - distinct from Manage, which is about editing the roles
+        /// themselves and their permission sets. Holding this shows the assign icon and allows the
+        /// change; without it the icon is hidden and the API refuses.</summary>
+        public const int AssignId = 33;
+        public const string Assign = "Roles.Assign";
     }
 
     public static class Faq
@@ -166,5 +184,35 @@ public static class Permissions
 
         public const int ImportId = 115;
         public const string Import = "LearningTranscript.Import";
+    }
+
+    /// <summary>
+    /// The Settings area. View is the gate on the section itself - without it none of the settings
+    /// pages are reachable at all; the rest control the individual pages, so a role can be given,
+    /// say, Email History without also being handed the SMTP credentials screen.
+    ///
+    /// Roles/FAQ/Contact Info pages inside Settings are deliberately NOT re-declared here - they
+    /// already have their own permissions (Roles.*, Faq.*, ContactInfo.*) and adding a second key
+    /// for the same screen would mean two switches that disagree.
+    /// </summary>
+    public static class Settings
+    {
+        public const int ViewId = 121;
+        public const string View = "Settings.View";
+
+        public const int ManageEmailId = 122;
+        public const string ManageEmail = "Settings.ManageEmail";
+
+        public const int ViewEmailHistoryId = 123;
+        public const string ViewEmailHistory = "Settings.ViewEmailHistory";
+
+        public const int ManageNotificationsId = 124;
+        public const string ManageNotifications = "Settings.ManageNotifications";
+
+        public const int ManageScraperId = 125;
+        public const string ManageScraper = "Settings.ManageScraper";
+
+        public const int ManageAppSettingsId = 126;
+        public const string ManageAppSettings = "Settings.ManageAppSettings";
     }
 }

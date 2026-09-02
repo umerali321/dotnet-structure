@@ -20,12 +20,12 @@ public class GetManagerByIdQueryHandler
 
     public async Task<ManagerListItemDto?> Handle(int userId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can view managers.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }

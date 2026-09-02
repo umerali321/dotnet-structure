@@ -28,6 +28,7 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             Seed(Permissions.Students.ManagePasswordId, Permissions.Students.ManagePassword, "Employees", "Reset Employee Password"),
             Seed(Permissions.Students.AssignManagerId, Permissions.Students.AssignManager, "Employees", "Assign Employee to a Manager"),
             Seed(Permissions.Students.ViewCredentialsId, Permissions.Students.ViewCredentials, "Employees", "View Employee Login Credentials"),
+            Seed(Permissions.Students.ImportId, Permissions.Students.Import, "Employees", "Import Employee Roster"),
 
             Seed(Permissions.Managers.ViewId, Permissions.Managers.View, "Managers", "View Managers"),
             Seed(Permissions.Managers.CreateId, Permissions.Managers.Create, "Managers", "Create Managers"),
@@ -37,9 +38,11 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 
             Seed(Permissions.Companies.ViewId, Permissions.Companies.View, "Companies", "View Companies"),
             Seed(Permissions.Companies.CreateId, Permissions.Companies.Create, "Companies", "Create Companies"),
+            Seed(Permissions.Companies.ManageId, Permissions.Companies.Manage, "Companies", "Edit & Deactivate Companies"),
 
             Seed(Permissions.Roles.ViewId, Permissions.Roles.View, "Roles & Permissions", "View Roles & Permissions"),
             Seed(Permissions.Roles.ManageId, Permissions.Roles.Manage, "Roles & Permissions", "Create & Edit Roles"),
+            Seed(Permissions.Roles.AssignId, Permissions.Roles.Assign, "Roles & Permissions", "Assign Roles to Users"),
 
             Seed(Permissions.Faq.ViewId, Permissions.Faq.View, "FAQs", "View FAQs"),
             Seed(Permissions.Faq.CreateId, Permissions.Faq.Create, "FAQs", "Create FAQs"),
@@ -72,7 +75,14 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             Seed(Permissions.LearningTranscript.ViewReportId, Permissions.LearningTranscript.ViewReport, "Learning Transcript", "View Learning Transcript Report"),
             Seed(Permissions.LearningTranscript.ViewEmployeeTranscriptId, Permissions.LearningTranscript.ViewEmployeeTranscript, "Learning Transcript", "View an Employee's Transcript"),
             Seed(Permissions.LearningTranscript.ExportId, Permissions.LearningTranscript.Export, "Learning Transcript", "Export Learning Transcript Report"),
-            Seed(Permissions.LearningTranscript.ImportId, Permissions.LearningTranscript.Import, "Learning Transcript", "Import Learning Transcript Data")
+            Seed(Permissions.LearningTranscript.ImportId, Permissions.LearningTranscript.Import, "Learning Transcript", "Import Learning Transcript Data"),
+
+            Seed(Permissions.Settings.ViewId, Permissions.Settings.View, "Settings", "Access Settings"),
+            Seed(Permissions.Settings.ManageEmailId, Permissions.Settings.ManageEmail, "Settings", "Manage Email Settings"),
+            Seed(Permissions.Settings.ViewEmailHistoryId, Permissions.Settings.ViewEmailHistory, "Settings", "View Email History"),
+            Seed(Permissions.Settings.ManageNotificationsId, Permissions.Settings.ManageNotifications, "Settings", "Manage Notification Service"),
+            Seed(Permissions.Settings.ManageScraperId, Permissions.Settings.ManageScraper, "Settings", "Manage Report Scraper"),
+            Seed(Permissions.Settings.ManageAppSettingsId, Permissions.Settings.ManageAppSettings, "Settings", "Manage App Settings")
         );
     }
 

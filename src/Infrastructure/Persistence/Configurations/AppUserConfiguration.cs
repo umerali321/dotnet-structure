@@ -19,6 +19,13 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.Property(x => x.Username).HasMaxLength(320);
         builder.Property(x => x.PasswordHash).HasMaxLength(500);
 
+        // Existing rows predate this column; the migration backfills them to "Legacy" and the
+        // default keeps any insert path that doesn't set it explicitly honest rather than blank.
+        builder.Property(x => x.CreationSource)
+            .HasMaxLength(CreationSource.MaxLength)
+            .IsRequired()
+            .HasDefaultValue(CreationSource.Manual);
+
         // Existing columns are datetime2 (no offset) - see DateTimeOffsetToDateTime2Converter.
         builder.Property(x => x.CreatedAt).HasConversion(DateTimeOffsetToDateTime2Converter.Instance);
         builder.Property(x => x.UpdatedAt).HasConversion(NullableDateTimeOffsetToDateTime2Converter.Instance);

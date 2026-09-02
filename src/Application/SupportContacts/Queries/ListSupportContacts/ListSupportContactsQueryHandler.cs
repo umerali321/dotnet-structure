@@ -26,7 +26,7 @@ public class ListSupportContactsQueryHandler
     {
         IReadOnlyCollection<int>? restrictToCompanyIds;
 
-        if (caller.IsSuperAdmin)
+        if (caller.IsPlatformAdmin)
         {
             restrictToCompanyIds = query.CompanyId is null ? null : [query.CompanyId.Value];
         }

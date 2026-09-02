@@ -496,3 +496,7 @@ src/API/appsettings.Production.json
 tools/skillport-scraper/output/
 tools/skillport-scraper/__pycache__/
 tools/**/*.pyc
+
+# One-off database deployment scripts. Generated from the EF migrations for a specific
+# release and run by hand against a server - not source of truth, and not something to push.
+deploy/

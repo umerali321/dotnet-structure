@@ -44,7 +44,7 @@ public class UpdateManagerCommandHandler
             throw new UnauthorizedAccessException("You do not have permission to update managers.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }

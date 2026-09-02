@@ -41,7 +41,7 @@ public class ListStudentsQueryHandler
 
         IReadOnlyCollection<int>? restrictToCompanyIds;
 
-        if (caller.IsSuperAdmin)
+        if (caller.HasGlobalCompanyScope)
         {
             restrictToCompanyIds = query.CompanyId.HasValue ? [query.CompanyId.Value] : null;
         }

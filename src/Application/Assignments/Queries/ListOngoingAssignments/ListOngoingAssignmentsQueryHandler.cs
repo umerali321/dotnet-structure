@@ -36,7 +36,7 @@ public class ListOngoingAssignmentsQueryHandler
 
         IReadOnlyCollection<int>? restrictToCompanyIds;
 
-        if (caller.IsSuperAdmin)
+        if (caller.IsPlatformAdmin)
         {
             restrictToCompanyIds = query.CompanyId.HasValue ? [query.CompanyId.Value] : null;
         }

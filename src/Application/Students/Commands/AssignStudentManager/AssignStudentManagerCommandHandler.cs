@@ -36,7 +36,7 @@ public class AssignStudentManagerCommandHandler
         var studentCompanies = await _userDirectory.GetActiveCompanyRolesAsync(studentUserId, cancellationToken);
 
         IReadOnlyCollection<int>? managedCompanyIds = null;
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             managedCompanyIds = await StudentAuthorization.GetManagedCompanyIdsAsync(caller, _userDirectory, cancellationToken);
             if (!studentCompanies.Any(c => managedCompanyIds.Contains(c.CompanyId)))

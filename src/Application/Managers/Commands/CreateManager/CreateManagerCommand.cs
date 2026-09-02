@@ -15,4 +15,8 @@ public record CreateManagerCommand(
     /// <summary>Also grants this brand-new person an Employee role at the same company, in the
     /// same request - equivalent to creating the Manager then separately calling
     /// AddEmployeeRoleCommand for the same userId.</summary>
-    bool AlsoCreateEmployee = false);
+    bool AlsoCreateEmployee = false,
+    /// <summary>Email this person their sign-in details. Defaults to TRUE because that is what this
+    /// endpoint has always done - flipping it to false by default would silently stop welcome emails
+    /// for every existing caller. The dialog exposes it so an admin can opt out per account.</summary>
+    bool SendWelcomeEmail = true);

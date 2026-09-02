@@ -24,7 +24,12 @@ public static class DashboardAuthorization
         CancellationToken cancellationToken,
         bool allowManager = false)
     {
-        if (caller.IsSuperAdmin)
+        // SystemAdmin included (IsPlatformAdmin): it is defined as an unrestricted platform
+        // administrator, so it sees the same cross-company totals a SuperAdmin does. This was
+        // previously narrowed to SuperAdmin only, back when a SystemAdmin started with no
+        // permissions at all and the dashboard - having no permission of its own - would otherwise
+        // have leaked every company's numbers to an account that had been granted nothing.
+        if (caller.IsPlatformAdmin)
         {
             return requestedCompanyId.HasValue ? [requestedCompanyId.Value] : null;
         }

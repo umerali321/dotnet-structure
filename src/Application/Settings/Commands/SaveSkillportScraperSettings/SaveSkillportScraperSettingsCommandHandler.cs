@@ -1,5 +1,7 @@
 using FluentValidation;
+using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Application.Settings.DTOs;
 using SkillsetsBackend.Application.Settings.Interfaces;
 using SkillsetsBackend.Domain.Skillsoft;
@@ -11,20 +13,26 @@ public class SaveSkillportScraperSettingsCommandHandler
 {
     private readonly IValidator<SaveSkillportScraperSettingsCommand> _validator;
     private readonly ISkillportScraperSettingsRepository _repository;
+    private readonly IPermissionService _permissionService;
 
     public SaveSkillportScraperSettingsCommandHandler(
-        IValidator<SaveSkillportScraperSettingsCommand> validator, ISkillportScraperSettingsRepository repository)
+        IValidator<SaveSkillportScraperSettingsCommand> validator, ISkillportScraperSettingsRepository repository,
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
+        _permissionService = permissionService;
     }
 
     public async Task<SkillportScraperSettingsDto> Handle(
         SaveSkillportScraperSettingsCommand command, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin)
+        // Permission-driven, not a hardcoded SuperAdmin check - this is what lets a SuperAdmin
+        // hand a SystemAdmin exactly this screen and nothing else. SuperAdmin still passes:
+        // IPermissionService returns true for them unconditionally.
+        if (!await _permissionService.HasPermissionAsync(caller, Permissions.Settings.ManageScraper, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin can change Skillport scraper settings.");
+            throw new UnauthorizedAccessException("You do not have permission to change the report scraper settings.");
         }
 
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);

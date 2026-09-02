@@ -18,7 +18,7 @@ public class ListPermissionsQueryHandler
 
     public async Task<IReadOnlyList<PermissionDto>> Handle(CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and Company Admins can view the permission catalog.");
         }

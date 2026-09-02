@@ -24,6 +24,16 @@ public static class CompanyContextResolver
             .Select(x => new CompanyDto(x.CompanyId, x.CompanyCode, x.CompanyName, Roles.Normalize(x.RoleName)))
             .ToList();
 
+        // A SystemAdmin has no company, exactly like a SuperAdmin - it administers all of them. The
+        // UserCompanyRoles row it carries exists only so a role can be resolved here at all; surfacing
+        // that company would put a specific company's name in the header and imply a membership that
+        // does not exist. Returned with no current company and no company list, so nothing offers to
+        // switch into it either.
+        if (companies.Any(c => c.Role == Roles.SystemAdmin))
+        {
+            return (Roles.SystemAdmin, null, []);
+        }
+
         if (companies.Count == 1)
         {
             var only = companies[0];

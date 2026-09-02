@@ -16,7 +16,7 @@ public static class ActingAsResolver
     public static async Task<int> ResolveCreatorUserIdAsync(
         CallerContext caller, int? actingAsUserId, int companyId, IUserDirectory userDirectory, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             return caller.DbUserId ?? throw new UnauthorizedAccessException("Only a Manager or Company Admin account can perform this action.");
         }

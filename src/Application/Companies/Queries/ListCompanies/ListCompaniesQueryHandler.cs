@@ -14,27 +14,41 @@ namespace SkillsetsBackend.Application.Companies.Queries.ListCompanies;
 /// exposed here for a consistent lookup shape (e.g. the Company Admins grid's logo lookup on the
 /// customer app). Students have no legitimate use for this list.
 /// </summary>
-public class ListCompaniesQueryHandler(ICompanyQueryService companyQueryService, IUserDirectory userDirectory)
+public class ListCompaniesQueryHandler(
+    ICompanyQueryService companyQueryService,
+    IUserDirectory userDirectory,
+    IPermissionService permissionService)
 {
     public async Task<PaginatedList<CompanyListItemDto>> Handle(
         ListCompaniesQuery query,
         CallerContext caller,
         CancellationToken cancellationToken = default)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        // A SystemAdmin must actually hold Companies.View - it is not enough to be a SystemAdmin.
+        // Manager/CompanyAdmin keep their existing role-based access deliberately: nothing currently
+        // grants them Companies.View, and they need this list for their own company pickers, so
+        // requiring the permission of everyone would break screens that work today.
+        if (caller.IsSystemAdmin)
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can list companies.");
+            if (!await permissionService.HasPermissionAsync(caller, Permissions.Companies.View, cancellationToken))
+            {
+                throw new UnauthorizedAccessException("You do not have permission to view companies.");
+            }
+        }
+        else if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to list companies.");
         }
 
-        var restrictToCompanyIds = caller.IsSuperAdmin
+        // A SystemAdmin administers every company too, so it is not narrowed to its carrier company.
+        var restrictToCompanyIds = caller.HasGlobalCompanyScope
             ? null
             : await StudentAuthorization.GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);
 
-        // Only SuperAdmin's explicit request to include inactive companies (the company-management
-        // screen) is honored - every other caller keeps seeing active-only, unchanged. Same for the
-        // status filter - it's a company-management-screen concept.
-        var includeInactive = caller.IsSuperAdmin && query.IncludeInactive;
-        var statusFilter = caller.IsSuperAdmin ? query.StatusFilter : null;
+        // Only the company-management screen (a globally scoped admin) may ask for inactive
+        // companies or filter by status - every other caller keeps seeing active-only, unchanged.
+        var includeInactive = caller.HasGlobalCompanyScope && query.IncludeInactive;
+        var statusFilter = caller.HasGlobalCompanyScope ? query.StatusFilter : null;
         var page = Math.Max(1, query.Page);
         var pageSize = query.PageSize <= 0 ? 100 : Math.Min(5000, query.PageSize);
 

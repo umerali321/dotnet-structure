@@ -164,24 +164,10 @@ public class LoginCommandHandler
             "[LOGIN] requestId={RequestId} userId={UserId} role={Role} companyCount={CompanyCount} token-created=true returning-status=200",
             requestId, user.UserId, role, companies.Count);
 
-        // Employees only - a sign-in alert is there to let the account holder spot access they don't
-        // recognise, which matters for the many accounts whose password is a short code an admin set
-        // for them. Admin/manager sign-ins are frequent and routine, so alerting on those would just
-        // train people to ignore the mail. Gated by the SuperAdmin switch inside the dispatcher, and
-        // never allowed to fail the login itself.
-        if (Roles.Normalize(role) == Roles.Student && user.Email is not null)
-        {
-            try
-            {
-                await _notifications.SendLoginAsync(
-                    new LoginNotification(user.Email, user.FirstName, DateTimeOffset.UtcNow), cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send login notification for user {UserId}", user.UserId);
-            }
-        }
-
+        // The sign-in notification email was removed at the customer's request. Sign-ins are still
+        // recorded in LoginActivityLogs (System Logs), which is where access is reviewed - the email
+        // added nothing that page does not already show, and generated one message per employee
+        // login.
         return result;
     }
 

@@ -6,6 +6,7 @@ using SkillsetsBackend.Domain.CourseLibrary;
 using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Domain.LearningTranscript;
 using SkillsetsBackend.Domain.Notifications;
+using SkillsetsBackend.Domain.RosterImport;
 using SkillsetsBackend.Domain.Skillsoft;
 using SkillsetsBackend.Domain.Support;
 using Microsoft.EntityFrameworkCore;
@@ -78,6 +79,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SmtpSettings> SmtpSettings => Set<SmtpSettings>();
 
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
+
+    public DbSet<RosterImportBatch> RosterImportBatches => Set<RosterImportBatch>();
+
+    public DbSet<RosterImportBatchRow> RosterImportBatchRows => Set<RosterImportBatchRow>();
 
     public DbSet<LearningTranscriptImportBatch> LearningTranscriptImportBatches => Set<LearningTranscriptImportBatch>();
 

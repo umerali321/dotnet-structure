@@ -1,6 +1,8 @@
 using FluentValidation;
 using FluentValidation.Results;
+using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Application.Settings.DTOs;
 using SkillsetsBackend.Application.Settings.Interfaces;
 using SkillsetsBackend.Domain.Communications;
@@ -13,20 +15,26 @@ public class SaveSmtpSettingsCommandHandler
     private readonly IValidator<SaveSmtpSettingsCommand> _validator;
     private readonly ISmtpSettingsRepository _repository;
     private readonly ISecretProtector _secretProtector;
+    private readonly IPermissionService _permissionService;
 
     public SaveSmtpSettingsCommandHandler(
-        IValidator<SaveSmtpSettingsCommand> validator, ISmtpSettingsRepository repository, ISecretProtector secretProtector)
+        IValidator<SaveSmtpSettingsCommand> validator, ISmtpSettingsRepository repository, ISecretProtector secretProtector,
+        IPermissionService permissionService)
     {
         _validator = validator;
         _repository = repository;
         _secretProtector = secretProtector;
+        _permissionService = permissionService;
     }
 
     public async Task<SmtpSettingsDto> Handle(SaveSmtpSettingsCommand command, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin)
+        // Permission-driven, not a hardcoded SuperAdmin check - this is what lets a SuperAdmin
+        // hand a SystemAdmin exactly this screen and nothing else. SuperAdmin still passes:
+        // IPermissionService returns true for them unconditionally.
+        if (!await _permissionService.HasPermissionAsync(caller, Permissions.Settings.ManageEmail, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin can change SMTP settings.");
+            throw new UnauthorizedAccessException("You do not have permission to change SMTP settings.");
         }
 
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);

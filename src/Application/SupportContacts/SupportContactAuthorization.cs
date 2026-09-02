@@ -10,7 +10,7 @@ public static class SupportContactAuthorization
     /// <summary>SuperAdmin: any contact, including global (CompanyId null). Manager: only their own company's contacts - never global.</summary>
     public static async Task EnsureCanManageContactAsync(CallerContext caller, SupportContact contact, IUserDirectory userDirectory, CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        if (caller.IsPlatformAdmin)
         {
             return;
         }

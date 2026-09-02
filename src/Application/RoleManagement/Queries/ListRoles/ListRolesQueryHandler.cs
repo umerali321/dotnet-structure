@@ -16,7 +16,7 @@ public class ListRolesQueryHandler
 
     public async Task<IReadOnlyList<RoleSummaryDto>> Handle(CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and Company Admins can view roles.");
         }

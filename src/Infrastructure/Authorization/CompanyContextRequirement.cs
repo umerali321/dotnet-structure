@@ -20,7 +20,9 @@ public class CompanyContextHandler : AuthorizationHandler<CompanyContextRequirem
 {
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, CompanyContextRequirement requirement)
     {
-        if (context.User.IsInRole(Roles.SuperAdmin))
+        // SystemAdmin too: it is companyless by design, so it never carries a company_id claim and
+        // would fail the check below on every company-scoped endpoint.
+        if (context.User.IsInRole(Roles.SuperAdmin) || context.User.IsInRole(Roles.SystemAdmin))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;

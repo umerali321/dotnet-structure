@@ -218,6 +218,40 @@ public class CompaniesController : ControllerBase
         return Ok(new { logoUrl });
     }
 
+    /// <summary>Clears a company's logo. Uploading could only ever REPLACE one, so a logo added by
+    /// mistake could not be taken off again.
+    ///
+    /// The database row is cleared first and the file deleted afterwards, on purpose: if the delete
+    /// fails, the company is already showing no logo and an orphaned file is harmless. Clearing the
+    /// row only after a successful delete would leave the company pointing at a file that is gone.</summary>
+    [HttpDelete("{id:int}/logo")]
+    public async Task<IActionResult> RemoveLogo(int id, CancellationToken cancellationToken)
+    {
+        await _updateLogoHandler.Handle(id, logoUrl: null, GetCaller(), cancellationToken);
+
+        var webRootPath = _webHostEnvironment.WebRootPath ?? Path.Combine(_webHostEnvironment.ContentRootPath, "wwwroot");
+        var logoDirectory = Path.Combine(webRootPath, "company-logos");
+
+        if (Directory.Exists(logoDirectory))
+        {
+            // The extension depends on what was uploaded, so remove whichever "<id>.*" is there.
+            foreach (var path in Directory.EnumerateFiles(logoDirectory, $"{id}.*"))
+            {
+                try
+                {
+                    System.IO.File.Delete(path);
+                }
+                catch (IOException)
+                {
+                    // A locked or already-removed file must not fail the request - the company has
+                    // no logo either way, which is what was asked for.
+                }
+            }
+        }
+
+        return NoContent();
+    }
+
     /// <summary>SuperAdmin only. Reads an .xlsx/.csv Company Import file and, for every row,
     /// creates or completes the matching Company + Company Admin - see ImportCompaniesCommandHandler
     /// for the full reconciliation logic. Returns a summary plus a per-row result so the admin can

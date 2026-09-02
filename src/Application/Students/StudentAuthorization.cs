@@ -21,7 +21,10 @@ public static class StudentAuthorization
         IStudentRepository studentRepository,
         CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        // HasGlobalCompanyScope, not IsSuperAdmin: a SystemAdmin is not confined to one company
+        // either. This is only about REACH - whether they may do the thing at all is decided by the
+        // permission check in the calling handler.
+        if (caller.HasGlobalCompanyScope)
         {
             return;
         }
@@ -63,7 +66,10 @@ public static class StudentAuthorization
         IStudentRepository studentRepository,
         CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        // HasGlobalCompanyScope, not IsSuperAdmin: a SystemAdmin is not confined to one company
+        // either. This is only about REACH - whether they may do the thing at all is decided by the
+        // permission check in the calling handler.
+        if (caller.HasGlobalCompanyScope)
         {
             return;
         }
@@ -108,7 +114,10 @@ public static class StudentAuthorization
         IUserDirectory userDirectory,
         CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        // HasGlobalCompanyScope, not IsSuperAdmin: a SystemAdmin is not confined to one company
+        // either. This is only about REACH - whether they may do the thing at all is decided by the
+        // permission check in the calling handler.
+        if (caller.HasGlobalCompanyScope)
         {
             return;
         }
@@ -134,7 +143,10 @@ public static class StudentAuthorization
         IUserDirectory userDirectory,
         CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        // HasGlobalCompanyScope, not IsSuperAdmin: a SystemAdmin is not confined to one company
+        // either. This is only about REACH - whether they may do the thing at all is decided by the
+        // permission check in the calling handler.
+        if (caller.HasGlobalCompanyScope)
         {
             return;
         }

@@ -176,7 +176,10 @@ public class LearningTranscriptImportService : ILearningTranscriptImportService
             await using var command = connection.CreateCommand();
             command.CommandText = "dbo.sp_ImportLearningTranscriptBatch";
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = 120; // a full multi-thousand-row import batch can take longer than the 30s default
+            // A real Skillport export is 50,000-100,000 rows. Even with the optimised procedure that
+            // is minutes of legitimate work, and timing out mid-import rolls the whole batch back -
+            // so the ceiling is set by what an honest large import needs, not by what a small one does.
+            command.CommandTimeout = 900;
 
             var rowsParam = command.Parameters.AddWithValue("@Rows", table);
             rowsParam.SqlDbType = SqlDbType.Structured;

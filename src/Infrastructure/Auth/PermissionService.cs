@@ -20,6 +20,10 @@ public class PermissionService : IPermissionService
 
     public async Task<bool> HasPermissionAsync(CallerContext caller, string permissionKey, CancellationToken cancellationToken = default)
     {
+        // IsSuperAdmin, NOT IsPlatformAdmin. SystemAdmin is fully RBAC: it holds exactly what its
+        // role was granted in Settings > Roles & Permissions, nothing more. Granting it a blanket
+        // bypass made every Settings tab appear for a SystemAdmin that had only been given
+        // "View Email History".
         if (caller.IsSuperAdmin)
         {
             return true;
@@ -84,6 +88,8 @@ public class PermissionService : IPermissionService
 
     public async Task<IReadOnlyList<string>> GetEffectivePermissionKeysForRoleAsync(string normalizedRoleName, CancellationToken cancellationToken = default)
     {
+        // SuperAdmin only. SystemAdmin deliberately falls through to the normal RolePermissions
+        // lookup below so its Roles & Permissions checkboxes actually govern what it can see and do.
         if (normalizedRoleName == Roles.SuperAdmin)
         {
             return await GetAllPermissionKeysAsync(cancellationToken);

@@ -27,7 +27,7 @@ public class ListSkillTraxQueryHandler
             throw new UnauthorizedAccessException("You do not have permission to view SkillTrax.");
         }
 
-        if (caller.IsSuperAdmin)
+        if (caller.IsPlatformAdmin)
         {
             return await _queryService.ListAsync(null, cancellationToken);
         }

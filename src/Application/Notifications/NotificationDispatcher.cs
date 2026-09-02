@@ -12,11 +12,6 @@ public record AssignmentNotification(
     DateOnly StartDate,
     DateOnly EndDate);
 
-public record LoginNotification(
-    string ToEmail,
-    string? FirstName,
-    DateTimeOffset SignedInAt);
-
 public record ReminderNotification(
     string ToEmail,
     string? FirstName,
@@ -97,33 +92,9 @@ public class NotificationDispatcher
         return await SendAsync(model.ToEmail, model.FirstName, $"New training assigned: {titleLine}", body, "AssignmentCreated", cancellationToken);
     }
 
-    public async Task<bool> SendLoginAsync(LoginNotification model, CancellationToken cancellationToken = default)
-    {
-        if (!await IsEnabledAsync(s => s.LoginNotificationsEnabled, "login", cancellationToken))
-        {
-            return false;
-        }
-
-        var details = new List<EmailLayout.DetailRow>
-        {
-            new("Account", model.ToEmail),
-            new("Signed in", model.SignedInAt.ToString("dddd, MMMM d, yyyy 'at' h:mm tt 'UTC'")),
-        };
-
-        var body = EmailLayout.Render(
-            kicker: "New sign-in",
-            preheader: $"Your SkillSets account was signed in on {model.SignedInAt:MMM d, yyyy}",
-            greeting: $"Hi {FirstNameOrDefault(model.FirstName)},",
-            intro: "Your SkillSets account was just signed in to. If this was you, no action is needed.",
-            details: details,
-            ctaLabel: null,
-            ctaUrl: null,
-            footerNote:
-                "If you don't recognise this sign-in, please reply to this email straight away so our " +
-                "support team can secure your account.");
-
-        return await SendAsync(model.ToEmail, model.FirstName, "New sign-in to your SkillSets account", body, "LoginNotification", cancellationToken);
-    }
+    // SendLoginAsync was removed at the customer's request - the sign-in notification email is gone.
+    // Sign-ins are still recorded in LoginActivityLogs and visible under System Logs, which is where
+    // access gets reviewed; the email duplicated that while sending one message per employee login.
 
     public async Task<bool> SendReminderAsync(ReminderNotification model, CancellationToken cancellationToken = default)
     {

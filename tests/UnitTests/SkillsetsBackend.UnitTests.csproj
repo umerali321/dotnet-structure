@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Domain\SkillsetsBackend.Domain.csproj" />
     <ProjectReference Include="..\..\src\Application\SkillsetsBackend.Application.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\SkillsetsBackend.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

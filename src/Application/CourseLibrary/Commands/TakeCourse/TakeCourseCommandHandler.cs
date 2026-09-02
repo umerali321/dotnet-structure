@@ -67,31 +67,26 @@ public class TakeCourseCommandHandler
             // the prior completed record's history instead of reactivating it in place.
         }
 
-        var activeForUser = await _repository.FindActiveByUserAsync(userId, cancellationToken);
-        if (activeForUser is not null)
-        {
-            if (!command.CancelActive)
-            {
-                var activeCourse = await _courseLibraryQueryService.GetCourseDetailAsync(activeForUser.CourseId, cancellationToken);
-                var activeTitle = activeCourse?.CourseTitle ?? "another course";
-                throw new ConflictException($"You already have an active course: {activeTitle}. Complete it before starting a new one.");
-            }
-
-            // The student chose "cancel my current course and start this one" and confirmed it.
-            // Cancelled, not completed - see CourseTaken.Cancel. This also has to clear before the
-            // insert below, or the filtered unique index on "one active row per user" rejects it.
-            activeForUser.Cancel();
-            await _repository.SaveChangesAsync(cancellationToken);
-        }
-
+        // A student may have as many courses in progress at once as they like.
+        //
+        // The old rule ("finish your current course before starting another") was removed at the
+        // customer's request, for two reasons that make it unworkable rather than merely strict:
+        //   1. Completion comes from the Skillport usage report, which can lag by up to two days.
+        //      A course the student genuinely finished still reads "In Progress" until the next
+        //      import, so the rule blocked people on the strength of stale data.
+        //   2. Nothing about the 30-day session is meant to limit how many courses run at once.
+        //
+        // Removing this also removed the need for the "Cancel Current Lab / Continue Current Lab"
+        // prompt - there is no longer a current lab to cancel. CancelActive is still accepted on the
+        // command so existing callers keep working; it simply has nothing left to do.
         var courseTaken = CourseTaken.Create(userId, command.CourseId);
 
         var added = await _repository.TryAddAsync(courseTaken, cancellationToken);
         if (!added)
         {
-            // A concurrent request won the race - the filtered unique index is the real
-            // guarantee here, the check above is just for a fast, friendly error message.
-            throw new ConflictException("This course could not be started - you may already have an active course.");
+            // No longer about an active course - the only way this fails now is a genuine
+            // concurrent double-submit of the SAME course by the same student.
+            throw new ConflictException("This course could not be started. Please try again.");
         }
 
         var createdDto = await _repository.GetDtoAsync(courseTaken.CourseTakenId, cancellationToken);

@@ -16,7 +16,7 @@ public class GetManagerCompaniesQueryHandler
 
     public async Task<IReadOnlyList<ManagerCompanyDto>> Handle(int userId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can view manager companies.");
         }

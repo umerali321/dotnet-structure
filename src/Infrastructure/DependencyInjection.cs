@@ -10,7 +10,9 @@ using SkillsetsBackend.Infrastructure.Persistence;
 using SkillsetsBackend.Application.Students.Interfaces;
 using SkillsetsBackend.Infrastructure.Students;
 using SkillsetsBackend.Application.Companies.Interfaces;
+using SkillsetsBackend.Application.RosterImport.Interfaces;
 using SkillsetsBackend.Infrastructure.Companies;
+using SkillsetsBackend.Infrastructure.RosterImport;
 using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Infrastructure.Managers;
 using SkillsetsBackend.Application.Faqs.Interfaces;
@@ -133,6 +135,8 @@ public static class DependencyInjection
         services.AddScoped<ICompanyQueryService, CompanyQueryService>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<IImportFileParser, ExcelCsvImportFileParser>();
+        services.AddScoped<IRosterImportFileParser, RosterImportFileParser>();
+        services.AddScoped<IRosterImportRepository, RosterImportRepository>();
         services.AddScoped<IManagerQueryService, ManagerQueryService>();
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IFaqRepository, FaqRepository>();

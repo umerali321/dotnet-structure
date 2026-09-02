@@ -16,7 +16,7 @@ public class GetRoleByIdQueryHandler
 
     public async Task<RoleDto?> Handle(byte roleId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin and Company Admins can view a role's permissions.");
         }

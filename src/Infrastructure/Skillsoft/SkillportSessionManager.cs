@@ -36,7 +36,19 @@ public class SkillportSessionManager : ISkillportSessionService
 
         if (session is not null && session.IsActive(today))
         {
-            return new SkillportSessionStatus(true, false, false, session.StartDate, session.EndDate);
+            // "Active" has to mean launchable. The redirect's credentials come from
+            // ActiveLibraryCards, so a session row without a usable card is a button that dead-ends
+            // on Skillport's login page - reported as "I'm signed in to SkillSets but Skillport asks
+            // me to sign in again".
+            //
+            // Reporting it as NOT active sends the dashboard down the start-session path, and
+            // EnsureActiveInternalAsync repairs the missing entitlement in place (same username, so
+            // no history is lost). The user just sees it work.
+            var usableCard = await _cardResolver.TryResolveAsync(userId, companyId, cancellationToken);
+            if (usableCard is not null)
+            {
+                return new SkillportSessionStatus(true, false, false, session.StartDate, session.EndDate);
+            }
         }
 
         if (session is not null && session.IsExpired(today))
@@ -80,7 +92,45 @@ public class SkillportSessionManager : ISkillportSessionService
 
         if (session is not null && session.IsActive(today))
         {
-            return new SkillsoftProvisionResult(true, null);
+            // An active session row is NOT on its own enough to launch.
+            //
+            // Two separate records have to agree, and they can drift apart:
+            //   dbo.SkillportSessions  - our 30-day focus-session clock, what the dashboard shows.
+            //   dbo.ActiveLibraryCards - the Skillport-side entitlement, and the ONLY place the
+            //                            username/password in the SSO redirect comes from.
+            //
+            // This used to return success on the session row alone. When the entitlement had
+            // expired or gone missing underneath it, the dashboard still offered "Access the course
+            // library", and the redirect then handed Skillport credentials it would not accept - so
+            // the user landed on Skillport's own login page with no explanation. That is the
+            // reported symptom: signed in to SkillSets, asked to sign in again by Skillport.
+            var usableCard = await _cardResolver.TryResolveAsync(userId, companyId, cancellationToken);
+            if (usableCard is not null)
+            {
+                return new SkillsoftProvisionResult(true, null);
+            }
+
+            // Re-record the entitlement using the SAME username and password this session already
+            // has, rather than falling through to the "brand-new identity" path below - a new
+            // username would orphan the learner's Skillport history for a problem that is only a
+            // missing entitlement row.
+            var repairUser = await GetUserAsync(userId, cancellationToken);
+            if (repairUser is null)
+            {
+                return new SkillsoftProvisionResult(false, "User not found.");
+            }
+
+            var (repairManagerEmail, repairManagerName) =
+                await _managerResolver.ResolveAsync(userId, companyId, cancellationToken);
+
+            var repairResult = await _provisioningService.RecordEntitlementAsync(
+                new SkillsoftEntitlementRequest(
+                    companyId, session.SkillportUsername, session.SkillportPassword,
+                    repairUser.FirstName, repairUser.LastName, repairUser.Email,
+                    repairManagerEmail ?? repairUser.Email, repairManagerName ?? "Unassigned"),
+                cancellationToken);
+
+            return repairResult;
         }
 
         var user = await GetUserAsync(userId, cancellationToken);

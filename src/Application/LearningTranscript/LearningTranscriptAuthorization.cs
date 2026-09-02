@@ -19,7 +19,7 @@ public static class LearningTranscriptAuthorization
         int? companyIdFilter,
         CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        if (caller.HasGlobalCompanyScope)
         {
             var restrict = companyIdFilter.HasValue ? new[] { companyIdFilter.Value } : null;
             return (restrict, null, null);

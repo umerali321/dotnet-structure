@@ -79,7 +79,7 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> List([FromQuery] ListStudentsRequest request, CancellationToken cancellationToken)
     {
         var query = new ListStudentsQuery(
-            request.Page, request.PageSize, request.Search, request.CompanyId,
+            request.Page, request.PageSize, request.ToSearchCriteria(), request.CompanyId,
             request.StudentType, request.IsActive, request.SortBy, request.SortDescending);
 
         var result = await _listHandler.Handle(query, GetCaller(), cancellationToken);
@@ -92,7 +92,7 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> Export([FromQuery] ListStudentsRequest request, CancellationToken cancellationToken)
     {
         var query = new ListStudentsQuery(
-            1, ListStudentsQueryHandler.MaxPageSize, request.Search, request.CompanyId,
+            1, ListStudentsQueryHandler.MaxPageSize, request.ToSearchCriteria(), request.CompanyId,
             request.StudentType, request.IsActive, request.SortBy, request.SortDescending);
 
         var result = await _listHandler.Handle(query, GetCaller(), cancellationToken);
@@ -246,7 +246,19 @@ public class ListStudentsRequest
 
     public int PageSize { get; set; } = 50;
 
+    // One parameter per "Search By" choice; the client sends only the one that was picked. The old
+    // single `Search` OR'd '%term%' across seven expressions including a correlated EXISTS over
+    // companies - 2,682 ms on this database. See SearchCriteria.
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    public string? Company { get; set; }
+
+    /// <summary>Legacy generic search, kept so an older client keeps working. Treated as a NAME
+    /// search rather than a scan of every column.</summary>
     public string? Search { get; set; }
+
+    public SearchCriteria? ToSearchCriteria() =>
+        SearchCriteria.From(name: Name ?? Search, email: Email, company: Company);
 
     public int? CompanyId { get; set; }
 

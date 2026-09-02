@@ -52,7 +52,7 @@ public class ChangeManagerPasswordCommandHandler
             throw new UnauthorizedAccessException("You do not have permission to change manager passwords.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageManagerAsync(caller, userId, _userDirectory, cancellationToken);
         }

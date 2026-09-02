@@ -111,7 +111,8 @@ public class ImportCompaniesCommandHandler
                         parsed.Street1, parsed.Street2, parsed.City, parsed.State, parsed.Zip,
                         parsed.PaymentForm, parsed.TotalPayment, parsed.PurchaseDate);
                     var admin = AppUser.CreateStudent(
-                        parsed.Email!, phone: null, parsed.AdminFirstName!, parsed.AdminLastName!, parsed.Email!, GenerateRandomPassword());
+                        parsed.Email!, phone: null, parsed.AdminFirstName!, parsed.AdminLastName!, parsed.Email!, GenerateRandomPassword(),
+                        CreationSource.CompanyImport);
 
                     await _companyRepository.CreateCompanyWithAdminAsync(company, admin, cancellationToken);
 
@@ -191,7 +192,8 @@ public class ImportCompaniesCommandHandler
                     }
                     else
                     {
-                        var newAdmin = AppUser.CreateStudent(parsed.Email, phone: null, parsed.AdminFirstName, parsed.AdminLastName, parsed.Email, GenerateRandomPassword());
+                        var newAdmin = AppUser.CreateStudent(parsed.Email, phone: null, parsed.AdminFirstName, parsed.AdminLastName, parsed.Email, GenerateRandomPassword(),
+                            CreationSource.CompanyImport);
                         await _managerRepository.CreateManagerAsync(newAdmin, existing.CompanyId, startDate: null, Roles.CompanyAdmin, cancellationToken);
                     }
 

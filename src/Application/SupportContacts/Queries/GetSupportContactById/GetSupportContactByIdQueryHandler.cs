@@ -20,7 +20,7 @@ public class GetSupportContactByIdQueryHandler
 
     public async Task<SupportContactDto?> Handle(int supportContactId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can manage contacts.");
         }
@@ -31,7 +31,7 @@ public class GetSupportContactByIdQueryHandler
             return null;
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             if (contact.CompanyId is null)
             {

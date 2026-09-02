@@ -20,7 +20,7 @@ public class GetFaqByIdQueryHandler
 
     public async Task<FaqDto?> Handle(int faqId, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
+        if (!caller.IsPlatformAdmin && caller.Role != Roles.Manager && caller.Role != Roles.CompanyAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin, company managers, and company admins can manage FAQs.");
         }
@@ -31,7 +31,7 @@ public class GetFaqByIdQueryHandler
             return null;
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             if (faq.CompanyId is null)
             {

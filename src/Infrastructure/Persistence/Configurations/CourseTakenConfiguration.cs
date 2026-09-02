@@ -15,13 +15,13 @@ public class CourseTakenConfiguration : IEntityTypeConfiguration<CourseTaken>
         builder.Property(x => x.CourseId).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();
 
-        // The real exclusivity guarantee (the app-layer check in the command handler is just the
-        // fast path / friendly error message) - one active course per student. Deliberately no
-        // equivalent unique index on CourseId alone: a course must be startable by many students
-        // across many companies at the same time (see CourseTaken's class doc for the bug this
-        // used to cause when such a global per-course index existed).
+        // NOT unique any more. This used to be a filtered UNIQUE index enforcing "one active course
+        // per student", which was the real teeth behind that rule - removing only the handler check
+        // would have left the database rejecting the second course with a raw constraint violation.
+        //
+        // Kept as a plain index because the lookup it serves (this student's active courses) is on
+        // every Course Library page load; only the uniqueness is gone.
         builder.HasIndex(x => x.UserId)
-            .IsUnique()
             .HasFilter("[IsActive] = 1")
             .HasDatabaseName("IX_CourseTakens_ActiveUser");
     }

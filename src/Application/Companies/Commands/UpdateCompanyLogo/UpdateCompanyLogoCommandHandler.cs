@@ -16,7 +16,8 @@ public class UpdateCompanyLogoCommandHandler
         _repository = repository;
     }
 
-    public async Task Handle(int companyId, string logoUrl, CallerContext caller, CancellationToken cancellationToken)
+    /// <param name="logoUrl">Null clears the logo - see CompaniesController.RemoveLogo.</param>
+    public async Task Handle(int companyId, string? logoUrl, CallerContext caller, CancellationToken cancellationToken)
     {
         if (!caller.IsSuperAdmin)
         {

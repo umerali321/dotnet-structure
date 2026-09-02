@@ -10,7 +10,7 @@ public static class FaqAuthorization
     /// <summary>SuperAdmin: any FAQ, including global (CompanyId null). Manager: only their own company's FAQs - never global.</summary>
     public static async Task EnsureCanManageFaqAsync(CallerContext caller, Faq faq, IUserDirectory userDirectory, CancellationToken cancellationToken)
     {
-        if (caller.IsSuperAdmin)
+        if (caller.IsPlatformAdmin)
         {
             return;
         }

@@ -1,4 +1,6 @@
+using SkillsetsBackend.Application.Auth.Interfaces;
 using SkillsetsBackend.Application.Common;
+using SkillsetsBackend.Domain.Identity;
 using SkillsetsBackend.Application.Settings.DTOs;
 using SkillsetsBackend.Application.Settings.Interfaces;
 
@@ -7,17 +9,23 @@ namespace SkillsetsBackend.Application.Settings.Queries.GetSkillportScraperSetti
 public class GetSkillportScraperSettingsQueryHandler
 {
     private readonly ISkillportScraperSettingsRepository _repository;
+    private readonly IPermissionService _permissionService;
 
-    public GetSkillportScraperSettingsQueryHandler(ISkillportScraperSettingsRepository repository)
+    public GetSkillportScraperSettingsQueryHandler(ISkillportScraperSettingsRepository repository,
+        IPermissionService permissionService)
     {
         _repository = repository;
+        _permissionService = permissionService;
     }
 
     public async Task<SkillportScraperSettingsDto?> Handle(CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin)
+        // Permission-driven, not a hardcoded SuperAdmin check - this is what lets a SuperAdmin
+        // hand a SystemAdmin exactly this screen and nothing else. SuperAdmin still passes:
+        // IPermissionService returns true for them unconditionally.
+        if (!await _permissionService.HasPermissionAsync(caller, Permissions.Settings.ManageScraper, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin can view Skillport scraper settings.");
+            throw new UnauthorizedAccessException("You do not have permission to view the report scraper settings.");
         }
 
         var settings = await _repository.GetAsync(cancellationToken);

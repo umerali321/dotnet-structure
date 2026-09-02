@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SkillsetsBackend.Application.Common;
 using SkillsetsBackend.Application.Managers.DTOs;
 using SkillsetsBackend.Application.Managers.Interfaces;
 using SkillsetsBackend.Domain.Identity;
@@ -12,7 +13,13 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
     public async Task<PaginatedList<ManagerListItemDto>> ListAsync(ManagerListQueryOptions o, CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var roleNames = o.RoleFilter == "CompanyAdmin" ? new[] { "CompanyAdmin" } : new[] { "Manager", "Admin" };
+        // Any explicit role name filters to exactly that role; null keeps the historical default of
+        // Manager/Admin together. Previously only "CompanyAdmin" was understood and anything else
+        // silently fell back to Manager/Admin - which would have listed the wrong people entirely
+        // for a new role such as SystemAdmin.
+        var roleNames = string.IsNullOrWhiteSpace(o.RoleFilter)
+            ? new[] { "Manager", "Admin" }
+            : new[] { o.RoleFilter };
         var memberships = db.UserCompanyRoles.AsNoTracking()
             .Where(x => x.IsActive && x.Company.IsActive && roleNames.Contains(x.Role.RoleName) && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
 
@@ -28,22 +35,25 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
             query = query.Where(u => u.IsActive == o.IsActive);
         }
 
-        if (!string.IsNullOrWhiteSpace(o.Search))
+        // One named column, prefix first - see SearchCriteria. The previous form OR'd '%term%'
+        // across six expressions and could not use IX_Users_Email or IX_Users_FirstName_LastName
+        // at all.
+        var unsearched = query;
+
+        if (o.Search is { } search)
         {
-            var term = $"%{EscapeLike(o.Search.Trim())}%";
-            query = query.Where(u =>
-                EF.Functions.Like(u.FirstName!, term, "\\") ||
-                EF.Functions.Like(u.LastName!, term, "\\") ||
-                EF.Functions.Like(u.Email!, term, "\\") ||
-                EF.Functions.Like(u.Username!, term, "\\") ||
-                // "First Last" / "Last First" - the individual-field checks above only ever match a
-                // single search token, so a two-word search like "John Smith" never matched either
-                // field on its own even though the person clearly exists.
-                EF.Functions.Like((u.FirstName ?? "") + " " + (u.LastName ?? ""), term, "\\") ||
-                EF.Functions.Like((u.LastName ?? "") + " " + (u.FirstName ?? ""), term, "\\"));
+            query = ApplySearch(unsearched, memberships, search.Field, search.ToPrefixPattern());
         }
 
         var total = await query.CountAsync(ct);
+
+        // Nothing matched as a prefix - retry once with contains, so a mid-string search still
+        // works. Only reached when the fast path came back empty.
+        if (total == 0 && o.Search is { } fallback)
+        {
+            query = ApplySearch(unsearched, memberships, fallback.Field, fallback.ToContainsPattern());
+            total = await query.CountAsync(ct);
+        }
 
 
         var ordered = o.SortBy?.ToLowerInvariant() switch
@@ -127,6 +137,33 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
         var emailLower = email.ToLower();
         return codes.Any(code => activePairs.Contains((code, emailLower)));
     }
+
+    /// <summary>Narrows to ONE field. Written once so the prefix attempt and the contains fallback
+    /// are the same predicate with a different pattern.</summary>
+    private static IQueryable<AppUser> ApplySearch(
+        IQueryable<AppUser> query,
+        IQueryable<UserCompanyRole> memberships,
+        SearchBy field,
+        string term) => field switch
+    {
+        SearchBy.Name => query.Where(u =>
+            EF.Functions.Like(u.FirstName!, term, "\\") ||
+            EF.Functions.Like(u.LastName!, term, "\\") ||
+            EF.Functions.Like((u.FirstName ?? "") + " " + (u.LastName ?? ""), term, "\\") ||
+            EF.Functions.Like((u.LastName ?? "") + " " + (u.FirstName ?? ""), term, "\\")),
+
+        SearchBy.Email => query.Where(u =>
+            EF.Functions.Like(u.Email!, term, "\\") ||
+            EF.Functions.Like(u.Username!, term, "\\")),
+
+        SearchBy.Company => query.Where(u => memberships.Any(x =>
+            x.UserId == u.UserId &&
+            (EF.Functions.Like(x.Company.CompanyName!, term, "\\") ||
+             EF.Functions.Like(x.Company.CompanyCode!, term, "\\")))),
+
+        // Narrow to nothing rather than silently returning the whole list unfiltered.
+        _ => query.Where(_ => false),
+    };
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");

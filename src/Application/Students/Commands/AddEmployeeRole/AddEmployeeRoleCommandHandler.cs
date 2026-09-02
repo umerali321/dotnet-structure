@@ -10,21 +10,26 @@ public class AddEmployeeRoleCommandHandler
 {
     private readonly IStudentRepository _repository;
     private readonly IUserDirectory _userDirectory;
+    private readonly IPermissionService _permissionService;
 
-    public AddEmployeeRoleCommandHandler(IStudentRepository repository, IUserDirectory userDirectory)
+    public AddEmployeeRoleCommandHandler(IStudentRepository repository, IUserDirectory userDirectory, IPermissionService permissionService)
     {
         _repository = repository;
         _userDirectory = userDirectory;
+        _permissionService = permissionService;
     }
 
     public async Task Handle(AddEmployeeRoleCommand command, CallerContext caller, CancellationToken cancellationToken)
     {
-        if (!caller.IsSuperAdmin && caller.Role != Roles.CompanyAdmin)
+        // Roles.Assign, not a hardcoded SuperAdmin/CompanyAdmin pair: whoever is granted
+        // "Assign Roles to Users" can do this, and whoever is not cannot - which is what
+        // makes the assign icon on the Manager/Employee screens meaningful.
+        if (!caller.IsSuperAdmin && !await _permissionService.HasPermissionAsync(caller, Permissions.Roles.Assign, cancellationToken))
         {
-            throw new UnauthorizedAccessException("Only SuperAdmin and CompanyAdmin can grant an Employee role to an existing user.");
+            throw new UnauthorizedAccessException("You do not have permission to assign roles to users.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);
         }

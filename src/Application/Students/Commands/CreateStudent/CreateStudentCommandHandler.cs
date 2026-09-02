@@ -57,7 +57,7 @@ public class CreateStudentCommandHandler
             throw new UnauthorizedAccessException("You do not have permission to create managers.");
         }
 
-        if (!caller.IsSuperAdmin)
+        if (!caller.IsPlatformAdmin)
         {
             await StudentAuthorization.EnsureCanManageCompanyAsync(caller, command.CompanyId, _userDirectory, cancellationToken);
         }
@@ -80,9 +80,12 @@ public class CreateStudentCommandHandler
             await _managerRepository.AddManagerRoleAsync(userId, command.CompanyId, startDate: null, cancellationToken);
         }
 
-        // Only once the account genuinely exists - and with the password that was actually stored,
-        // whether the admin typed it or let the form generate one.
-        await _welcomeEmail.SendAsync(command.Email, command.FirstName, command.Password, cancellationToken);
+        // Only once the account genuinely exists, with the password that was actually stored
+        // (typed or generated), and only if the admin left the welcome email switched on.
+        if (command.SendWelcomeEmail)
+        {
+            await _welcomeEmail.SendAsync(command.Email, command.FirstName, command.Password, cancellationToken);
+        }
 
         return new CreateStudentResult(userId);
     }

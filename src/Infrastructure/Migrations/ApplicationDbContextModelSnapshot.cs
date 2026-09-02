@@ -469,7 +469,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasKey("CourseTakenId");
 
                     b.HasIndex("UserId")
-                        .IsUnique()
                         .HasDatabaseName("IX_CourseTakens_ActiveUser")
                         .HasFilter("[IsActive] = 1");
 
@@ -568,6 +567,13 @@ namespace SkillsetsBackend.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CreationSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Manual");
 
                     b.Property<string>("Email")
                         .HasMaxLength(320)
@@ -829,6 +835,13 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         },
                         new
                         {
+                            PermissionId = 8,
+                            Category = "Employees",
+                            Description = "Import Employee Roster",
+                            PermissionKey = "Students.Import"
+                        },
+                        new
+                        {
                             PermissionId = 11,
                             Category = "Managers",
                             Description = "View Managers",
@@ -878,6 +891,13 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         },
                         new
                         {
+                            PermissionId = 23,
+                            Category = "Companies",
+                            Description = "Edit & Deactivate Companies",
+                            PermissionKey = "Companies.Manage"
+                        },
+                        new
+                        {
                             PermissionId = 31,
                             Category = "Roles & Permissions",
                             Description = "View Roles & Permissions",
@@ -889,6 +909,13 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                             Category = "Roles & Permissions",
                             Description = "Create & Edit Roles",
                             PermissionKey = "Roles.Manage"
+                        },
+                        new
+                        {
+                            PermissionId = 33,
+                            Category = "Roles & Permissions",
+                            Description = "Assign Roles to Users",
+                            PermissionKey = "Roles.Assign"
                         },
                         new
                         {
@@ -1064,6 +1091,48 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                             Category = "Learning Transcript",
                             Description = "Import Learning Transcript Data",
                             PermissionKey = "LearningTranscript.Import"
+                        },
+                        new
+                        {
+                            PermissionId = 121,
+                            Category = "Settings",
+                            Description = "Access Settings",
+                            PermissionKey = "Settings.View"
+                        },
+                        new
+                        {
+                            PermissionId = 122,
+                            Category = "Settings",
+                            Description = "Manage Email Settings",
+                            PermissionKey = "Settings.ManageEmail"
+                        },
+                        new
+                        {
+                            PermissionId = 123,
+                            Category = "Settings",
+                            Description = "View Email History",
+                            PermissionKey = "Settings.ViewEmailHistory"
+                        },
+                        new
+                        {
+                            PermissionId = 124,
+                            Category = "Settings",
+                            Description = "Manage Notification Service",
+                            PermissionKey = "Settings.ManageNotifications"
+                        },
+                        new
+                        {
+                            PermissionId = 125,
+                            Category = "Settings",
+                            Description = "Manage Report Scraper",
+                            PermissionKey = "Settings.ManageScraper"
+                        },
+                        new
+                        {
+                            PermissionId = 126,
+                            Category = "Settings",
+                            Description = "Manage App Settings",
+                            PermissionKey = "Settings.ManageAppSettings"
                         });
                 });
 
@@ -1583,6 +1652,11 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         new
                         {
                             RoleId = (byte)5,
+                            PermissionId = 8
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
                             PermissionId = 11
                         },
                         new
@@ -1609,6 +1683,11 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         {
                             RoleId = (byte)5,
                             PermissionId = 31
+                        },
+                        new
+                        {
+                            RoleId = (byte)5,
+                            PermissionId = 33
                         },
                         new
                         {
@@ -1788,6 +1867,13 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CreationSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Manual");
+
                     b.Property<DateOnly?>("EndDate")
                         .HasColumnType("date");
 
@@ -1810,6 +1896,9 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("CreationSource", "RoleId")
+                        .HasDatabaseName("IX_UserCompanyRoles_CreationSource_Role");
 
                     b.ToTable("UserCompanyRoles", (string)null);
                 });
@@ -2167,6 +2256,127 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.HasKey("NotificationSettingsId");
 
                     b.ToTable("NotificationSettings", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.RosterImport.RosterImportBatch", b =>
+                {
+                    b.Property<int>("RosterImportBatchId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RosterImportBatchId"));
+
+                    b.Property<int?>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreatedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EmployeesCreated")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImportedByEmail")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<int>("ManagersCreated")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("WelcomeEmailsSentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("WelcomeEmailsSentCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("RosterImportBatchId");
+
+                    b.HasIndex("ImportedAt")
+                        .HasDatabaseName("IX_RosterImportBatches_ImportedAt");
+
+                    b.ToTable("RosterImportBatches", (string)null);
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.RosterImport.RosterImportBatchRow", b =>
+                {
+                    b.Property<int>("RosterImportBatchRowId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RosterImportBatchRowId"));
+
+                    b.Property<string>("CompanyName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<bool>("EmployeeCreated")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("EmployeeType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("GiveManagerDashboard")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("ManagerCreated")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("RosterImportBatchId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RosterImportBatchRowId");
+
+                    b.HasIndex("RosterImportBatchId", "UserId")
+                        .HasDatabaseName("IX_RosterImportBatchRows_Batch_User")
+                        .HasFilter("[UserId] IS NOT NULL");
+
+                    b.ToTable("RosterImportBatchRows", (string)null);
                 });
 
             modelBuilder.Entity("SkillsetsBackend.Domain.Skillsoft.ActiveLibraryCard", b =>
@@ -2540,6 +2750,20 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.RosterImport.RosterImportBatchRow", b =>
+                {
+                    b.HasOne("SkillsetsBackend.Domain.RosterImport.RosterImportBatch", null)
+                        .WithMany("Rows")
+                        .HasForeignKey("RosterImportBatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SkillsetsBackend.Domain.RosterImport.RosterImportBatch", b =>
+                {
+                    b.Navigation("Rows");
                 });
 #pragma warning restore 612, 618
         }

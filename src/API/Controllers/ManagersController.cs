@@ -85,7 +85,7 @@ public sealed class ManagersController : ControllerBase
         var result = await _listHandler.Handle(
             request.Page,
             request.PageSize,
-            request.Search,
+            request.ToSearchCriteria(),
             request.CompanyId,
             request.IsActive,
             request.SortBy,
@@ -106,7 +106,7 @@ public sealed class ManagersController : ControllerBase
         // 5000 - matches the cap ListManagersQueryHandler itself clamps to, high enough to cover a
         // full company roster in one file.
         var result = await _listHandler.Handle(
-            1, 5000, request.Search, request.CompanyId, request.IsActive, request.SortBy, request.SortDescending,
+            1, 5000, request.ToSearchCriteria(), request.CompanyId, request.IsActive, request.SortBy, request.SortDescending,
             request.Role, GetCaller(), cancellationToken);
 
         var isCompanyAdminExport = request.Role == "CompanyAdmin";
@@ -280,7 +280,21 @@ public sealed class ManagerRequest
 {
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 50;
+
+    // One field-specific parameter per "Search By" choice, and the client sends only the one that
+    // was picked. The old single `Search` OR'd a leading-wildcard LIKE across every column, which no
+    // index can serve - see SearchCriteria for the measured cost.
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    public string? Company { get; set; }
+
+    /// <summary>Legacy generic search. Kept so an older client keeps working, and treated as a NAME
+    /// search rather than a scan of every column - name is what it was overwhelmingly used for.</summary>
     public string? Search { get; set; }
+
+    public SearchCriteria? ToSearchCriteria() =>
+        SearchCriteria.From(name: Name ?? Search, email: Email, company: Company);
+
     public int? CompanyId { get; set; }
     public bool? IsActive { get; set; }
     public string? SortBy { get; set; }
