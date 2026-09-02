@@ -89,7 +89,7 @@ public class AssignmentQueryService : IAssignmentQueryService
             from at in _dbContext.AssignmentTitles.AsNoTracking()
             join c in _dbContext.Courses.AsNoTracking() on at.CourseId equals c.CourseId
             where assignmentIds.Contains(at.AssignmentId)
-            select new { at.AssignmentId, c.CourseId, c.CourseTitle, c.CourseUrl, c.LaunchUrl, c.SkillsoftCourseCode })
+            select new { at.AssignmentId, c.CourseId, c.CourseTitle, c.CourseUrl, c.LaunchUrl })
             .ToListAsync(cancellationToken);
 
         var creatorIds = assignments.Select(a => a.CreatedByUserId)
@@ -176,7 +176,7 @@ public class AssignmentQueryService : IAssignmentQueryService
 
         var titlesByAssignment = titleRows
             .GroupBy(t => t.AssignmentId)
-            .ToDictionary(g => g.Key, g => g.Select(t => (t.CourseId, t.CourseTitle, t.CourseUrl, t.LaunchUrl, t.SkillsoftCourseCode)).ToList());
+            .ToDictionary(g => g.Key, g => g.Select(t => (t.CourseId, t.CourseTitle, t.CourseUrl, t.LaunchUrl)).ToList());
 
         var assignmentStartDates = assignments.ToDictionary(a => a.AssignmentId, a => a.StartDate);
 
@@ -220,7 +220,7 @@ public class AssignmentQueryService : IAssignmentQueryService
 
         var titleDtosByAssignment = titlesByAssignment
             .ToDictionary(kv => kv.Key, kv => (IReadOnlyList<AssignmentTitleDto>)kv.Value
-                .Select(t => new AssignmentTitleDto(t.CourseId, t.CourseTitle, t.CourseUrl, t.LaunchUrl, t.SkillsoftCourseCode)).ToList());
+                .Select(t => new AssignmentTitleDto(t.CourseId, t.CourseTitle, t.CourseUrl, t.LaunchUrl)).ToList());
 
         return assignments
             .Select(a => new AssignmentDto(

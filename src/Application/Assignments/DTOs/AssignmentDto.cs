@@ -55,7 +55,7 @@ public record AssignmentEmployeeDto(
     string Timing,
     DateOnly? StartedOn);
 
-public record AssignmentTitleDto(long CourseId, string CourseTitle, string? CourseUrl, string? LaunchUrl, string? SkillsoftCourseCode);
+public record AssignmentTitleDto(long CourseId, string CourseTitle, string? CourseUrl, string? LaunchUrl);
 
 public record AssignmentDto(
     int AssignmentId,

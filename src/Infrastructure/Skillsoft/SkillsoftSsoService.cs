@@ -39,9 +39,24 @@ public class SkillsoftSsoService : ISkillsoftSsoService
 
     public async Task<string> CreateLaunchTicketAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)
     {
-        await _accessGuard.ResolveForCallerAsync(caller, companyId, cancellationToken);
+        var userId = await _accessGuard.EnsureActiveRoleAsync(caller, companyId, cancellationToken);
 
-        return CreateTicket(caller.DbUserId!.Value, companyId);
+        // Same repair-before-resolve as StartSessionAsync/GetCourseLaunchUrlAsync. This is the
+        // endpoint the silent background session (SkillsoftSilentSessionComponent's hidden iframe,
+        // fired once on login/company-select to establish the Skillport cookie without the employee
+        // ever seeing it) calls - it was the one call site that never got the repair-check, so for
+        // anyone whose ActiveLibraryCards entitlement had gone missing or stale, the iframe failed
+        // silently on every login and no Skillport session was ever established. Every later raw
+        // courseUrl click then hit Skillport with no cookie at all and showed its login page - not
+        // because that click was doing anything wrong, but because the silent session before it had
+        // already quietly failed.
+        var provisionResult = await _sessionManager.EnsureActiveAsync(userId, companyId, cancellationToken);
+        if (!provisionResult.Success)
+        {
+            throw new InvalidOperationException(provisionResult.ErrorMessage ?? "Could not start your Skillport session. Please try again.");
+        }
+
+        return CreateTicket(userId, companyId);
     }
 
     public async Task<SkillsoftSessionStatus> GetSessionStatusAsync(CallerContext caller, int companyId, CancellationToken cancellationToken = default)
