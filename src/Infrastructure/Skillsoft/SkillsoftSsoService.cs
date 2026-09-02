@@ -93,6 +93,18 @@ public class SkillsoftSsoService : ISkillsoftSsoService
 
     public async Task<string> GetCourseLaunchUrlAsync(CallerContext caller, int companyId, string assetId, CancellationToken cancellationToken = default)
     {
+        var userId = await _accessGuard.EnsureActiveRoleAsync(caller, companyId, cancellationToken);
+
+        // Same repair-before-resolve as StartSessionAsync: a session row with no usable
+        // ActiveLibraryCards entitlement behind it used to resolve here anyway and hand Skillport
+        // credentials it would not accept, landing the learner on Skillport's own login page. This
+        // heals that gap in place (same username, no lost history) before minting the sign-on URL.
+        var provisionResult = await _sessionManager.EnsureActiveAsync(userId, companyId, cancellationToken);
+        if (!provisionResult.Success)
+        {
+            throw new InvalidOperationException(provisionResult.ErrorMessage ?? "Could not start your Skillport session. Please try again.");
+        }
+
         var card = await _accessGuard.ResolveForCallerAsync(caller, companyId, cancellationToken);
 
         return await _olsaClient.GetMultiActionSignOnUrlAsync(
