@@ -35,6 +35,7 @@ public class GetSkillportScraperSettingsQueryHandler
         }
 
         return new SkillportScraperSettingsDto(
-            settings.SkillportScraperSettingsId, settings.GroupName, settings.CreatedAt, settings.UpdatedAt);
+            settings.SkillportScraperSettingsId, settings.GroupName, settings.DateRangeMode,
+            settings.CustomDateFrom, settings.CustomDateTo, settings.CreatedAt, settings.UpdatedAt);
     }
 }

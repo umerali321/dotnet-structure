@@ -15,6 +15,7 @@ public interface IDashboardQueryService
         IReadOnlyCollection<int>? companyIds,
         DateOnly? startDate,
         DateOnly? endDate,
+        int? restrictToManagerId,
         CancellationToken cancellationToken);
 
     /// <summary>restrictToManagerId: when set (a Manager caller), narrows the company-scoped result

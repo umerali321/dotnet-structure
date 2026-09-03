@@ -44,17 +44,20 @@ public class SaveSkillportScraperSettingsCommandHandler
         var settings = await _repository.GetAsync(cancellationToken);
         if (settings is null)
         {
-            settings = SkillportScraperSettings.Create(command.GroupName);
+            settings = SkillportScraperSettings.Create(
+                command.GroupName, command.DateRangeMode, command.CustomDateFrom, command.CustomDateTo);
             _repository.Add(settings);
         }
         else
         {
             settings.UpdateGroupName(command.GroupName);
+            settings.UpdateDateRange(command.DateRangeMode, command.CustomDateFrom, command.CustomDateTo);
         }
 
         await _repository.SaveChangesAsync(cancellationToken);
 
         return new SkillportScraperSettingsDto(
-            settings.SkillportScraperSettingsId, settings.GroupName, settings.CreatedAt, settings.UpdatedAt);
+            settings.SkillportScraperSettingsId, settings.GroupName, settings.DateRangeMode,
+            settings.CustomDateFrom, settings.CustomDateTo, settings.CreatedAt, settings.UpdatedAt);
     }
 }

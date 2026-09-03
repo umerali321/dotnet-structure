@@ -50,6 +50,7 @@ public class LearningTranscriptQueryService : ILearningTranscriptQueryService
         var totalCount = rows.Count > 0 ? rows[0].TotalCount : 0;
         var items = rows.Select(r => new LearningTranscriptListItemDto(
             r.LearningTranscriptActivityId, r.UserId, r.EmployeeFirstName, r.EmployeeLastName, r.EmployeeEmail,
+            r.StudentType,
             r.CompanyId, r.CompanyName, r.ManagerId, r.ManagerFirstName, r.ManagerLastName,
             r.UserStatus, r.GroupName, r.GroupOrgCode, r.GroupPath, r.TotalSessions,
             r.AssetId, r.AssetTitle, r.AssetType, r.AssetSubType,
@@ -93,6 +94,7 @@ public class LearningTranscriptQueryService : ILearningTranscriptQueryService
 
     private sealed record Row(
         long LearningTranscriptActivityId, int UserId, string? EmployeeFirstName, string? EmployeeLastName, string? EmployeeEmail,
+        string? StudentType,
         int? CompanyId, string? CompanyName, int? ManagerId, string? ManagerFirstName, string? ManagerLastName,
         string? UserStatus, string? GroupName, string? GroupOrgCode, string? GroupPath, int TotalSessions,
         string AssetId, string AssetTitle, string? AssetType, string? AssetSubType,

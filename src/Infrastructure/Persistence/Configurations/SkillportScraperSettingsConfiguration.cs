@@ -13,6 +13,7 @@ public class SkillportScraperSettingsConfiguration : IEntityTypeConfiguration<Sk
         builder.HasKey(x => x.SkillportScraperSettingsId);
 
         builder.Property(x => x.GroupName).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.DateRangeMode).HasMaxLength(20).IsRequired().HasDefaultValue("Today");
 
         builder.Property(x => x.CreatedAt).HasConversion(DateTimeOffsetToDateTime2Converter.Instance);
         builder.Property(x => x.UpdatedAt).HasConversion(NullableDateTimeOffsetToDateTime2Converter.Instance);

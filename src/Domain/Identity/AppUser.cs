@@ -41,6 +41,12 @@ public class AppUser : IAggregateRoot
 
     public DateTimeOffset? UpdatedAt { get; private set; }
 
+    /// <summary>When PasswordHash was last set - deliberately separate from UpdatedAt, which also
+    /// bumps on any unrelated profile edit (name, phone, activate/deactivate) and so cannot be
+    /// trusted to mean "this is when the password changed". Added after a support incident where a
+    /// stale-looking credential could not be distinguished from a freshly reset one.</summary>
+    public DateTimeOffset? PasswordChangedAt { get; private set; }
+
     private AppUser()
     {
     }
@@ -62,6 +68,7 @@ public class AppUser : IAggregateRoot
             LastName = lastName,
             Username = username,
             PasswordHash = initialLegacyPassword,
+            PasswordChangedAt = DateTimeOffset.UtcNow,
             IsActive = true,
             CreationSource = creationSource,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -96,6 +103,7 @@ public class AppUser : IAggregateRoot
     public void SetPassword(string legacyPasswordValue)
     {
         PasswordHash = legacyPasswordValue;
+        PasswordChangedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

@@ -462,6 +462,19 @@ public class LearningTranscriptImportService : ILearningTranscriptImportService
             return exact;
         }
 
-        return DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var loose) ? loose : null;
+        if (DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var loose))
+        {
+            return loose;
+        }
+
+        // A cell holding a full timestamp as text (e.g. "2026-03-27 16:48:00") lands here.
+        // DateOnly.TryParse refuses to parse ANY string with a time-of-day component at all -
+        // unlike DateTime.TryParse, it does not just discard the extra part - so a completion
+        // date/access date written with a time in the source file was silently coming back as
+        // null. Parsing it as a full DateTime and keeping just the date fixes that without
+        // changing any already-working case above.
+        return DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateTime)
+            ? DateOnly.FromDateTime(dateTime)
+            : null;
     }
 }

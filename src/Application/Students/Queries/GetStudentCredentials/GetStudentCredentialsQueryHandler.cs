@@ -32,6 +32,6 @@ public class GetStudentCredentialsQueryHandler
         var user = await _repository.GetUserAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), userId);
 
-        return new StudentCredentialDto(user.Username, user.Email, user.PasswordHash, user.IsActive);
+        return new StudentCredentialDto(user.Username, user.Email, user.PasswordHash, user.IsActive, user.PasswordChangedAt);
     }
 }

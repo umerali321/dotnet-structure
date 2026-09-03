@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902222638_AddManagerScopeAndUsageToDashboardStats")]
+    partial class AddManagerScopeAndUsageToDashboardStats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -593,9 +596,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                     b.Property<int?>("LegacyUserId")
                         .HasColumnType("int");
 
-                    b.Property<DateTimeOffset?>("PasswordChangedAt")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -612,9 +612,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasColumnType("nvarchar(320)");
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("Phone")
-                        .HasDatabaseName("IX_Users_Phone");
 
                     b.ToTable("Users", (string)null);
                 });
@@ -2469,19 +2466,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<DateOnly?>("CustomDateFrom")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("CustomDateTo")
-                        .HasColumnType("date");
-
-                    b.Property<string>("DateRangeMode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Today");
 
                     b.Property<string>("GroupName")
                         .IsRequired()

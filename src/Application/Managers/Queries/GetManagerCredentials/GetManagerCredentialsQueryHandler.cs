@@ -33,6 +33,6 @@ public class GetManagerCredentialsQueryHandler
         var user = await _repository.GetUserAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(AppUser), userId);
 
-        return new ManagerCredentialDto(user.Username, user.Email, user.PasswordHash, user.IsActive);
+        return new ManagerCredentialDto(user.Username, user.Email, user.PasswordHash, user.IsActive, user.PasswordChangedAt);
     }
 }

@@ -79,48 +79,45 @@ public class LearningTranscriptController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Mirrors the on-screen columns exactly (Employee, Type, Company, Course, Status,
+    /// Completion Date, High Score, Expected/Actual Duration) - the export is meant to be exactly
+    /// what the screen currently shows, not the full underlying record.</summary>
     private static byte[] BuildExportFile(IReadOnlyCollection<LearningTranscriptListItemDto> items)
     {
         string[] headers =
         [
-            "Employee", "Email", "Company", "Manager", "User Status", "Group Name", "Group Org Code", "Group Path",
-            "Total Sessions", "Course", "Course Type", "Asset ID", "Enrollment Date", "First Access", "Last Access",
-            "Completion Date", "Status", "Pre-test Score", "High Score", "Current Score", "Attempts",
-            "Expected Duration (min)", "Actual Duration (min)", "Times Accessed", "Last Skillport Login",
-            "Skillport Registration Date",
+            "Employee", "Type", "Company", "Course", "Status", "Completion Date", "High Score",
+            "Expected Duration", "Actual Duration",
         ];
 
         var rows = items.Select(i => (IReadOnlyList<string>)
         [
             $"{i.EmployeeFirstName} {i.EmployeeLastName}".Trim(),
-            i.EmployeeEmail ?? "",
+            i.StudentType ?? "",
             i.CompanyName ?? "",
-            $"{i.ManagerFirstName} {i.ManagerLastName}".Trim(),
-            i.UserStatus ?? "",
-            i.GroupName ?? "",
-            i.GroupOrgCode ?? "",
-            i.GroupPath ?? "",
-            i.TotalSessions.ToString(),
             i.AssetTitle,
-            i.AssetType ?? "",
-            i.AssetId,
-            i.EnrollmentDate?.ToString("yyyy-MM-dd") ?? "",
-            i.FirstAccessDate?.ToString("yyyy-MM-dd") ?? "",
-            i.LastAccessDate?.ToString("yyyy-MM-dd") ?? "",
-            i.CompletionDate?.ToString("yyyy-MM-dd") ?? "",
             i.CompletionStatus ?? "",
-            i.PreTestScore?.ToString("0.##") ?? "",
+            i.CompletionDate?.ToString("yyyy-MM-dd") ?? "",
             i.HighScore?.ToString("0.##") ?? "",
-            i.CurrentScore?.ToString("0.##") ?? "",
-            i.ActualTestAttempts?.ToString() ?? "",
-            i.ExpectedDurationMinutes?.ToString() ?? "",
-            i.ActualDurationMinutes?.ToString() ?? "",
-            i.TimesAccessed?.ToString() ?? "",
-            i.LastSkillportLoginDate?.ToString("yyyy-MM-dd") ?? "",
-            i.SkillportRegistrationDate?.ToString("yyyy-MM-dd") ?? "",
+            FormatDurationHms(i.ExpectedDurationMinutes),
+            FormatDurationHms(i.ActualDurationMinutes),
         ]);
 
         return ExcelExportWriter.Write("Learning Transcript", headers, rows);
+    }
+
+    /// <summary>Matches the frontend's formatDurationHms exactly, so the export reads the same as
+    /// the screen (e.g. 540 minutes -> "9h 0m 0s") rather than a raw minute count.</summary>
+    private static string FormatDurationHms(int? totalMinutes)
+    {
+        if (totalMinutes is null) return "";
+
+        var totalSeconds = totalMinutes.Value * 60;
+        var hours = totalSeconds / 3600;
+        var minutes = (totalSeconds % 3600) / 60;
+        var seconds = totalSeconds % 60;
+
+        return $"{hours}h {minutes}m {seconds}s";
     }
 
     private CallerContext GetCaller() => new(

@@ -172,6 +172,11 @@ public static class StudentAuthorization
         return roles
             .Where(r => Roles.Normalize(r.RoleName) == Roles.Manager || r.RoleName == Roles.CompanyAdmin)
             .Select(r => r.CompanyId)
+            // A caller who holds both Manager and CompanyAdmin (or two Manager rows via a legacy-Admin
+            // alias) at the same company would otherwise yield that CompanyId twice - harmless to an
+            // EF LINQ .Contains() filter, but sp_GetDashboardStats's @CompanyIds TABLE (CompanyId INT
+            // PRIMARY KEY) has no such tolerance and throws a PK violation on the duplicate INSERT.
+            .Distinct()
             .ToList();
     }
 }

@@ -252,13 +252,14 @@ public class ListStudentsRequest
     public string? Name { get; set; }
     public string? Email { get; set; }
     public string? Company { get; set; }
+    public string? Phone { get; set; }
 
     /// <summary>Legacy generic search, kept so an older client keeps working. Treated as a NAME
     /// search rather than a scan of every column.</summary>
     public string? Search { get; set; }
 
     public SearchCriteria? ToSearchCriteria() =>
-        SearchCriteria.From(name: Name ?? Search, email: Email, company: Company);
+        SearchCriteria.From(name: Name ?? Search, email: Email, company: Company, phone: Phone);
 
     public int? CompanyId { get; set; }
 

@@ -33,6 +33,7 @@ public class DashboardQueryService : IDashboardQueryService
         IReadOnlyCollection<int>? companyIds,
         DateOnly? startDate,
         DateOnly? endDate,
+        int? restrictToManagerId,
         CancellationToken cancellationToken)
     {
         // Distinguish "no restriction" (null -> NULL param) from "restricted to zero companies"
@@ -41,7 +42,7 @@ public class DashboardQueryService : IDashboardQueryService
 
         var rows = await _dbContext.Database
             .SqlQuery<DashboardStatsRow>(
-                $"EXEC dbo.sp_GetDashboardStats @RestrictToCompanyIds={restrictParam}, @StartDate={startDate}, @EndDate={endDate}")
+                $"EXEC dbo.sp_GetDashboardStats @RestrictToCompanyIds={restrictParam}, @StartDate={startDate}, @EndDate={endDate}, @RestrictToManagerId={restrictToManagerId}")
             .ToListAsync(cancellationToken);
 
         var row = rows[0];
@@ -49,14 +50,16 @@ public class DashboardQueryService : IDashboardQueryService
             row.TotalCompanies, row.TotalCompanyAdmins, row.TotalManagers, row.TotalEmployees,
             row.TrialCompanies, row.LicensedCompanies, row.InactiveCompanies, row.ExpiringLicensesIn30Days,
             row.ItEmployees, row.NonItEmployees, row.CourseLibraryUsers,
-            row.CompaniesAddedInPeriod, row.UsersAddedInPeriod, row.CourseLibrarySessionsStartedInPeriod);
+            row.CompaniesAddedInPeriod, row.UsersAddedInPeriod, row.CourseLibrarySessionsStartedInPeriod,
+            row.TotalCourseUsage);
     }
 
     private sealed record DashboardStatsRow(
         int TotalCompanies, int TotalCompanyAdmins, int TotalManagers, int TotalEmployees,
         int TrialCompanies, int LicensedCompanies, int InactiveCompanies, int ExpiringLicensesIn30Days,
         int ItEmployees, int NonItEmployees, int CourseLibraryUsers,
-        int CompaniesAddedInPeriod, int UsersAddedInPeriod, int CourseLibrarySessionsStartedInPeriod);
+        int CompaniesAddedInPeriod, int UsersAddedInPeriod, int CourseLibrarySessionsStartedInPeriod,
+        int TotalCourseUsage);
 
     public async Task<PaginatedList<CourseLibraryUserDto>> GetCourseLibraryUsersAsync(
         IReadOnlyCollection<int>? companyIds,

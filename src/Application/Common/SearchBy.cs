@@ -23,6 +23,8 @@ public enum SearchBy
     Code,
     /// <summary>Learning Transcript only - the course/asset title.</summary>
     Course,
+    /// <summary>Employees screen only - phone number, in place of Company there.</summary>
+    Phone,
 }
 
 /// <summary>One field, one term - the whole search contract for a list query.</summary>
@@ -41,13 +43,15 @@ public sealed record SearchCriteria(SearchBy Field, string Term)
         string? email = null,
         string? company = null,
         string? code = null,
-        string? course = null)
+        string? course = null,
+        string? phone = null)
     {
         if (Clean(name) is { } n) return new SearchCriteria(SearchBy.Name, n);
         if (Clean(email) is { } e) return new SearchCriteria(SearchBy.Email, e);
         if (Clean(company) is { } c) return new SearchCriteria(SearchBy.Company, c);
         if (Clean(code) is { } cd) return new SearchCriteria(SearchBy.Code, cd);
         if (Clean(course) is { } cr) return new SearchCriteria(SearchBy.Course, cr);
+        if (Clean(phone) is { } p) return new SearchCriteria(SearchBy.Phone, p);
         return null;
     }
 

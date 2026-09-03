@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkillsetsBackend.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SkillsetsBackend.Infrastructure.Migrations
+namespace SkillsetsBackend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902232558_AddDateRangeToSkillportScraperSettings")]
+    partial class AddDateRangeToSkillportScraperSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -612,9 +615,6 @@ namespace SkillsetsBackend.Infrastructure.Migrations
                         .HasColumnType("nvarchar(320)");
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("Phone")
-                        .HasDatabaseName("IX_Users_Phone");
 
                     b.ToTable("Users", (string)null);
                 });

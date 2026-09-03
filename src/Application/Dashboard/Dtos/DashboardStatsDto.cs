@@ -22,4 +22,8 @@ public record DashboardStatsDto(
     int CourseLibraryUsers,
     int CompaniesAddedInPeriod,
     int UsersAddedInPeriod,
-    int CourseLibrarySessionsStartedInPeriod);
+    int CourseLibrarySessionsStartedInPeriod,
+    /// <summary>Every course a scoped employee has ever taken, active or completed - a plain count
+    /// of CourseTakens rows (not a distinct-course count), narrowed to a Manager's own team when
+    /// restrictToManagerId is set, company-wide otherwise.</summary>
+    int TotalCourseUsage);

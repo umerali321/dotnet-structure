@@ -6,6 +6,7 @@ public record LearningTranscriptListItemDto(
     string? EmployeeFirstName,
     string? EmployeeLastName,
     string? EmployeeEmail,
+    string? StudentType,
     int? CompanyId,
     string? CompanyName,
     int? ManagerId,

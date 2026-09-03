@@ -29,5 +29,10 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         // Existing columns are datetime2 (no offset) - see DateTimeOffsetToDateTime2Converter.
         builder.Property(x => x.CreatedAt).HasConversion(DateTimeOffsetToDateTime2Converter.Instance);
         builder.Property(x => x.UpdatedAt).HasConversion(NullableDateTimeOffsetToDateTime2Converter.Instance);
+
+        // Matches IX_Users_Email/IX_Users_FirstName_LastName - a prefix search on Phone (Employees
+        // screen's "Search by phone") needs its own seekable index for the same reason those do: a
+        // LIKE 'term%' scan against 162k+ Users rows with no index is measured at hundreds of ms.
+        builder.HasIndex(x => x.Phone).HasDatabaseName("IX_Users_Phone");
     }
 }

@@ -303,6 +303,8 @@ public class StudentQueryService : IStudentQueryService
             (EF.Functions.Like(membership.Company.CompanyName!, term, "\\") ||
              EF.Functions.Like(membership.Company.CompanyCode!, term, "\\")))),
 
+        SearchBy.Phone => query.Where(x => EF.Functions.Like(x.u.Phone!, term, "\\")),
+
         // A field this screen does not offer must narrow to nothing rather than silently returning
         // the unfiltered list as if the search had matched everyone.
         _ => query.Where(_ => false),
