@@ -60,6 +60,9 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
         {
             "firstname" => o.SortDescending ? query.OrderByDescending(x => x.FirstName).ThenBy(x => x.UserId) : query.OrderBy(x => x.FirstName).ThenBy(x => x.UserId),
             "email" => o.SortDescending ? query.OrderByDescending(x => x.Email).ThenBy(x => x.UserId) : query.OrderBy(x => x.Email).ThenBy(x => x.UserId),
+            // Newest-added OR most-recently-edited first - UpdatedAt bumps on a name/email/phone
+            // edit or activate/deactivate (see AppUser.cs).
+            "recent" => query.OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt).ThenByDescending(x => x.UserId),
             _ => query.OrderBy(x => x.UserId)
         };
 

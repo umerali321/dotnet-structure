@@ -28,7 +28,11 @@ public class AssignmentQueryService : IAssignmentQueryService
 
         var totalCount = await query.CountAsync(cancellationToken);
         var assignments = await query
-            .OrderByDescending(a => a.CreatedAt)
+            // Newest-created OR most-recently-edited first (MarkUpdated() is called on every edit -
+            // see Assignment.cs) - a manager who just adjusted an assignment's employees/dates
+            // should see it back at the top, not wherever CreatedAt alone would leave it.
+            .OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt)
+            .ThenByDescending(a => a.AssignmentId)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -45,10 +49,15 @@ public class AssignmentQueryService : IAssignmentQueryService
             .Select(ae => ae.AssignmentId)
             .ToListAsync(cancellationToken);
 
+        // !IsCancelled per this method's own contract (see IAssignmentQueryService) - Cancel()
+        // deliberately never removes AssignmentEmployees rows (the Manager's Ongoing Assignments
+        // list still needs to show who was on a cancelled assignment), so a cancelled assignment's
+        // join row to this employee stays forever and must be filtered out here instead.
         var assignments = await _dbContext.Assignments
             .AsNoTracking()
-            .Where(a => assignmentIds.Contains(a.AssignmentId))
-            .OrderByDescending(a => a.CreatedAt)
+            .Where(a => assignmentIds.Contains(a.AssignmentId) && !a.IsCancelled)
+            .OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt)
+            .ThenByDescending(a => a.AssignmentId)
             .ToListAsync(cancellationToken);
 
         return await BuildDtosAsync(assignments, cancellationToken);

@@ -116,6 +116,10 @@ public class StudentQueryService : IStudentQueryService
             "createdat" => options.SortDescending
                 ? query.OrderByDescending(x => x.sp.CreatedAt).ThenBy(x => x.u.UserId)
                 : query.OrderBy(x => x.sp.CreatedAt).ThenBy(x => x.u.UserId),
+            // Newest-added OR most-recently-edited first - Users.UpdatedAt is what actually bumps on
+            // a name/email/phone edit or activate/deactivate (see AppUser.cs), so this is the one
+            // that reflects "just touched" rather than only "just created".
+            "recent" => query.OrderByDescending(x => x.u.UpdatedAt ?? x.u.CreatedAt).ThenByDescending(x => x.u.UserId),
             _ => query.OrderBy(x => x.u.UserId),
         };
 

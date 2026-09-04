@@ -53,7 +53,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
         var provisionResult = await _sessionManager.EnsureActiveAsync(userId, companyId, cancellationToken);
         if (!provisionResult.Success)
         {
-            throw new InvalidOperationException(provisionResult.ErrorMessage ?? "Could not start your Skillport session. Please try again.");
+            throw new InvalidOperationException(provisionResult.ErrorMessage ?? "Could not start your Course Library session. Please try again.");
         }
 
         return CreateTicket(userId, companyId);
@@ -74,7 +74,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
         var result = await _sessionManager.EnsureActiveAsync(userId, companyId, cancellationToken);
         if (!result.Success)
         {
-            throw new InvalidOperationException(result.ErrorMessage ?? "Could not start your Skillport session. Please try again.");
+            throw new InvalidOperationException(result.ErrorMessage ?? "Could not start your Course Library session. Please try again.");
         }
 
         return CreateTicket(userId, companyId);
@@ -117,7 +117,7 @@ public class SkillsoftSsoService : ISkillsoftSsoService
         var provisionResult = await _sessionManager.EnsureActiveAsync(userId, companyId, cancellationToken);
         if (!provisionResult.Success)
         {
-            throw new InvalidOperationException(provisionResult.ErrorMessage ?? "Could not start your Skillport session. Please try again.");
+            throw new InvalidOperationException(provisionResult.ErrorMessage ?? "Could not start your Course Library session. Please try again.");
         }
 
         var card = await _accessGuard.ResolveForCallerAsync(caller, companyId, cancellationToken);
