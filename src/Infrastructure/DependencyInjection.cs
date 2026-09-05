@@ -166,11 +166,18 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SkillsoftScraperSettings.SectionName));
         services.AddOptions<EmailSettings>()
             .Bind(configuration.GetSection(EmailSettings.SectionName));
+        services.AddOptions<ScraperTaskRunnerSettings>()
+            .Bind(configuration.GetSection(ScraperTaskRunnerSettings.SectionName));
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<ISmtpConnectionTester, SmtpConnectionTester>();
         services.AddScoped<ISmtpSettingsRepository, SmtpSettingsRepository>();
         services.AddScoped<ISkillportScraperSettingsRepository, SkillportScraperSettingsRepository>();
+        // This app is only ever deployed to the Windows Server that also runs the scheduled task
+        // WindowsScraperTaskRunner triggers - CA1416 doesn't know that, since this composition root
+        // itself isn't (and shouldn't be) marked Windows-only.
+#pragma warning disable CA1416
         services.AddScoped<IScraperTaskRunner, WindowsScraperTaskRunner>();
+#pragma warning restore CA1416
         services.AddScoped<INotificationSettingsRepository, NotificationSettingsRepository>();
         services.AddScoped<IEmailLogRepository, EmailLogRepository>();
         // Without an explicit key-storage location, ASP.NET Core's Data Protection key ring can end
