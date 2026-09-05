@@ -48,7 +48,8 @@ public class WindowsScraperTaskRunner : IScraperTaskRunner
         // schtasks.exe AS that owning account instead sidesteps the ACL question entirely. Falls
         // back to running as the app pool's own identity when unset (e.g. local dev, where this
         // task doesn't exist anyway).
-        if (!string.IsNullOrWhiteSpace(_settings.Username) && !string.IsNullOrWhiteSpace(_settings.Password))
+        var usingConfiguredCredentials = !string.IsNullOrWhiteSpace(_settings.Username) && !string.IsNullOrWhiteSpace(_settings.Password);
+        if (usingConfiguredCredentials)
         {
             startInfo.UserName = _settings.Username;
             // CreateProcessWithLogonW (which ProcessStartInfo.UserName/Password map to) treats an
@@ -102,6 +103,13 @@ public class WindowsScraperTaskRunner : IScraperTaskRunner
             {
                 message.Append(" stdout: ").Append(stdOut);
             }
+            // Disambiguates the most common cause of this failure: were the ScraperTaskRunner
+            // credentials actually picked up, or is a stale worker process (started before the
+            // environment variables were set, e.g. an app pool recycle without a full iisreset)
+            // still running schtasks.exe as the app pool's own identity?
+            message.Append(usingConfiguredCredentials
+                ? $" (ran as configured account '{_settings.Username}')"
+                : " (no ScraperTaskRunner credentials configured/visible - ran as the app pool's own identity)");
 
             _logger.LogError("schtasks /Run /TN {TaskName} failed: {Message}", TaskName, message);
             return new ScraperTaskRunResult(false, message.ToString());
