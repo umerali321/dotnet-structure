@@ -54,6 +54,7 @@ using SkillsetsBackend.Application.Settings.Commands.SaveNotificationSettings;
 using SkillsetsBackend.Application.Notifications;
 using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
 using SkillsetsBackend.Application.Settings.Commands.SaveSkillportScraperSettings;
+using SkillsetsBackend.Application.Settings.Commands.RunSkillportScraperNow;
 using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
 using SkillsetsBackend.Application.Settings.Commands.SendTestEmail;
 using SkillsetsBackend.Application.Settings.Queries.ListEmailHistory;
@@ -206,6 +207,7 @@ public static class DependencyInjection
         services.AddScoped<SaveSmtpSettingsCommandHandler>();
         services.AddScoped<GetSkillportScraperSettingsQueryHandler>();
         services.AddScoped<SaveSkillportScraperSettingsCommandHandler>();
+        services.AddScoped<RunSkillportScraperNowCommandHandler>();
         services.AddScoped<GetNotificationSettingsQueryHandler>();
         services.AddScoped<SaveNotificationSettingsCommandHandler>();
 

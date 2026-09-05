@@ -7,6 +7,7 @@ using SkillsetsBackend.Application.Settings.Commands.SaveSmtpSettings;
 using SkillsetsBackend.Application.Settings.Commands.SendTestEmail;
 using SkillsetsBackend.Application.Settings.Commands.TestSmtpConnection;
 using SkillsetsBackend.Application.Settings.Commands.SaveSkillportScraperSettings;
+using SkillsetsBackend.Application.Settings.Commands.RunSkillportScraperNow;
 using SkillsetsBackend.Application.Settings.Commands.SaveNotificationSettings;
 using SkillsetsBackend.Application.Settings.Queries.GetNotificationSettings;
 using SkillsetsBackend.Application.Settings.Queries.GetSmtpSettings;
@@ -30,6 +31,7 @@ public class SettingsController : ControllerBase
     private readonly GetEmailLogDetailQueryHandler _getEmailLogDetailHandler;
     private readonly GetSkillportScraperSettingsQueryHandler _getSkillportScraperSettingsHandler;
     private readonly SaveSkillportScraperSettingsCommandHandler _saveSkillportScraperSettingsHandler;
+    private readonly RunSkillportScraperNowCommandHandler _runSkillportScraperNowHandler;
     private readonly GetNotificationSettingsQueryHandler _getNotificationSettingsHandler;
     private readonly SaveNotificationSettingsCommandHandler _saveNotificationSettingsHandler;
 
@@ -42,6 +44,7 @@ public class SettingsController : ControllerBase
         GetEmailLogDetailQueryHandler getEmailLogDetailHandler,
         GetSkillportScraperSettingsQueryHandler getSkillportScraperSettingsHandler,
         SaveSkillportScraperSettingsCommandHandler saveSkillportScraperSettingsHandler,
+        RunSkillportScraperNowCommandHandler runSkillportScraperNowHandler,
         GetNotificationSettingsQueryHandler getNotificationSettingsHandler,
         SaveNotificationSettingsCommandHandler saveNotificationSettingsHandler)
     {
@@ -53,6 +56,7 @@ public class SettingsController : ControllerBase
         _getEmailLogDetailHandler = getEmailLogDetailHandler;
         _getSkillportScraperSettingsHandler = getSkillportScraperSettingsHandler;
         _saveSkillportScraperSettingsHandler = saveSkillportScraperSettingsHandler;
+        _runSkillportScraperNowHandler = runSkillportScraperNowHandler;
         _getNotificationSettingsHandler = getNotificationSettingsHandler;
         _saveNotificationSettingsHandler = saveNotificationSettingsHandler;
     }
@@ -113,6 +117,16 @@ public class SettingsController : ControllerBase
     public async Task<IActionResult> SaveSkillportScraperSettings(SaveSkillportScraperSettingsCommand command, CancellationToken cancellationToken)
     {
         var result = await _saveSkillportScraperSettingsHandler.Handle(command, GetCaller(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>Triggers the nightly scraper's Windows Scheduled Task immediately, using whatever
+    /// Group/Date Range is currently saved - so an admin can change settings and run right away
+    /// without RDP-ing into the server.</summary>
+    [HttpPost("skillport-scraper/run-now")]
+    public async Task<IActionResult> RunSkillportScraperNow(CancellationToken cancellationToken)
+    {
+        var result = await _runSkillportScraperNowHandler.Handle(GetCaller(), cancellationToken);
         return Ok(result);
     }
 
