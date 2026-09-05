@@ -48,8 +48,12 @@ public static class StudentAuthorization
             }
         }
 
+        // Ignoring the target's own company Active status here (unlike the caller's managed
+        // companies, resolved via GetActiveCompanyRolesAsync below) - a company going inactive must
+        // not also make its users invisible/inaccessible to admins who already legitimately manage
+        // them; only login/company-selection should require an active company.
         var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);
-        var targetCompanies = await userDirectory.GetActiveCompanyRolesAsync(targetUserId, cancellationToken);
+        var targetCompanies = await userDirectory.GetCompanyRolesIgnoringCompanyStatusAsync(targetUserId, cancellationToken);
 
         if (!targetCompanies.Any(tc => managedCompanyIds.Contains(tc.CompanyId)))
         {
@@ -96,8 +100,12 @@ public static class StudentAuthorization
             }
         }
 
+        // Ignoring the target's own company Active status here (unlike the caller's managed
+        // companies, resolved via GetActiveCompanyRolesAsync below) - a company going inactive must
+        // not also make its users invisible/inaccessible to admins who already legitimately manage
+        // them; only login/company-selection should require an active company.
         var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);
-        var targetCompanies = await userDirectory.GetActiveCompanyRolesAsync(targetUserId, cancellationToken);
+        var targetCompanies = await userDirectory.GetCompanyRolesIgnoringCompanyStatusAsync(targetUserId, cancellationToken);
 
         if (!targetCompanies.Any(tc => managedCompanyIds.Contains(tc.CompanyId)))
         {
@@ -127,8 +135,12 @@ public static class StudentAuthorization
             throw new UnauthorizedAccessException("You are not authorized to perform this action.");
         }
 
+        // Ignoring the target's own company Active status here (unlike the caller's managed
+        // companies, resolved via GetActiveCompanyRolesAsync below) - a company going inactive must
+        // not also make its users invisible/inaccessible to admins who already legitimately manage
+        // them; only login/company-selection should require an active company.
         var managedCompanyIds = await GetManagedCompanyIdsAsync(caller, userDirectory, cancellationToken);
-        var targetCompanies = await userDirectory.GetActiveCompanyRolesAsync(targetUserId, cancellationToken);
+        var targetCompanies = await userDirectory.GetCompanyRolesIgnoringCompanyStatusAsync(targetUserId, cancellationToken);
 
         if (!targetCompanies.Any(tc => managedCompanyIds.Contains(tc.CompanyId)))
         {

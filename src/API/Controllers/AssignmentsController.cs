@@ -42,9 +42,11 @@ public class AssignmentsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> ListOngoing(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] int? companyId = null,
+        [FromQuery] string? trainingName = null, [FromQuery] string? employeeName = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _listOngoingHandler.Handle(new ListOngoingAssignmentsQuery(page, pageSize, companyId), GetCaller(), cancellationToken);
+        var result = await _listOngoingHandler.Handle(
+            new ListOngoingAssignmentsQuery(page, pageSize, companyId, trainingName, employeeName), GetCaller(), cancellationToken);
         return Ok(result);
     }
 

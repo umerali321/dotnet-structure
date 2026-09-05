@@ -20,8 +20,13 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
         var roleNames = string.IsNullOrWhiteSpace(o.RoleFilter)
             ? new[] { "Manager", "Admin" }
             : new[] { o.RoleFilter };
+        // Deliberately NOT filtered by x.Company.IsActive - a company going inactive blocks its
+        // users from logging in (enforced separately in UserDirectory.QueryActiveCompanyRoles,
+        // which backs login/company-selection), it must not also hide their records from admin
+        // listings/search. x.IsActive is a different flag (this specific role assignment's own
+        // active state) and stays.
         var memberships = db.UserCompanyRoles.AsNoTracking()
-            .Where(x => x.IsActive && x.Company.IsActive && roleNames.Contains(x.Role.RoleName) && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
+            .Where(x => x.IsActive && roleNames.Contains(x.Role.RoleName) && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
 
         var query = db.Users.AsNoTracking().Where(u => memberships.Any(x => x.UserId == u.UserId));
 
@@ -105,8 +110,11 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
         // Unlike ListAsync, this is looked up by a specific UserId (e.g. a detail page, or a
         // CompanyAdmin viewing their own profile) - widened to include CompanyAdmin unconditionally
         // rather than gated by RoleFilter, since the caller already knows which user they want.
+        // Not filtered by x.Company.IsActive - see the identical note in ListAsync above. The detail
+        // page must keep showing which company this person belongs to even once that company is
+        // deactivated, not blank it out.
         var memberships = db.UserCompanyRoles.AsNoTracking()
-            .Where(x => x.UserId == id && x.IsActive && x.Company.IsActive
+            .Where(x => x.UserId == id && x.IsActive
                 && (x.Role.RoleName == "Manager" || x.Role.RoleName == "Admin" || x.Role.RoleName == "CompanyAdmin")
                 && (x.StartDate == null || x.StartDate <= today) && (x.EndDate == null || x.EndDate >= today));
 
@@ -163,6 +171,8 @@ public sealed class ManagerQueryService(ApplicationDbContext db) : IManagerQuery
             x.UserId == u.UserId &&
             (EF.Functions.Like(x.Company.CompanyName!, term, "\\") ||
              EF.Functions.Like(x.Company.CompanyCode!, term, "\\")))),
+
+        SearchBy.Phone => query.Where(u => EF.Functions.Like(u.Phone!, term, "\\")),
 
         // Narrow to nothing rather than silently returning the whole list unfiltered.
         _ => query.Where(_ => false),

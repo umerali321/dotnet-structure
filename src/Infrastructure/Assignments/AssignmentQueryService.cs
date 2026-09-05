@@ -18,12 +18,35 @@ public class AssignmentQueryService : IAssignmentQueryService
     }
 
     public async Task<PaginatedList<AssignmentDto>> ListManagedAsync(
-        IReadOnlyCollection<int>? companyIds, int page, int pageSize, CancellationToken cancellationToken = default)
+        IReadOnlyCollection<int>? companyIds, int page, int pageSize,
+        string? trainingName = null, string? employeeName = null, CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Assignments.AsNoTracking().AsQueryable();
         if (companyIds is not null)
         {
             query = query.Where(a => companyIds.Contains(a.CompanyId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(trainingName))
+        {
+            var term = $"%{EscapeLike(trainingName.Trim())}%";
+            query = query.Where(a =>
+                (a.SourceSkillTraxId != null && _dbContext.SkillTrax.IgnoreQueryFilters()
+                    .Any(s => s.SkillTraxId == a.SourceSkillTraxId && EF.Functions.Like(s.Name, term, "\\")))
+                || _dbContext.AssignmentTitles
+                    .Any(at => at.AssignmentId == a.AssignmentId
+                        && _dbContext.Courses.Any(c => c.CourseId == at.CourseId && EF.Functions.Like(c.CourseTitle, term, "\\"))));
+        }
+
+        if (!string.IsNullOrWhiteSpace(employeeName))
+        {
+            var term = $"%{EscapeLike(employeeName.Trim())}%";
+            query = query.Where(a => _dbContext.AssignmentEmployees
+                .Any(ae => ae.AssignmentId == a.AssignmentId
+                    && _dbContext.Users.Any(u => u.UserId == ae.StudentUserId &&
+                        (EF.Functions.Like(u.FirstName!, term, "\\")
+                         || EF.Functions.Like(u.LastName!, term, "\\")
+                         || EF.Functions.Like((u.FirstName ?? "") + " " + (u.LastName ?? ""), term, "\\")))));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -264,4 +287,7 @@ public class AssignmentQueryService : IAssignmentQueryService
 
         return isActive ? AssignmentTitleProgressStatus.InProgress : AssignmentTitleProgressStatus.Completed;
     }
+
+    private static string EscapeLike(string value) =>
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
 }

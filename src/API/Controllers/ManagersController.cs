@@ -287,13 +287,14 @@ public sealed class ManagerRequest
     public string? Name { get; set; }
     public string? Email { get; set; }
     public string? Company { get; set; }
+    public string? Phone { get; set; }
 
     /// <summary>Legacy generic search. Kept so an older client keeps working, and treated as a NAME
     /// search rather than a scan of every column - name is what it was overwhelmingly used for.</summary>
     public string? Search { get; set; }
 
     public SearchCriteria? ToSearchCriteria() =>
-        SearchCriteria.From(name: Name ?? Search, email: Email, company: Company);
+        SearchCriteria.From(name: Name ?? Search, email: Email, company: Company, phone: Phone);
 
     public int? CompanyId { get; set; }
     public bool? IsActive { get; set; }

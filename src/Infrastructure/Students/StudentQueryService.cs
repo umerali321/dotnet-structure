@@ -21,9 +21,13 @@ public class StudentQueryService : IStudentQueryService
     public async Task<PaginatedList<StudentListItemDto>> ListAsync(StudentListQueryOptions options, CancellationToken cancellationToken = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Deliberately NOT filtered by ucr.Company.IsActive - a company going inactive blocks its
+        // users from logging in (enforced separately in UserDirectory.QueryActiveCompanyRoles,
+        // which backs login/company-selection), it must not also hide their records from admin
+        // listings/search. ucr.IsActive is a different flag (this specific role assignment's own
+        // active state) and stays.
         var studentMemberships = _dbContext.UserCompanyRoles.AsNoTracking().Where(ucr =>
             ucr.IsActive
-            && ucr.Company.IsActive
             && ucr.Role.RoleName == Roles.Student
             && (ucr.StartDate == null || ucr.StartDate <= today)
             && (ucr.EndDate == null || ucr.EndDate >= today));
@@ -224,11 +228,12 @@ public class StudentQueryService : IStudentQueryService
             return ([], []);
         }
 
+        // Not filtered by ucr.Company.IsActive - see the identical note in ListAsync above. A
+        // student's company badge must keep showing even once that company is deactivated.
         var rows = await _dbContext.UserCompanyRoles
             .AsNoTracking()
             .Where(ucr => ids.Contains(ucr.UserId)
                 && ucr.IsActive
-                && ucr.Company.IsActive
                 && ucr.Role.RoleName == Roles.Student
                 && (ucr.StartDate == null || ucr.StartDate <= today)
                 && (ucr.EndDate == null || ucr.EndDate >= today))

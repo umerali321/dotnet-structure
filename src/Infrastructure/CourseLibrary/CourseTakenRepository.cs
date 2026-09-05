@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using SkillsetsBackend.Application.Assignments;
+using SkillsetsBackend.Application.Assignments.DTOs;
 using SkillsetsBackend.Application.CourseLibrary.DTOs;
 using SkillsetsBackend.Application.CourseLibrary.Interfaces;
 using SkillsetsBackend.Domain.CourseLibrary;
@@ -62,7 +64,13 @@ public class CourseTakenRepository : ICourseTakenRepository
                 select ToDto(ct, u, c, cat))
             .FirstOrDefaultAsync(cancellationToken);
 
-        return dto ?? throw new InvalidOperationException($"CourseTaken {courseTakenId} was just written but could not be re-read.");
+        if (dto is null)
+        {
+            throw new InvalidOperationException($"CourseTaken {courseTakenId} was just written but could not be re-read.");
+        }
+
+        var paceLookup = await GetAssignmentStartDatesAsync([(dto.UserId, dto.CourseId)], cancellationToken);
+        return WithPace(dto, paceLookup);
     }
 
     public async Task<PaginatedList<CourseTakenDto>> ListAsync(CourseTakenListOptions options, CancellationToken cancellationToken = default)
@@ -76,9 +84,12 @@ public class CourseTakenRepository : ICourseTakenRepository
         else if (options.RestrictToCompanyIds is not null)
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            // Deliberately NOT filtered by ucr.Company.IsActive - a company going inactive blocks
+            // its users from logging in (enforced separately in
+            // UserDirectory.QueryActiveCompanyRoles, which backs login/company-selection), it must
+            // not also hide their course-taken records from admin listings/search.
             var studentMemberships = _dbContext.UserCompanyRoles.AsNoTracking().Where(ucr =>
                 ucr.IsActive
-                && ucr.Company.IsActive
                 && ucr.Role.RoleName == Roles.Student
                 && (ucr.StartDate == null || ucr.StartDate <= today)
                 && (ucr.EndDate == null || ucr.EndDate >= today));
@@ -117,7 +128,10 @@ public class CourseTakenRepository : ICourseTakenRepository
             .Take(options.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new PaginatedList<CourseTakenDto>(items, totalCount, options.Page, options.PageSize);
+        var paceLookup = await GetAssignmentStartDatesAsync(items.Select(i => (i.UserId, i.CourseId)), cancellationToken);
+        var withPace = items.Select(i => WithPace(i, paceLookup)).ToList();
+
+        return new PaginatedList<CourseTakenDto>(withPace, totalCount, options.Page, options.PageSize);
     }
 
     private static CourseTakenDto ToDto(CourseTaken ct, AppUser u, Course c, MainCourseCategory cat) => new(
@@ -132,6 +146,48 @@ public class CourseTakenRepository : ICourseTakenRepository
         ct.AccessedAt,
         ct.CompletedAt,
         c.CourseUrl);
+
+    private static CourseTakenDto WithPace(CourseTakenDto dto, IReadOnlyDictionary<(int UserId, long CourseId), DateOnly> assignmentStartByPair) =>
+        assignmentStartByPair.TryGetValue((dto.UserId, dto.CourseId), out var assignmentStart)
+            ? dto with
+            {
+                CourseDate = assignmentStart,
+                Status = AssignmentTiming.Derive(DateOnly.FromDateTime(dto.AccessedAt.UtcDateTime), assignmentStart).ToString(),
+            }
+            : dto;
+
+    /// <summary>For each (UserId, CourseId) pair, the StartDate of the most recently created
+    /// non-cancelled Assignment that targeted that employee with that course as one of its titles -
+    /// or no entry at all if the course was never part of any assignment for them. "Most recently
+    /// created" wins when a student was assigned the same course more than once (e.g. a retake
+    /// assignment), matching how a fresh assignment is meant to supersede an older one.</summary>
+    private async Task<Dictionary<(int UserId, long CourseId), DateOnly>> GetAssignmentStartDatesAsync(
+        IEnumerable<(int UserId, long CourseId)> pairs, CancellationToken cancellationToken)
+    {
+        var pairList = pairs.Distinct().ToList();
+        if (pairList.Count == 0)
+        {
+            return [];
+        }
+
+        var userIds = pairList.Select(p => p.UserId).Distinct().ToList();
+        var courseIds = pairList.Select(p => p.CourseId).Distinct().ToList();
+
+        var rows = await (
+                from ae in _dbContext.AssignmentEmployees.AsNoTracking()
+                join at in _dbContext.AssignmentTitles.AsNoTracking() on ae.AssignmentId equals at.AssignmentId
+                join a in _dbContext.Assignments.AsNoTracking() on ae.AssignmentId equals a.AssignmentId
+                where userIds.Contains(ae.StudentUserId) && courseIds.Contains(at.CourseId) && !a.IsCancelled
+                select new { ae.StudentUserId, at.CourseId, a.StartDate, a.CreatedAt })
+            .ToListAsync(cancellationToken);
+
+        var pairSet = pairList.ToHashSet();
+
+        return rows
+            .Where(r => pairSet.Contains((r.StudentUserId, r.CourseId)))
+            .GroupBy(r => (r.StudentUserId, r.CourseId))
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.CreatedAt).First().StartDate);
+    }
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");

@@ -59,6 +59,7 @@ public class ListOngoingAssignmentsQueryHandler
             }
         }
 
-        return await _queryService.ListManagedAsync(restrictToCompanyIds, page, pageSize, cancellationToken);
+        return await _queryService.ListManagedAsync(
+            restrictToCompanyIds, page, pageSize, query.TrainingName, query.EmployeeName, cancellationToken);
     }
 }

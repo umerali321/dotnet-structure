@@ -45,10 +45,20 @@ public class UserDirectory : IUserDirectory
 
     public async Task<IReadOnlyList<DirectoryCompanyRole>> GetActiveCompanyRolesAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var rows = await QueryActiveCompanyRoles(userId, companyId: null).ToListAsync(cancellationToken);
+        var rows = await QueryCompanyRoles(userId, companyId: null, requireCompanyActive: true).ToListAsync(cancellationToken);
 
         // Preserve each active role at a company. A user who is both Student and Manager must
         // explicitly choose which role they are using for the current session.
+        return rows
+            .GroupBy(x => new { x.CompanyId, Role = Roles.Normalize(x.RoleName) })
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<DirectoryCompanyRole>> GetCompanyRolesIgnoringCompanyStatusAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var rows = await QueryCompanyRoles(userId, companyId: null, requireCompanyActive: false).ToListAsync(cancellationToken);
+
         return rows
             .GroupBy(x => new { x.CompanyId, Role = Roles.Normalize(x.RoleName) })
             .Select(g => g.First())
@@ -61,14 +71,18 @@ public class UserDirectory : IUserDirectory
         string role,
         CancellationToken cancellationToken = default)
     {
-        var rows = await QueryActiveCompanyRoles(userId, companyId).ToListAsync(cancellationToken);
+        var rows = await QueryCompanyRoles(userId, companyId, requireCompanyActive: true).ToListAsync(cancellationToken);
         return rows.FirstOrDefault(x => Roles.Normalize(x.RoleName) == role);
     }
 
     public Task<bool> HasAnyCompanyRoleAsync(int userId, CancellationToken cancellationToken = default) =>
         _dbContext.UserCompanyRoles.AsNoTracking().AnyAsync(ucr => ucr.UserId == userId, cancellationToken);
 
-    private IQueryable<DirectoryCompanyRole> QueryActiveCompanyRoles(int userId, int? companyId)
+    /// <summary>requireCompanyActive gates login/company-selection (true, the original behavior) vs
+    /// admin visibility/authorization-scope checks on a target user (false - see
+    /// GetCompanyRolesIgnoringCompanyStatusAsync's doc comment for why). Plan expiry is unrelated to
+    /// this Active/Inactive distinction and always still applies either way.</summary>
+    private IQueryable<DirectoryCompanyRole> QueryCompanyRoles(int userId, int? companyId, bool requireCompanyActive)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -77,7 +91,7 @@ public class UserDirectory : IUserDirectory
             .Where(ucr => ucr.UserId == userId
                 && (companyId == null || ucr.CompanyId == companyId)
                 && ucr.IsActive
-                && ucr.Company.IsActive
+                && (!requireCompanyActive || ucr.Company.IsActive)
                 && ucr.Company.PlanEndDate >= today
                 && (ucr.StartDate == null || ucr.StartDate <= today)
                 && (ucr.EndDate == null || ucr.EndDate >= today))

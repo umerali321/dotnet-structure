@@ -8,6 +8,15 @@ public interface IUserDirectory
 
     Task<IReadOnlyList<DirectoryCompanyRole>> GetActiveCompanyRolesAsync(int userId, CancellationToken cancellationToken = default);
 
+    /// <summary>Same as <see cref="GetActiveCompanyRolesAsync"/> (active role assignment, valid
+    /// StartDate/EndDate window) but WITHOUT requiring the company itself to be active. Use this to
+    /// resolve a TARGET user's companies for admin visibility/authorization-scope checks (e.g. "does
+    /// this student's company overlap with the Manager's managed companies") - a company going
+    /// inactive must not also make its users invisible/inaccessible to the admins who already have
+    /// legitimate access to them. Never use this for login/company-selection - that must keep
+    /// requiring an active company (see GetActiveCompanyRolesAsync / QueryActiveCompanyRoles).</summary>
+    Task<IReadOnlyList<DirectoryCompanyRole>> GetCompanyRolesIgnoringCompanyStatusAsync(int userId, CancellationToken cancellationToken = default);
+
     /// <summary>Gets one specific active company-role membership for an explicit session selection.</summary>
     Task<DirectoryCompanyRole?> GetActiveCompanyRoleAsync(
         int userId,

@@ -28,4 +28,7 @@ public class SuperAdminAuthenticator : ISuperAdminAuthenticator
 
         return new SuperAdminIdentity(account.Id, account.Email, Roles.SuperAdmin);
     }
+
+    public bool IsSuperAdminEmail(string email) =>
+        _settings.Accounts.Any(a => string.Equals(email, a.Email, StringComparison.OrdinalIgnoreCase));
 }
