@@ -5,7 +5,7 @@ using SkillsetsBackend.Domain.Identity;
 
 namespace SkillsetsBackend.Application.Settings.Commands.RunSkillportScraperNow;
 
-public record RunSkillportScraperNowResultDto(bool Started);
+public record RunSkillportScraperNowResultDto(bool Started, string? ErrorMessage);
 
 public class RunSkillportScraperNowCommandHandler
 {
@@ -28,7 +28,7 @@ public class RunSkillportScraperNowCommandHandler
             throw new UnauthorizedAccessException("You do not have permission to run the report scraper.");
         }
 
-        var started = await _taskRunner.TriggerNowAsync(cancellationToken);
-        return new RunSkillportScraperNowResultDto(started);
+        var result = await _taskRunner.TriggerNowAsync(cancellationToken);
+        return new RunSkillportScraperNowResultDto(result.Started, result.ErrorMessage);
     }
 }

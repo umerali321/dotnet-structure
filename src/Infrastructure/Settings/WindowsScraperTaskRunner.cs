@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using System.Text;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SkillsetsBackend.Application.Settings.Interfaces;
 using SkillsetsBackend.Infrastructure.Options;
@@ -20,13 +22,15 @@ public class WindowsScraperTaskRunner : IScraperTaskRunner
     private const string TaskName = "SkillSets - Nightly Learning Transcript Sync";
 
     private readonly ScraperTaskRunnerSettings _settings;
+    private readonly ILogger<WindowsScraperTaskRunner> _logger;
 
-    public WindowsScraperTaskRunner(IOptions<ScraperTaskRunnerSettings> settings)
+    public WindowsScraperTaskRunner(IOptions<ScraperTaskRunnerSettings> settings, ILogger<WindowsScraperTaskRunner> logger)
     {
         _settings = settings.Value;
+        _logger = logger;
     }
 
-    public async Task<bool> TriggerNowAsync(CancellationToken cancellationToken = default)
+    public async Task<ScraperTaskRunResult> TriggerNowAsync(CancellationToken cancellationToken = default)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -47,18 +51,60 @@ public class WindowsScraperTaskRunner : IScraperTaskRunner
         if (!string.IsNullOrWhiteSpace(_settings.Username) && !string.IsNullOrWhiteSpace(_settings.Password))
         {
             startInfo.UserName = _settings.Username;
-            startInfo.Domain = _settings.Domain;
+            // CreateProcessWithLogonW (which ProcessStartInfo.UserName/Password map to) treats an
+            // empty Domain as "look this account up on a domain controller" - for a local account
+            // like a server's own Administrator, that lookup fails even though the account and
+            // password are both correct. "." tells it "local accounts database on this machine"
+            // instead, which is what a local Administrator account actually needs.
+            startInfo.Domain = string.IsNullOrWhiteSpace(_settings.Domain) ? "." : _settings.Domain;
             startInfo.PasswordInClearText = _settings.Password;
             startInfo.LoadUserProfile = false;
         }
 
-        using var process = Process.Start(startInfo);
-        if (process is null)
+        Process? process;
+        try
         {
-            return false;
+            process = Process.Start(startInfo);
+        }
+        catch (Exception ex)
+        {
+            // CreateProcessWithLogonW throws (rather than returning a failed process) for bad
+            // credentials, a missing "Log on as a batch job" right, etc. - surface the real message
+            // instead of a bare false.
+            _logger.LogError(ex, "Failed to launch schtasks.exe to trigger '{TaskName}'", TaskName);
+            return new ScraperTaskRunResult(false, ex.Message);
         }
 
-        await process.WaitForExitAsync(cancellationToken);
-        return process.ExitCode == 0;
+        using (process)
+        {
+            if (process is null)
+            {
+                return new ScraperTaskRunResult(false, "Process.Start returned no process.");
+            }
+
+            var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+            var stdOut = (await stdOutTask).Trim();
+            var stdErr = (await stdErrTask).Trim();
+
+            if (process.ExitCode == 0)
+            {
+                return new ScraperTaskRunResult(true, null);
+            }
+
+            var message = new StringBuilder($"schtasks.exe exited with code {process.ExitCode}.");
+            if (!string.IsNullOrWhiteSpace(stdErr))
+            {
+                message.Append(" stderr: ").Append(stdErr);
+            }
+            if (!string.IsNullOrWhiteSpace(stdOut))
+            {
+                message.Append(" stdout: ").Append(stdOut);
+            }
+
+            _logger.LogError("schtasks /Run /TN {TaskName} failed: {Message}", TaskName, message);
+            return new ScraperTaskRunResult(false, message.ToString());
+        }
     }
 }
