@@ -115,4 +115,78 @@ public class WindowsScraperTaskRunner : IScraperTaskRunner
             return new ScraperTaskRunResult(false, message.ToString());
         }
     }
+
+    public async Task<ScraperTaskStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            // /FO LIST rather than CSV: one "Field Name:    Value" line per field, no quoting/escaping
+            // rules to get wrong for a value that happens to contain a comma.
+            ArgumentList = { "/Query", "/TN", TaskName, "/V", "/FO", "LIST" },
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+
+        if (!string.IsNullOrWhiteSpace(_settings.Username) && !string.IsNullOrWhiteSpace(_settings.Password))
+        {
+            startInfo.UserName = _settings.Username;
+            startInfo.Domain = string.IsNullOrWhiteSpace(_settings.Domain) ? "." : _settings.Domain;
+            startInfo.PasswordInClearText = _settings.Password;
+            startInfo.LoadUserProfile = false;
+        }
+
+        Process? process;
+        try
+        {
+            process = Process.Start(startInfo);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to launch schtasks.exe to query '{TaskName}'", TaskName);
+            return new ScraperTaskStatus(null, null, null, null, ex.Message);
+        }
+
+        using (process)
+        {
+            if (process is null)
+            {
+                return new ScraperTaskStatus(null, null, null, null, "Process.Start returned no process.");
+            }
+
+            var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+            var stdOut = await stdOutTask;
+            var stdErr = (await stdErrTask).Trim();
+
+            if (process.ExitCode != 0)
+            {
+                var message = string.IsNullOrWhiteSpace(stdErr) ? $"schtasks /Query exited with code {process.ExitCode}." : stdErr;
+                _logger.LogError("schtasks /Query /TN {TaskName} failed: {Message}", TaskName, message);
+                return new ScraperTaskStatus(null, null, null, null, message);
+            }
+
+            var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var line in stdOut.Split('\n'))
+            {
+                var separatorIndex = line.IndexOf(':');
+                if (separatorIndex <= 0)
+                {
+                    continue;
+                }
+                var name = line[..separatorIndex].Trim();
+                var value = line[(separatorIndex + 1)..].Trim().TrimEnd('\r');
+                fields[name] = value;
+            }
+
+            fields.TryGetValue("Status", out var status);
+            fields.TryGetValue("Last Run Time", out var lastRunTime);
+            fields.TryGetValue("Last Result", out var lastResult);
+            fields.TryGetValue("Next Run Time", out var nextRunTime);
+            return new ScraperTaskStatus(status, lastRunTime, lastResult, nextRunTime, null);
+        }
+    }
 }
