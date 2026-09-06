@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SkillsetsBackend.Application.Common.Exceptions;
@@ -26,6 +27,10 @@ public class ScraperRunnerService : IScraperRunnerService
 
     private readonly SkillsoftScraperSettings _settings;
     private readonly ILogger<ScraperRunnerService> _logger;
+    // IScraperSqlApplier is Scoped (it holds a DbContext) but this service is a Singleton - a scope
+    // is created on demand around the one call that needs it, rather than injecting the applier
+    // directly, which would capture a DbContext for the app's entire lifetime.
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly object _lock = new();
 
     private ScraperRunStatus _status = ScraperRunStatus.Idle;
@@ -40,11 +45,19 @@ public class ScraperRunnerService : IScraperRunnerService
     private string? _sqlFilePath;
     private int? _exitCode;
     private Process? _currentProcess;
+    private bool _sqlApplied;
+    private int? _sqlBatchesSucceeded;
+    private int? _sqlBatchesFailed;
+    private string? _sqlApplyError;
 
-    public ScraperRunnerService(IOptions<SkillsoftScraperSettings> settings, ILogger<ScraperRunnerService> logger)
+    public ScraperRunnerService(
+        IOptions<SkillsoftScraperSettings> settings,
+        ILogger<ScraperRunnerService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _settings = settings.Value;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public ScraperRunSnapshot GetSnapshot()
@@ -75,6 +88,10 @@ public class ScraperRunnerService : IScraperRunnerService
             _errorMessage = null;
             _sqlFilePath = null;
             _exitCode = null;
+            _sqlApplied = false;
+            _sqlBatchesSucceeded = null;
+            _sqlBatchesFailed = null;
+            _sqlApplyError = null;
 
             var snapshot = BuildSnapshot();
             _ = Task.Run(() => RunProcessAsync(categories, mode, limit));
@@ -233,6 +250,22 @@ public class ScraperRunnerService : IScraperRunnerService
                 }
                 process.Dispose();
             }
+
+            string? sqlFilePathToApply;
+            lock (_lock)
+            {
+                sqlFilePathToApply = _status == ScraperRunStatus.Completed && _sqlFilePath is not null && File.Exists(_sqlFilePath)
+                    ? _sqlFilePath
+                    : null;
+            }
+
+            // Applying the generated SQL is what actually gets scraped courses into the portal - a
+            // successful scrape that just leaves a file on disk for someone to remember to run by
+            // hand is exactly the gap that caused courses to go missing in the first place.
+            if (sqlFilePathToApply is not null)
+            {
+                await ApplySqlFileAsync(sqlFilePathToApply);
+            }
         }
         catch (Exception ex)
         {
@@ -242,6 +275,33 @@ public class ScraperRunnerService : IScraperRunnerService
                 _status = ScraperRunStatus.Failed;
                 _errorMessage = ex.Message;
                 _finishedAt = DateTimeOffset.UtcNow;
+            }
+        }
+    }
+
+    private async Task ApplySqlFileAsync(string sqlFilePath)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var applier = scope.ServiceProvider.GetRequiredService<IScraperSqlApplier>();
+            var result = await applier.ApplyAsync(sqlFilePath);
+
+            lock (_lock)
+            {
+                _sqlApplied = true;
+                _sqlBatchesSucceeded = result.BatchesSucceeded;
+                _sqlBatchesFailed = result.BatchesFailed;
+                _sqlApplyError = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply scraper SQL file '{SqlFilePath}' to the database.", sqlFilePath);
+            lock (_lock)
+            {
+                _sqlApplied = false;
+                _sqlApplyError = ex.Message;
             }
         }
     }
@@ -283,5 +343,6 @@ public class ScraperRunnerService : IScraperRunnerService
 
     private ScraperRunSnapshot BuildSnapshot() => new(
         _status, _category, _mode, _limit, _startedAt, _finishedAt, _startedByEmail,
-        _logLines.ToList(), _errorMessage, _sqlFilePath, _exitCode);
+        _logLines.ToList(), _errorMessage, _sqlFilePath, _exitCode,
+        _sqlApplied, _sqlBatchesSucceeded, _sqlBatchesFailed, _sqlApplyError);
 }

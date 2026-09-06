@@ -21,4 +21,8 @@ public record ScraperRunSnapshot(
     IReadOnlyList<string> LogTail,
     string? ErrorMessage,
     string? SqlFilePath,
-    int? ExitCode);
+    int? ExitCode,
+    bool SqlApplied,
+    int? SqlBatchesSucceeded,
+    int? SqlBatchesFailed,
+    string? SqlApplyError);

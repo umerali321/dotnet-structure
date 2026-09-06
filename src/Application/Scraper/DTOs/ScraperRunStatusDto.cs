@@ -13,7 +13,11 @@ public record ScraperRunStatusDto(
     IReadOnlyList<string> LogTail,
     string? ErrorMessage,
     bool SqlFileAvailable,
-    string? SqlFileName)
+    string? SqlFileName,
+    bool SqlApplied,
+    int? SqlBatchesSucceeded,
+    int? SqlBatchesFailed,
+    string? SqlApplyError)
 {
     public static ScraperRunStatusDto FromSnapshot(ScraperRunSnapshot snapshot) => new(
         snapshot.Status.ToString(),
@@ -26,5 +30,9 @@ public record ScraperRunStatusDto(
         snapshot.LogTail,
         snapshot.ErrorMessage,
         snapshot.SqlFilePath is not null,
-        snapshot.SqlFilePath is not null ? Path.GetFileName(snapshot.SqlFilePath) : null);
+        snapshot.SqlFilePath is not null ? Path.GetFileName(snapshot.SqlFilePath) : null,
+        snapshot.SqlApplied,
+        snapshot.SqlBatchesSucceeded,
+        snapshot.SqlBatchesFailed,
+        snapshot.SqlApplyError);
 }

@@ -146,6 +146,7 @@ public static class DependencyInjection
         services.AddScoped<IScraperCategoryQueryService, ScraperCategoryQueryService>();
         services.AddSingleton<ScraperRunnerService>();
         services.AddSingleton<IScraperRunnerService>(provider => provider.GetRequiredService<ScraperRunnerService>());
+        services.AddScoped<IScraperSqlApplier, ScraperSqlApplier>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IDashboardQueryService, DashboardQueryService>();
         services.AddScoped<ISkillTraxRepository, SkillTraxRepository>();
