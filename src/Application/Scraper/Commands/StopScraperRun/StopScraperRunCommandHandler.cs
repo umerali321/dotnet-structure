@@ -13,14 +13,14 @@ public class StopScraperRunCommandHandler
         _runner = runner;
     }
 
-    public Task<ScraperRunStatusDto> Handle(CallerContext caller, CancellationToken cancellationToken)
+    public async Task<ScraperRunStatusDto> Handle(CallerContext caller, CancellationToken cancellationToken)
     {
         if (!caller.IsSuperAdmin)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin can stop the course scraper.");
         }
 
-        var snapshot = _runner.StopRun();
-        return Task.FromResult(ScraperRunStatusDto.FromSnapshot(snapshot));
+        var snapshot = await _runner.StopRunAsync(cancellationToken);
+        return ScraperRunStatusDto.FromSnapshot(snapshot);
     }
 }

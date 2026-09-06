@@ -28,7 +28,7 @@ public class RunSkillportScraperNowCommandHandler
             throw new UnauthorizedAccessException("You do not have permission to run the report scraper.");
         }
 
-        var result = await _taskRunner.TriggerNowAsync(cancellationToken);
+        var result = await _taskRunner.TriggerNowAsync(ScraperTaskNames.NightlyTranscriptSync, cancellationToken);
         return new RunSkillportScraperNowResultDto(result.Started, result.ErrorMessage);
     }
 }

@@ -25,6 +25,6 @@ public class GetSkillportScraperStatusQueryHandler
             throw new UnauthorizedAccessException("You do not have permission to view the report scraper status.");
         }
 
-        return await _taskRunner.GetStatusAsync(cancellationToken);
+        return await _taskRunner.GetStatusAsync(ScraperTaskNames.NightlyTranscriptSync, cancellationToken);
     }
 }

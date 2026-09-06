@@ -13,15 +13,22 @@ public record ScraperTaskRunResult(bool Started, string? ErrorMessage);
 /// ErrorMessage is set instead of the rest when the query itself couldn't be answered.</summary>
 public record ScraperTaskStatus(string? Status, string? LastRunTime, string? LastResult, string? NextRunTime, string? ErrorMessage);
 
-/// <summary>Triggers the nightly Learning Transcript scraper's Windows Scheduled Task immediately,
-/// instead of waiting for its normal midnight schedule - lets an admin change the Group/Date Range
-/// in Settings and see it take effect right away, without needing server (RDP) access.</summary>
+/// <summary>Triggers a named Windows Scheduled Task immediately instead of waiting for its normal
+/// schedule (or, for an on-demand-only task with no schedule at all, triggers the only way it can
+/// ever run) - lets an admin act right away without needing server (RDP) access. Shared by both the
+/// nightly Learning Transcript sync and the on-demand Course Library scraper - see
+/// SkillsetsBackend.Application.Common.ScraperTaskNames for the exact registered names.</summary>
 public interface IScraperTaskRunner
 {
-    Task<ScraperTaskRunResult> TriggerNowAsync(CancellationToken cancellationToken = default);
+    Task<ScraperTaskRunResult> TriggerNowAsync(string taskName, CancellationToken cancellationToken = default);
 
     /// <summary>Lets an admin see whether the task is currently running and how its last run went,
-    /// from the same Settings screen - without this, Run Now only ever confirms the trigger was
-    /// accepted, never whether the scrape itself finished or succeeded.</summary>
-    Task<ScraperTaskStatus> GetStatusAsync(CancellationToken cancellationToken = default);
+    /// from the same Settings screen - without this, triggering a run only ever confirms it was
+    /// accepted, never whether the run itself finished or succeeded.</summary>
+    Task<ScraperTaskStatus> GetStatusAsync(string taskName, CancellationToken cancellationToken = default);
+
+    /// <summary>Ends a currently-running instance of the task (schtasks /End) - lets a user-requested
+    /// Stop actually stop the underlying process tree when it's running via Task Scheduler rather
+    /// than a directly-owned Process handle.</summary>
+    Task<bool> EndAsync(string taskName, CancellationToken cancellationToken = default);
 }

@@ -13,5 +13,5 @@ public interface IScraperRunnerService
     ScraperRunSnapshot StartRun(IReadOnlyList<string> categories, string mode, int? limit, string startedByEmail);
 
     /// <summary>Throws ConflictException if no run is currently in progress.</summary>
-    ScraperRunSnapshot StopRun();
+    Task<ScraperRunSnapshot> StopRunAsync(CancellationToken cancellationToken = default);
 }
