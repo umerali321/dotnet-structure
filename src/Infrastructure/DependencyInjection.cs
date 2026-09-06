@@ -144,8 +144,12 @@ public static class DependencyInjection
         services.AddScoped<ICourseLibraryQueryService, CourseLibraryQueryService>();
         services.AddScoped<ICourseTakenRepository, CourseTakenRepository>();
         services.AddScoped<IScraperCategoryQueryService, ScraperCategoryQueryService>();
+        // This app only ever runs on the Windows Server that also hosts the scraper's own Python
+        // install and Chrome - see ScraperRunnerService's [SupportedOSPlatform] doc comment.
+#pragma warning disable CA1416
         services.AddSingleton<ScraperRunnerService>();
         services.AddSingleton<IScraperRunnerService>(provider => provider.GetRequiredService<ScraperRunnerService>());
+#pragma warning restore CA1416
         services.AddScoped<IScraperSqlApplier, ScraperSqlApplier>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IDashboardQueryService, DashboardQueryService>();

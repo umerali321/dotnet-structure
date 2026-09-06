@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ namespace SkillsetsBackend.Infrastructure.Scraper;
 /// Python/Selenium/Chrome process (it keeps running, unmonitored) while the reported status
 /// resets to Idle. Fine for a single-admin, run-occasionally tool - not building PID/lock-file
 /// recovery for this.</summary>
+[SupportedOSPlatform("windows")]
 public class ScraperRunnerService : IScraperRunnerService
 {
     private const int MaxLogLines = 1000;
@@ -26,6 +28,13 @@ public class ScraperRunnerService : IScraperRunnerService
     private static readonly Regex SqlFileLineRegex = new(@"^\[SQL\] Exported SQL to: (?<path>.+)$", RegexOptions.Compiled);
 
     private readonly SkillsoftScraperSettings _settings;
+    // Reuses the same "account that owns things on this box" credentials as WindowsScraperTaskRunner
+    // - Python here lives under the Administrator user's own profile
+    // (C:\Users\Administrator\AppData\...), which the IIS app pool's own identity has no NTFS
+    // permission to execute from ("Access is denied" launching it, confirmed live). Running the
+    // scraper process as that same account sidesteps the ACL question exactly like it did for
+    // triggering the scheduled task.
+    private readonly ScraperTaskRunnerSettings _runAsSettings;
     private readonly ILogger<ScraperRunnerService> _logger;
     // IScraperSqlApplier is Scoped (it holds a DbContext) but this service is a Singleton - a scope
     // is created on demand around the one call that needs it, rather than injecting the applier
@@ -52,10 +61,12 @@ public class ScraperRunnerService : IScraperRunnerService
 
     public ScraperRunnerService(
         IOptions<SkillsoftScraperSettings> settings,
+        IOptions<ScraperTaskRunnerSettings> runAsSettings,
         ILogger<ScraperRunnerService> logger,
         IServiceScopeFactory scopeFactory)
     {
         _settings = settings.Value;
+        _runAsSettings = runAsSettings.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
     }
@@ -157,6 +168,18 @@ public class ScraperRunnerService : IScraperRunnerService
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
+
+            if (!string.IsNullOrWhiteSpace(_runAsSettings.Username) && !string.IsNullOrWhiteSpace(_runAsSettings.Password))
+            {
+                psi.UserName = _runAsSettings.Username;
+                psi.Domain = string.IsNullOrWhiteSpace(_runAsSettings.Domain) ? "." : _runAsSettings.Domain;
+                psi.PasswordInClearText = _runAsSettings.Password;
+                // Unlike WindowsScraperTaskRunner's schtasks.exe call, this actually needs the
+                // account's profile: Python/pip and Selenium's Chrome driver cache live under the
+                // account's own profile (%LOCALAPPDATA%, %USERPROFILE%), not machine-wide.
+                psi.LoadUserProfile = true;
+            }
+
             psi.ArgumentList.Add(_settings.ScriptPath);
             // One --category argument per selected category (not comma-joined) - some real
             // category names contain commas themselves (e.g. "CUSTOMER SERVICE, SALES &
