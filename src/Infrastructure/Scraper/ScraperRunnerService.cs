@@ -265,7 +265,12 @@ public class ScraperRunnerService : IScraperRunnerService
         string? sqlFilePathToApply;
         lock (_lock)
         {
-            sqlFilePathToApply = _status == ScraperRunStatus.Completed && _sqlFilePath is not null && File.Exists(_sqlFilePath)
+            // Not gated on Completed: skillport_scraper.py exports SQL per-category as each one
+            // finishes, so a run that later crashes (e.g. a Chrome/Selenium disconnect deep into an
+            // ALL-categories run) can still have produced a real, usable SQL file covering whatever
+            // categories DID finish before the crash - applying it recovers that work instead of
+            // discarding potentially hours of successful scraping over one late failure.
+            sqlFilePathToApply = _sqlFilePath is not null && File.Exists(_sqlFilePath)
                 ? _sqlFilePath
                 : null;
         }
